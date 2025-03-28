@@ -13,7 +13,7 @@ Contém a API de backend para o evento da SCTI 2025
 - [ ] Criar Issues para os requisitos e rotas da API
 
 
-### Go-Auth
+### Autenticação -> Go-Auth
 - [ ] Pacote para autenticação modularizado
 - [ ] JWT + Refresh token por padrão
 - [ ] Possui uma interface para conectar seu próprio DB
