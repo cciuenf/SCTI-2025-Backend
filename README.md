@@ -27,6 +27,7 @@ Contém a API de backend para o evento da SCTI 2025
 ### Banco de Dados
 - [ ] Modelagem do banco de dados
 - [ ] Usar transações em código crítico
+- [ ] Modelagem do banco no próprio códgio usando GORM
 
 
 #### User
