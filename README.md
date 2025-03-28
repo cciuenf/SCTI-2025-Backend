@@ -12,6 +12,7 @@ Contém a API de backend para o evento da SCTI 2025
 - [ ] Github Actions para Linting e Formatting
 - [ ] Criar Issues para os requisitos e rotas da API
 
+
 ### Go-Auth
 - [ ] Pacote para autenticação modularizado
 - [ ] JWT + Refresh token por padrão
@@ -22,9 +23,11 @@ Contém a API de backend para o evento da SCTI 2025
 - [ ] Proporciona verificação de conta
 - [ ] Possui rate limiting pra evitar ataques de força bruta
 
+
 ### Banco de Dados
 - [ ] Modelagem do banco de dados
 - [ ] Usar transações em código crítico
+
 
 #### User
 - [ ] UUID pk
@@ -38,13 +41,15 @@ Contém a API de backend para o evento da SCTI 2025
 - [ ] IsUenf
 - [ ] Curso
 - [ ] Periodo
-- [ ] Redes[]
+- [ ] Redes
 - [ ] IsAdmin
 - [ ] IsMaster
 
+
 - Usuários que possuam foto de perfil
-    - Verificaçao de imagem com (Google cloud/Rekognition)
+    - Verificaçao de imagem com (Google cloud/Rekognition) se possível
     - A imagem ao chegar ao backend já deve ter sido verificada pelo NSFW JS
+    - Fotos de perfis são guardadas em disco, < 10mb e apenas .png .jpg .webp
 
 - Email de usuario deve ser limpado antes de processado (toLower, ...)
 - Não deve exisitir mais de uma conta com o mesmo email
@@ -72,6 +77,7 @@ Contém a API de backend para o evento da SCTI 2025
     - Não podem ser links minificados
     - Usar um regex para proibir links especificos
 
+
 #### Activity
 - [ ] ID pk
 - [ ] Tipo (MC|Minicurso, PL|Palestra, EV|Evento[Extra])
@@ -98,6 +104,7 @@ Contém a API de backend para o evento da SCTI 2025
 - Thumbnail
     - Atividades devem possuir thumbnail (Ou foto do ministrante ou thumb customizada)
 
+
 #### Registrations
 - [ ] UserID fk
 - [ ] ActivityID fk
@@ -105,6 +112,7 @@ Contém a API de backend para o evento da SCTI 2025
 
 - Race condition
     - A implementação atual possui uma condição de corrida, achar uma implementação que diminua ou remova essa condição de corrida
+
  
 #### ActionLog
 - [ ] ActionID AutoIncrement
@@ -114,9 +122,11 @@ Contém a API de backend para o evento da SCTI 2025
 - [ ] ActionType
 - [ ] ActionData
 
+
 ### Segurança
 - [ ] Redirect Automático de http para https pela linguagem
 - [ ] Certificado Let's encrypt automático
+
 
 ### Logging Middleware
 - [ ] Log padronizado (Rota/Modulo/Arquivo)
@@ -124,7 +134,6 @@ Contém a API de backend para o evento da SCTI 2025
 - [ ] Arquivo de log Localizado
 - [ ] Arquivo de log por usuário
 - [ ] Contador de Visitas / Server metrics
-
 
 
 --!! NAO REVISADOS !!--
