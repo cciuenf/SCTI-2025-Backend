@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: database-layer
+    environment:
+      POSTGRES_DB: scti-db
+      POSTGRES_USER: scti-user
+      POSTGRES_PASSWORD: scti#01
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./create.sql:/docker-entrypoint-initdb.d/create.sql
+
+volumes:
+  postgres_data:
