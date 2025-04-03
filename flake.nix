@@ -17,6 +17,7 @@
           go
         ];
         shellHook = ''
+          export GOPATH=$HOME/.go
           echo "Welcome to the development environment!"
           export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [ pkgs.libglvnd ]}:$LD_LIBRARY_PATH
           USER_SHELL=$(getent passwd $USER | cut -d: -f7)
