@@ -1,8 +1,8 @@
 package services
 
 import (
-	"breakfast/internal/models"
-	"breakfast/internal/repositories"
+	"scti/internal/models"
+	"scti/internal/repos"
 	"errors"
 	"time"
 
@@ -12,12 +12,15 @@ import (
 )
 
 type AuthService struct {
-	UserRepo  *repositories.UserRepository
+	UserRepo  *repos.UserRepo
 	JWTSecret string
 }
 
-func NewAuthService(repo *repositories.UserRepository, secret string) *AuthService {
-	return &AuthService{UserRepo: repo, JWTSecret: secret}
+func NewAuthService(repo *repos.UserRepo, secret string) *AuthService {
+	return &AuthService{
+		UserRepo:  repo,
+		JWTSecret: secret,
+	}
 }
 
 func (s *AuthService) Register(email, password, name string) error {
@@ -27,9 +30,9 @@ func (s *AuthService) Register(email, password, name string) error {
 	}
 
 	user := &models.User{
-		ID:       uuid.New(),
+		UserID:   uuid.New().String(),
+		Nome:     name,
 		Email:    email,
-		Name:     name,
 		Password: string(hashedPassword),
 	}
 
@@ -37,7 +40,7 @@ func (s *AuthService) Register(email, password, name string) error {
 }
 
 func (s *AuthService) Login(email, password string) (string, error) {
-	user, err := s.UserRepo.FindByEmail(email)
+	user, err := s.UserRepo.FindByEmail(email) // Chamando o método FindByEmail
 	if err != nil {
 		return "", err
 	}
@@ -50,9 +53,10 @@ func (s *AuthService) Login(email, password string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.ID.String(),
+		"id":  user.UserID,
 		"exp": time.Now().Add(24 * time.Hour).Unix(),
 	})
 
 	return token.SignedString([]byte(s.JWTSecret))
 }
+

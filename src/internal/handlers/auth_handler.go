@@ -1,70 +1,82 @@
 package handlers
 
 import (
-	"breakfast/internal/models"
-	"breakfast/internal/services"
-	u "breakfast/internal/utilities"
-	"encoding/json"
-	"net/http"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "scti/internal/services"
 )
 
 type AuthHandler struct {
-	AuthService *services.AuthService
+    AuthService *services.AuthService
 }
 
 func NewAuthHandler(service *services.AuthService) *AuthHandler {
-	return &AuthHandler{AuthService: service}
+    return &AuthHandler{AuthService: service}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var data models.UserRegister
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		u.Send(w, err.Error(), nil, http.StatusConflict)
-		return
-	}
+    var data struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+        Name     string `json:"name"`
+    }
 
-	msg, err := models.ValidateModel(data)
-	if err != nil {
-		u.Send(w, "Invalid request", msg, http.StatusBadRequest)
-		return
-	}
+    if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+        http.Error(w, err.Error(), http.StatusConflict)
+        return
+    }
 
-	if err := h.AuthService.Register(data.Email, data.Password, data.Name); err != nil {
-		u.Send(w, err.Error(), nil, http.StatusConflict)
-		return
-	}
+    // Simples validação (caso precise)
+    if data.Email == "" || data.Password == "" || data.Name == "" {
+        http.Error(w, "Invalid input", http.StatusBadRequest)
+        return
+    }
 
-	token, err := h.AuthService.Login(data.Email, data.Password)
-	if err != nil {
-		u.Send(w, "Invalid email or password", err.Error(), http.StatusUnauthorized)
-		return
-	}
+    if err := h.AuthService.Register(data.Email, data.Password, data.Name); err != nil {
+        http.Error(w, err.Error(), http.StatusConflict)
+        return
+    }
 
-	u.Send(w, "", token, http.StatusCreated)
+    token, err := h.AuthService.Login(data.Email, data.Password)
+    if err != nil {
+        http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+        return
+    }
+
+    // Resposta com o token
+    w.WriteHeader(http.StatusCreated)
+    fmt.Fprintln(w, token)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var data models.UserLogin
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		u.Send(w, "Invalid Input", err.Error(), http.StatusBadRequest)
-		return
-	}
+    var data struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+    }
 
-	msg, err := models.ValidateModel(data)
-	if err != nil {
-		u.Send(w, "Invalid request", msg, http.StatusBadRequest)
-		return
-	}
+    if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 
-	token, err := h.AuthService.Login(data.Email, data.Password)
-	if err != nil {
-		u.Send(w, "Invalid email or password", err.Error(), http.StatusUnauthorized)
-		return
-	}
+    if data.Email == "" || data.Password == "" {
+        http.Error(w, "Invalid input", http.StatusBadRequest)
+        return
+    }
 
-	u.Send(w, "", token, http.StatusOK)
+    token, err := h.AuthService.Login(data.Email, data.Password)
+    if err != nil {
+        http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, token)
 }
 
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
-	u.Send(w, "", nil, http.StatusOK)
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, "JWT is valid")  // Simples resposta, caso você queira validar o JWT de fato, você pode adicionar lógica aqui.
 }
+

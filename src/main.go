@@ -12,27 +12,27 @@ import (
 	"gorm.io/gorm"
 )
 
-func main (){
-  cfg := config.LoadConfig()
-  database := db.Connect(*cfg)
-  db.Migrate()
-  mux := initializeMux(database, cfg)
-  if cfg.PORT == "" {
-    cfg.PORT = "8080"
-  }
-  log.Println("Started server on port 8080")
-  log.Fatal(http.ListenAndServe(":"+cfg.PORT, mux))
+func main() {
+	cfg := config.LoadConfig()
+	database := db.Connect(*cfg)
+	db.Migrate()
+
+	authService := services.NewAuthService(repos.NewUserRepo(database), cfg.JWT_SECRET)
+	authHandler := handlers.NewAuthHandler(authService)
+
+	mux := initializeMux(database, cfg, authHandler)
+	if cfg.PORT == "" {
+		cfg.PORT = "8080"
+	}
+	log.Println("Started server on port 8080")
+	log.Fatal(http.ListenAndServe(":"+cfg.PORT, mux))
 }
 
-func initializeMux(database *gorm.DB, _ *config.Config) *http.ServeMux{
- userRepo := repos.NewUserRepo(database)
-  userService := services.NewUserService(userRepo)
-  userHandler := handlers.NewUserHandler(userService)
-
-  mux := http.NewServeMux()
-
-  // mux.HandleFunc("GET /me", userHandler.Me)
-  mux.HandleFunc("POST /create", userHandler.Create)
-
-  return mux
+func initializeMux(database *gorm.DB, cfg *config.Config, authHandler *handlers.AuthHandler) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/register", authHandler.Register)
+	mux.HandleFunc("/login", authHandler.Login)
+	mux.HandleFunc("/verify", authHandler.VerifyJWT)
+	return mux
 }
+

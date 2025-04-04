@@ -16,6 +16,7 @@ type Config struct  {
   DSN string
   HOST string
   PORT string
+	JWT_SECRET string
 }
 
 func LoadConfig () *Config {
@@ -30,6 +31,7 @@ func LoadConfig () *Config {
   user := os.Getenv("DATABASE_USER")
   pass := os.Getenv("DATABASE_PASS")
   db := os.Getenv("DATABASE")
+	jwtSecret := os.Getenv("JWT_SECRET")
 
   dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=America/Sao_Paulo", host, user, pass, db, db_port)
 
@@ -41,5 +43,6 @@ func LoadConfig () *Config {
     DB_USER: user,
     DB_PASS: pass,
     DSN: dsn,
+		JWT_SECRET: jwtSecret,
   }
 }
