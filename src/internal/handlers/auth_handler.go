@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-
+	"scti/internal/models"
 	"scti/internal/services"
+	"encoding/json"
 )
 
 type AuthHandler struct {
@@ -16,45 +16,35 @@ func NewAuthHandler(service *services.AuthService) *AuthHandler {
 	return &AuthHandler{AuthService: service}
 }
 
-type RegisterRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "JWT is valid")
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var user models.UserRegister
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Erro ao ler JSON", http.StatusBadRequest)
 		return
 	}
 
-	token, refresh, err := h.AuthService.Register(req.Email, req.Password, req.Name)
+	err := h.AuthService.Register(user.Email, user.Password, user.Name, user.LastName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"access_token":  token,
-		"refresh_token": refresh,
-	})
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var user models.UserLogin
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Erro ao ler JSON", http.StatusBadRequest)
 		return
 	}
 
-	token, refresh, err := h.AuthService.Login(req.Email, req.Password)
+	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -62,12 +52,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"access_token":  token,
+		"access_token":  acess_token,
 		"refresh_token": refresh,
 	})
-}
-
-func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "JWT is valid")
 }

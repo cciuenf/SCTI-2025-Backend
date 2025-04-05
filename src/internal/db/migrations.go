@@ -10,6 +10,7 @@ func Migrate() {
 
 	err := DB.AutoMigrate(
 		&models.User{},
+		&models.RefreshTokens{},
 	)
 	if err != nil {
 		log.Fatalf("migrations failed: %v", err)

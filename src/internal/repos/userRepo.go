@@ -45,3 +45,18 @@ func (r *UserRepo) UpdateRefreshToken(userID, refreshToken string) error {
 		Where("user_id = ?", userID).
 		Update("refresh_token", refreshToken).Error
 }
+
+func (r *UserRepo) CreateRefreshToken(userID, refreshToken string) (error, int64) {
+	token := models.RefreshTokens{
+		UserID:        userID,
+		TokenStr: refreshToken,
+	}
+
+	err := r.DB.Create(&token).Error
+
+	if err != nil {
+		return err, -1
+	}
+
+	return err, token.ID
+}
