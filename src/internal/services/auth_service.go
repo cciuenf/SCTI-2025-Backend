@@ -5,6 +5,7 @@ import (
 	"scti/internal/models"
 	"scti/internal/repos"
 	"time"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -23,39 +24,70 @@ func NewAuthService(repo *repos.UserRepo, secret string) *AuthService {
 	}
 }
 
-func (s *AuthService) Register(email, password, name string) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
+func (s *AuthService) Register(email, password, name string) (string, string, error) {
+    email = strings.TrimSpace(strings.ToLower(email))
 
-	user := &models.User{
-		UserID:   uuid.New().String(),
-		Nome:     name,
-		Email:    email,
-		Password: string(hashedPassword),
-	}
+    // Checar se já existe usuário
+    existing, _ := s.UserRepo.FindByEmail(email)
+    if existing != nil {
+        return "", "", errors.New("usuario já existe")
+    }
 
-	return s.UserRepo.Create(user)
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    if err != nil {
+        return "", "", err
+    }
+
+    user := &models.User{
+        UserID:       uuid.New().String(),
+        Name:         name,
+        Email:        email,
+        Password:     string(hashedPassword),
+        RefreshToken: uuid.New().String(), // cria refresh inicial
+    }
+
+    if err := s.UserRepo.Create(user); err != nil {
+        return "", "", err
+    }
+
+    accessToken, err := s.generateJWT(user)
+    if err != nil {
+        return "", "", err
+    }
+
+    return accessToken, user.RefreshToken, nil
 }
 
-func (s *AuthService) Login(email, password string) (string, error) {
-	user, err := s.UserRepo.FindByEmail(email) // Chamando o método FindByEmail
-	if err != nil {
-		return "", err
-	}
-	if user == nil {
-		return "", errors.New("invalid email or password")
-	}
+func (s *AuthService) Login(email, password string) (string, string, error) {
+    email = strings.TrimSpace(strings.ToLower(email))
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", errors.New("invalid email or password")
-	}
+    user, err := s.UserRepo.FindByEmail(email)
+    if err != nil || user == nil {
+        return "", "", errors.New("email ou senha inválidos")
+    }
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.UserID,
-		"exp": time.Now().Add(24 * time.Hour).Unix(),
-	})
+    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+        return "", "", errors.New("email ou senha inválidos")
+    }
 
-	return token.SignedString([]byte(s.JWTSecret))
+    accessToken, err := s.generateJWT(user)
+    if err != nil {
+        return "", "", err
+    }
+
+    newRefresh := uuid.New().String()
+    if err := s.UserRepo.UpdateRefreshToken(user.UserID, newRefresh); err != nil {
+        return "", "", err
+    }
+
+    return accessToken, newRefresh, nil
 }
+
+func (s *AuthService) generateJWT(user *models.User) (string, error) {
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "id":  user.UserID,
+        "exp": time.Now().Add(5 * time.Minute).Unix(),
+    })
+    return token.SignedString([]byte(s.JWTSecret))
+}
+

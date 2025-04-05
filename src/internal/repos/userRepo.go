@@ -33,10 +33,15 @@ func (r *UserRepo) Create(user *models.User) error {
 }
 
 func (r *UserRepo) GetAll() (users *[]models.User, err error) {
-	err = r.DB.Select("nome").Find(&users).Error
+	err = r.DB.Select("name").Find(&users).Error
 	if err != nil {
 		return nil, err
 	}
-
 	return users, nil
+}
+
+func (r *UserRepo) UpdateRefreshToken(userID, refreshToken string) error {
+	return r.DB.Model(&models.User{}).
+		Where("user_id = ?", userID).
+		Update("refresh_token", refreshToken).Error
 }

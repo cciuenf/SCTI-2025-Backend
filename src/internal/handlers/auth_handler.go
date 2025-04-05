@@ -1,81 +1,73 @@
 package handlers
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"scti/internal/services"
+    "encoding/json"
+    "fmt"
+    "net/http"
+
+    "scti/internal/services"
 )
 
 type AuthHandler struct {
-	AuthService *services.AuthService
+    AuthService *services.AuthService
 }
 
 func NewAuthHandler(service *services.AuthService) *AuthHandler {
-	return &AuthHandler{AuthService: service}
+    return &AuthHandler{AuthService: service}
+}
+
+type RegisterRequest struct {
+    Email    string `json:"email"`
+    Password string `json:"password"`
+    Name     string `json:"name"`
+}
+
+type LoginRequest struct {
+    Email    string `json:"email"`
+    Password string `json:"password"`
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Name     string `json:"name"`
-	}
+    var req RegisterRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Erro ao ler JSON", http.StatusBadRequest)
+        return
+    }
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
+    token, refresh, err := h.AuthService.Register(req.Email, req.Password, req.Name)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 
-	// Simples validação (caso precise)
-	if data.Email == "" || data.Password == "" || data.Name == "" {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.AuthService.Register(data.Email, data.Password, data.Name); err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-
-	token, err := h.AuthService.Login(data.Email, data.Password)
-	if err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	// Resposta com o token
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintln(w, token)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{
+        "access_token":  token,
+        "refresh_token": refresh,
+    })
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+    var req LoginRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Erro ao ler JSON", http.StatusBadRequest)
+        return
+    }
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+    token, refresh, err := h.AuthService.Login(req.Email, req.Password)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusUnauthorized)
+        return
+    }
 
-	if data.Email == "" || data.Password == "" {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
-
-	token, err := h.AuthService.Login(data.Email, data.Password)
-	if err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, token)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{
+        "access_token":  token,
+        "refresh_token": refresh,
+    })
 }
 
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "JWT is valid") // Simples resposta, caso você queira validar o JWT de fato, você pode adicionar lógica aqui.
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, "JWT is valid")
 }
