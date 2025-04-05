@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -62,4 +61,3 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 	})
 }
-

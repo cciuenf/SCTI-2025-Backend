@@ -1,9 +1,9 @@
 package services
 
 import (
+	"errors"
 	"scti/internal/models"
 	"scti/internal/repos"
-	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -59,4 +59,3 @@ func (s *AuthService) Login(email, password string) (string, error) {
 
 	return token.SignedString([]byte(s.JWTSecret))
 }
-

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"scti/config"
 	"scti/internal/db"
+	"scti/internal/handlers"
 	"scti/internal/repos"
 	"scti/internal/services"
-	"scti/internal/handlers"
 
 	"gorm.io/gorm"
 )

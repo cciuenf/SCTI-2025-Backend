@@ -1,9 +1,10 @@
 package repos
 
 import (
-	"scti/internal/models"
-	"gorm.io/gorm"
 	"fmt"
+	"scti/internal/models"
+
+	"gorm.io/gorm"
 )
 
 type UserRepo struct {
@@ -39,4 +40,3 @@ func (r *UserRepo) GetAll() (users *[]models.User, err error) {
 
 	return users, nil
 }
-
