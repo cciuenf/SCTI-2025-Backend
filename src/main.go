@@ -17,10 +17,7 @@ func main() {
 	database := db.Connect(*cfg)
 	db.Migrate()
 
-	authService := services.NewAuthService(repos.NewUserRepo(database), cfg.JWT_SECRET)
-	authHandler := handlers.NewAuthHandler(authService)
-
-	mux := initializeMux(database, cfg, authHandler)
+	mux := initializeMux(database, cfg)
 	if cfg.PORT == "" {
 		cfg.PORT = "8080"
 	}
@@ -28,11 +25,14 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+cfg.PORT, mux))
 }
 
-func initializeMux(database *gorm.DB, cfg *config.Config, authHandler *handlers.AuthHandler) *http.ServeMux {
+func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
+	authService := services.NewAuthService(repos.NewUserRepo(database), cfg.JWT_SECRET)
+	authHandler := handlers.NewAuthHandler(authService)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/register", authHandler.Register)
 	mux.HandleFunc("/login", authHandler.Login)
 	mux.HandleFunc("/verify", authHandler.VerifyJWT)
+
 	return mux
 }
-
