@@ -6,7 +6,7 @@ Contém a API de backend para o evento da SCTI 2025
 
 ### Pré-Projeto
 - [ ] Fazer setup inicial (Docker com Postgres) + go
-- [ ] Criar .env.example
+- [x] Criar .env.example
 - [x] Criar a API base de maneira extensível
 - [ ] Github Actions para PRs e Issues no Trello
 - [x] Github Actions para Linting e Formatting
