@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"scti/internal/models"
 	"scti/internal/services"
-	"encoding/json"
 )
 
 type AuthHandler struct {

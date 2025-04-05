@@ -39,10 +39,10 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 
 	user := &models.User{
 		ID:       uuid.New().String(),
-		Name:         name,
-		LastName:     last_name,
-		Email:        email,
-		Password:     string(hashedPassword),
+		Name:     name,
+		LastName: last_name,
+		Email:    email,
+		Password: string(hashedPassword),
 	}
 
 	if err := s.UserRepo.Create(user); err != nil {
@@ -82,21 +82,21 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 
 func (s *AuthService) generateAcessToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.ID,
-		"name": user.Name,
+		"id":        user.ID,
+		"name":      user.Name,
 		"last_name": user.LastName,
-		"event": user.Event,
-		"is_paid": user.IsPaid,
-		"exp": time.Now().Add(5 * time.Minute).Unix(),
+		"event":     user.Event,
+		"is_paid":   user.IsPaid,
+		"exp":       time.Now().Add(5 * time.Minute).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }
 
 func (s *AuthService) generateRefreshToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.ID,
+		"id":       user.ID,
 		"token_id": -1,
-		"exp": time.Now().Add(2 * 24 * time.Hour).Unix(),
+		"exp":      time.Now().Add(2 * 24 * time.Hour).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }

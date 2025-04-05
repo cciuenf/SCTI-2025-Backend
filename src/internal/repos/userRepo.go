@@ -48,7 +48,7 @@ func (r *UserRepo) UpdateRefreshToken(userID, refreshToken string) error {
 
 func (r *UserRepo) CreateRefreshToken(userID, refreshToken string) (error, int64) {
 	token := models.RefreshTokens{
-		UserID:        userID,
+		UserID:   userID,
 		TokenStr: refreshToken,
 	}
 
