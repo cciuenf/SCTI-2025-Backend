@@ -1,4 +1,4 @@
- name: Go Lint, Format, and Test
+name: Go Lint, Format, and Test
 on:
   push:
   pull_request:
