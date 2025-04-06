@@ -15,10 +15,20 @@
         buildInputs = with pkgs; [
           postman
           go
+          docker
+          docker-compose
         ];
         shellHook = ''
           echo "Welcome to the development environment!"
           export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [ pkgs.libglvnd ]}:$LD_LIBRARY_PATH
+          
+          # Verificar se o Docker está rodando
+          if ! docker info > /dev/null 2>&1; then
+            echo "⚠️  Atenção: Docker não está rodando. Por favor, inicie o serviço Docker."
+          else
+            echo "✅ Docker está rodando!"
+          fi
+          
           USER_SHELL=$(getent passwd $USER | cut -d: -f7)
           exec $USER_SHELL
         '';
