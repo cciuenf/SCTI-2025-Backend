@@ -44,22 +44,7 @@ cd SCTI-2025-Backend
 Use o Nix para configurar seu ambiente de desenvolvimento:
 
 ```
-nix develop --extra-experimental-features "nix-command flakes"
-```
-
-Se esse comando falhar, habilite os recursos experimentais permanentemente:
-
-
-```
-mkdir -p ~/.config/nix &&
-echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
-```
-
-Depois execute novamente:
-
-
-```
-nix develop
+nix develop 
 ```
 
 Isso configurará automaticamente todas as dependências necessárias para o desenvolvimento.
