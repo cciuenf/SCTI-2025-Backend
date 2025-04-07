@@ -6,10 +6,10 @@ Contém a API de backend para o evento da SCTI 2025
 
 ### Pré-Projeto
 - [ ] Fazer setup inicial (Docker com Postgres) + go
-- [ ] Criar .env.example
+- [x] Criar .env.example
 - [x] Criar a API base de maneira extensível
 - [ ] Github Actions para PRs e Issues no Trello
-- [ ] Github Actions para Linting e Formatting
+- [x] Github Actions para Linting e Formatting
 - [ ] Criar Issues para os requisitos e rotas da API
 
 
@@ -114,7 +114,7 @@ Contém a API de backend para o evento da SCTI 2025
 - Race condition
     - A implementação atual possui uma condição de corrida, achar uma implementação que diminua ou remova essa condição de corrida
 
- 
+
 #### ActionLog
 - [ ] ActionID AutoIncrement
 - [ ] PerformedBy (User, Admin, Master)
