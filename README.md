@@ -15,10 +15,10 @@ Contém a API de backend para o evento da SCTI 2025
 
 ### Autenticação -> Go-Auth
 - [ ] Pacote para autenticação modularizado
-- [ ] JWT + Refresh token por padrão
+- [x] JWT + Refresh token por padrão
 - [ ] Possui uma interface para conectar seu próprio DB
 - [ ] Possui uma interface para interagir com seu usuário
-- [ ] Proporciona o middleware de  autenticação
+- [x] Proporciona o middleware de  autenticação
 - [ ] Proporciona uma função para trocar senha
 - [ ] Proporciona verificação de conta
 - [ ] Possui rate limiting pra evitar ataques de força bruta
