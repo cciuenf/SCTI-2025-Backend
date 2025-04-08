@@ -67,12 +67,12 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 		return "", "", errors.New("AUTH: Invalid password")
 	}
 
-	accessToken, err := s.generateAcessToken(user)
+	accessToken, err := s.GenerateAcessToken(user)
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err := s.generateRefreshToken(user)
+	refreshToken, err := s.GenerateRefreshToken(user.ID)
 	if err != nil {
 		return "", "", err
 	}
@@ -84,7 +84,7 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
-func (s *AuthService) generateAcessToken(user *models.User) (string, error) {
+func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":        user.ID,
 		"name":      user.Name,
@@ -96,10 +96,30 @@ func (s *AuthService) generateAcessToken(user *models.User) (string, error) {
 	return token.SignedString([]byte(s.JWTSecret))
 }
 
-func (s *AuthService) generateRefreshToken(user *models.User) (string, error) {
+func (s *AuthService) GenerateRefreshToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.ID,
+		"id":  userID,
 		"exp": time.Now().Add(2 * 24 * time.Hour).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
+}
+
+func (s *AuthService) FindRefreshToken(userID, tokenStr string) (*models.RefreshToken, error) {
+	token := s.AuthRepo.FindRefreshToken(userID, tokenStr)
+	if token == nil {
+		return nil, errors.New("AUTH: Refresh token not found")
+	}
+	return token, nil
+}
+
+func (s *AuthService) UpdateRefreshToken(userID, oldToken string) error {
+	newToken, err := s.GenerateRefreshToken(userID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.AuthRepo.UpdateRefreshToken(userID, oldToken, newToken); err != nil {
+		return err
+	}
+	return nil
 }

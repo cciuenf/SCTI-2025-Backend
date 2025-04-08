@@ -34,10 +34,13 @@ func (r *AuthRepo) FindUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *AuthRepo) UpdateRefreshToken(userID, oldToken, newToken string) error {
-	return r.DB.Model(&models.RefreshToken{}).
-		Where("user_id = ? AND token_str = ?", userID, oldToken).
-		Update("token_str", newToken).Error
+func (r *AuthRepo) FindUserByID(id string) (*models.User, error) {
+	var user models.User
+	err := r.DB.Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return nil, fmt.Errorf("AUTH-REPO: User not found: %v", err)
+	}
+	return &user, nil
 }
 
 func (r *AuthRepo) CreateRefreshToken(userID, refreshToken string) error {
@@ -52,4 +55,23 @@ func (r *AuthRepo) CreateRefreshToken(userID, refreshToken string) error {
 	}
 
 	return nil
+}
+
+func (r *AuthRepo) UpdateRefreshToken(userID, oldToken, newToken string) error {
+	return r.DB.Model(&models.RefreshToken{}).
+		Where("user_id = ? AND token_str = ?", userID, oldToken).
+		Update("token_str", newToken).Error
+}
+
+func (r *AuthRepo) FindRefreshToken(userID, tokenStr string) *models.RefreshToken {
+	var token models.RefreshToken
+	err := r.DB.
+		Where("user_id = ? AND token_str = ?", userID, tokenStr).
+		First(&token).Error
+
+	if err != nil {
+		return nil
+	}
+
+	return &token
 }
