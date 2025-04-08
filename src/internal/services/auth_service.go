@@ -13,13 +13,13 @@ import (
 )
 
 type AuthService struct {
-	UserRepo  *repos.UserRepo
+	AuthRepo  *repos.AuthRepo
 	JWTSecret string
 }
 
-func NewAuthService(repo *repos.UserRepo, secret string) *AuthService {
+func NewAuthService(repo *repos.AuthRepo, secret string) *AuthService {
 	return &AuthService{
-		UserRepo:  repo,
+		AuthRepo:  repo,
 		JWTSecret: secret,
 	}
 }
@@ -27,9 +27,9 @@ func NewAuthService(repo *repos.UserRepo, secret string) *AuthService {
 func (s *AuthService) Register(email, password, name, last_name string) error {
 	email = strings.TrimSpace(strings.ToLower(email))
 
-	existing, _ := s.UserRepo.FindByEmail(email)
-	if existing != nil {
-		return errors.New("usuario já existe")
+	exists, _ := s.AuthRepo.FindUserByEmail(email)
+	if exists != nil {
+		return errors.New("AUTH: User already exists")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -45,7 +45,7 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 		Password: string(hashedPassword),
 	}
 
-	if err := s.UserRepo.Create(user); err != nil {
+	if err := s.AuthRepo.CreateUser(user); err != nil {
 		return err
 	}
 	return nil
@@ -54,33 +54,37 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 func (s *AuthService) Login(email, password string) (string, string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
-	user, err := s.UserRepo.FindByEmail(email)
-	if err != nil || user == nil {
-		return "", "", errors.New("email ou senha inválidos")
+	user, err := s.AuthRepo.FindUserByEmail(email)
+	if err != nil {
+		return "", "", err
+	}
+
+	if user == nil {
+		return "", "", errors.New("AUTH: User with specified email not found")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", "", errors.New("email ou senha inválidos")
+		return "", "", errors.New("AUTH: Invalid password")
 	}
 
-	accessToken, err := s.generateAcessToken(user)
+	accessToken, err := s.GenerateAcessToken(user)
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err := s.generateRefreshToken(user)
+	refreshToken, err := s.GenerateRefreshToken(user.ID)
 	if err != nil {
 		return "", "", err
 	}
 
-	if err, _ := s.UserRepo.CreateRefreshToken(user.ID, refreshToken); err != nil {
+	if err := s.AuthRepo.CreateRefreshToken(user.ID, refreshToken); err != nil {
 		return "", "", err
 	}
 
 	return accessToken, refreshToken, nil
 }
 
-func (s *AuthService) generateAcessToken(user *models.User) (string, error) {
+func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":        user.ID,
 		"name":      user.Name,
@@ -92,11 +96,30 @@ func (s *AuthService) generateAcessToken(user *models.User) (string, error) {
 	return token.SignedString([]byte(s.JWTSecret))
 }
 
-func (s *AuthService) generateRefreshToken(user *models.User) (string, error) {
+func (s *AuthService) GenerateRefreshToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":       user.ID,
-		"token_id": -1,
-		"exp":      time.Now().Add(2 * 24 * time.Hour).Unix(),
+		"id":  userID,
+		"exp": time.Now().Add(2 * 24 * time.Hour).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
+}
+
+func (s *AuthService) FindRefreshToken(userID, tokenStr string) (*models.RefreshToken, error) {
+	token := s.AuthRepo.FindRefreshToken(userID, tokenStr)
+	if token == nil {
+		return nil, errors.New("AUTH: Refresh token not found")
+	}
+	return token, nil
+}
+
+func (s *AuthService) UpdateRefreshToken(userID, oldToken string) error {
+	newToken, err := s.GenerateRefreshToken(userID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.AuthRepo.UpdateRefreshToken(userID, oldToken, newToken); err != nil {
+		return err
+	}
+	return nil
 }

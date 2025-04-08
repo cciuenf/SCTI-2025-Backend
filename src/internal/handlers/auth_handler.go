@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"scti/config"
 	"scti/internal/models"
 	"scti/internal/services"
+	u "scti/internal/utilities"
+	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthHandler struct {
@@ -14,11 +18,6 @@ type AuthHandler struct {
 
 func NewAuthHandler(service *services.AuthService) *AuthHandler {
 	return &AuthHandler{AuthService: service}
-}
-
-func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "JWT is valid")
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +33,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	u.Send(w, "", map[string]string{
+		"access_token":  acess_token,
+		"refresh_token": refresh,
+	}, http.StatusOK)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -50,9 +58,69 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	u.Send(w, "", map[string]string{
 		"access_token":  acess_token,
 		"refresh_token": refresh,
+	}, http.StatusOK)
+}
+
+func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
+	var secretKey string = config.GetJWTSecret()
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		u.Send(w, "mw-error: Authorization header is required", nil, http.StatusUnauthorized)
+		return
+	}
+
+	refreshHeader := r.Header.Get("Refresh")
+	if refreshHeader == "" {
+		u.Send(w, "mw-error: Authorization header is required", nil, http.StatusUnauthorized)
+		return
+	}
+
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		u.Send(w, "mw-error: Authorization header format must be Bearer {token}", nil, http.StatusUnauthorized)
+		return
+	}
+
+	if !strings.HasPrefix(refreshHeader, "Bearer ") {
+		u.Send(w, "mw-error: Refresh header format must be Bearer {token}", nil, http.StatusUnauthorized)
+		return
+	}
+
+	accessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
+
+	accessToken, err := jwt.ParseWithClaims(accessTokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			u.Send(w, "mw-error: Invalid signing method", nil, http.StatusUnauthorized)
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(secretKey), nil
 	})
+
+	if err != nil {
+		u.Send(w, "mw-error: Invalid access token:"+err.Error(), nil, http.StatusUnauthorized)
+		return
+	}
+
+	refreshToken, err := jwt.ParseWithClaims(refreshTokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			u.Send(w, "mw-error: Invalid signing method", nil, http.StatusUnauthorized)
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		u.Send(w, "mw-error: Invalid refresh token:"+err.Error(), nil, http.StatusUnauthorized)
+		return
+	}
+
+	if !accessToken.Valid || !refreshToken.Valid {
+		u.Send(w, "mw-error: Token is not valid or has expired", nil, http.StatusUnauthorized)
+		return
+	}
+
+	u.Send(w, "Success", nil, http.StatusOK)
 }

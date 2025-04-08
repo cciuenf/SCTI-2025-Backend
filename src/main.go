@@ -6,6 +6,7 @@ import (
 	"scti/config"
 	"scti/internal/db"
 	"scti/internal/handlers"
+	mw "scti/internal/middleware"
 	"scti/internal/repos"
 	"scti/internal/services"
 
@@ -26,13 +27,19 @@ func main() {
 }
 
 func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
-	authService := services.NewAuthService(repos.NewUserRepo(database), cfg.JWT_SECRET)
+	authRepo := repos.NewAuthRepo(database)
+
+	authService := services.NewAuthService(authRepo, cfg.JWT_SECRET)
 	authHandler := handlers.NewAuthHandler(authService)
+
+	authMiddleware := mw.AuthMiddleware(authService)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/register", authHandler.Register)
 	mux.HandleFunc("/login", authHandler.Login)
-	mux.HandleFunc("/verify", authHandler.VerifyJWT)
+	mux.HandleFunc("/verify-tokens", authHandler.VerifyJWT)
+
+	mux.Handle("/secure-verify-tokens", authMiddleware(http.HandlerFunc(authHandler.VerifyJWT)))
 
 	return mux
 }
