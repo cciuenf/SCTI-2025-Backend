@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
+)
 
 type User struct {
 	gorm.Model
@@ -33,4 +36,13 @@ type RefreshTokens struct {
 	UserID   string `gorm:"type:varchar(36);" json:"user_id"`
 	TokenStr string `gorm:"type:varchar(255);" json:"token_str"`
 	ID       int64  `gorm:"autoIncrement;primaryKey;"`
+}
+
+type UserClaims struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	LastName string `json:"last_name"`
+	Event    string `json:"event"`
+	IsPaid   bool   `json:"is_paid"`
+	jwt.RegisteredClaims
 }

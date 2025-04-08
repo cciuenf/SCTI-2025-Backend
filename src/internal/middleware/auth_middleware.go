@@ -48,7 +48,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		if claims, ok := token.Claims.(*models.UserClaims); ok {
-			// Expiry check
 			if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
 				utilities.Send(w, "mw-error: Token has expired", nil, http.StatusUnauthorized)
 				return

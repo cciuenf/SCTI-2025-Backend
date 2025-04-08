@@ -32,7 +32,7 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/register", authHandler.Register)
 	mux.HandleFunc("/login", authHandler.Login)
-	mux.HandleFunc("/verify", authHandler.VerifyJWT)
+	mux.HandleFunc("/verify-tokens", authHandler.VerifyJWT)
 
 	return mux
 }
