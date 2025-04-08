@@ -39,7 +39,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.Send(w, "Success", map[string]string{
+	u.Send(w, "", map[string]string{
 		"access_token":  acess_token,
 		"refresh_token": refresh,
 	}, http.StatusOK)
@@ -58,7 +58,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.Send(w, "Success", map[string]string{
+	u.Send(w, "", map[string]string{
 		"access_token":  acess_token,
 		"refresh_token": refresh,
 	}, http.StatusOK)
