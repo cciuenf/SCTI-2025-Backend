@@ -6,6 +6,7 @@ import (
 	"scti/config"
 	"scti/internal/models"
 	"scti/internal/services"
+	"scti/internal/utilities"
 	u "scti/internal/utilities"
 	"strings"
 
@@ -62,6 +63,25 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		"access_token":  acess_token,
 		"refresh_token": refresh,
 	}, http.StatusOK)
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	user := utilities.GetUserFromContext(r.Context())
+	if user == nil {
+		u.Send(w, "mw-error: User not found in context", nil, http.StatusUnauthorized)
+		return
+	}
+
+	refreshHeader := r.Header.Get("Refresh")
+	refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
+
+	err := h.AuthService.Logout(user.ID, refreshTokenString)
+	if err != nil {
+		u.Send(w, "mw-error: "+err.Error(), nil, http.StatusUnauthorized)
+		return
+	}
+
+	u.Send(w, "Logged out", nil, http.StatusOK)
 }
 
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {

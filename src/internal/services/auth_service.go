@@ -84,6 +84,14 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
+func (s *AuthService) Logout(ID, refreshTokenString string) error {
+	err := s.AuthRepo.DeleteRefreshToken(ID, refreshTokenString)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":        user.ID,
