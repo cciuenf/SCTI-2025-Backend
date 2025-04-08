@@ -31,13 +31,13 @@ Contém a API de backend para o evento da SCTI 2025
 
 
 #### User
-- [ ] UUID pk
+- [x] UUID pk
 - [ ] IsVerified
-- [ ] IsPaid
+- [x] IsPaid
 - [ ] Tokens
-- [ ] Nome
-- [ ] Sobrenome
-- [ ] Email
+- [x] Nome
+- [x] Sobrenome
+- [x] Email
 - [ ] PFP (Path)
 - [ ] IsUenf
 - [ ] Curso
