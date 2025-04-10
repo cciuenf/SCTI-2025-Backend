@@ -100,6 +100,36 @@ func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
 	u.Send(w, "", refreshTokens, http.StatusOK)
 }
 
+func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request) {
+	user := utilities.GetUserFromContext(r.Context())
+	if user == nil {
+		u.Send(w, "User not found in context", nil, http.StatusBadRequest)
+		return
+	}
+
+	var requestBody struct {
+		Token string `json:"refresh_token"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		u.Send(w, "Error decoding JSON", nil, http.StatusBadRequest)
+		return
+	}
+
+	if requestBody.Token == "" {
+		u.Send(w, "Token is required", nil, http.StatusBadRequest)
+		return
+	}
+
+	err := h.AuthService.RevokeRefreshToken(user.ID, requestBody.Token)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "Refresh token revoked", nil, http.StatusOK)
+}
+
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	var secretKey string = config.GetJWTSecret()
 	authHeader := r.Header.Get("Authorization")

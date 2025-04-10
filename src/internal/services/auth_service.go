@@ -102,6 +102,14 @@ func (s *AuthService) GetRefreshTokens(userID string) ([]models.RefreshToken, er
 	return tokens, nil
 }
 
+func (s *AuthService) RevokeRefreshToken(userID, tokenStr string) error {
+	err := s.AuthRepo.DeleteRefreshToken(userID, tokenStr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":        user.ID,
