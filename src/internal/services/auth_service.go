@@ -2,8 +2,10 @@ package services
 
 import (
 	"errors"
+	"net/http"
 	"scti/internal/models"
 	"scti/internal/repos"
+	"scti/internal/utilities"
 	"strings"
 	"time"
 
@@ -51,7 +53,7 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 	return nil
 }
 
-func (s *AuthService) Login(email, password string) (string, string, error) {
+func (s *AuthService) Login(email, password string, r *http.Request) (string, string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	user, err := s.AuthRepo.FindUserByEmail(email)
@@ -72,7 +74,7 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 		return "", "", err
 	}
 
-	refreshToken, err := s.GenerateRefreshToken(user.ID)
+	refreshToken, err := s.GenerateRefreshToken(user.ID, r)
 	if err != nil {
 		return "", "", err
 	}
@@ -82,6 +84,14 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	}
 
 	return accessToken, refreshToken, nil
+}
+
+func (s *AuthService) Logout(ID, refreshTokenString string) error {
+	err := s.AuthRepo.DeleteRefreshToken(ID, refreshTokenString)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
@@ -96,10 +106,20 @@ func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	return token.SignedString([]byte(s.JWTSecret))
 }
 
-func (s *AuthService) GenerateRefreshToken(userID string) (string, error) {
+func (s *AuthService) GenerateRefreshToken(userID string, r *http.Request) (string, error) {
+	userAgent := r.UserAgent()
+	ipAddress := r.RemoteAddr
+	// Se o server estiver atrás de um proxy, use o seguinte:
+	// ipAddress = r.Header.Get("X-Forwarded-For")
+	deviceInfo := utilities.ParseUserAgent(userAgent)
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  userID,
-		"exp": time.Now().Add(2 * 24 * time.Hour).Unix(),
+		"id":          userID,
+		"user_agent":  userAgent,
+		"device_info": deviceInfo,
+		"ip_address":  ipAddress,
+		"last_used":   time.Now(),
+		"exp":         time.Now().Add(2 * 24 * time.Hour).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }
@@ -110,16 +130,4 @@ func (s *AuthService) FindRefreshToken(userID, tokenStr string) (*models.Refresh
 		return nil, errors.New("AUTH: Refresh token not found")
 	}
 	return token, nil
-}
-
-func (s *AuthService) UpdateRefreshToken(userID, oldToken string) error {
-	newToken, err := s.GenerateRefreshToken(userID)
-	if err != nil {
-		return err
-	}
-
-	if err := s.AuthRepo.UpdateRefreshToken(userID, oldToken, newToken); err != nil {
-		return err
-	}
-	return nil
 }

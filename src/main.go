@@ -35,11 +35,11 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	authMiddleware := mw.AuthMiddleware(authService)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/register", authHandler.Register)
-	mux.HandleFunc("/login", authHandler.Login)
-	mux.HandleFunc("/verify-tokens", authHandler.VerifyJWT)
-
-	mux.Handle("/secure-verify-tokens", authMiddleware(http.HandlerFunc(authHandler.VerifyJWT)))
+	mux.HandleFunc("POST /register", authHandler.Register)
+	mux.HandleFunc("POST /login", authHandler.Login)
+	mux.Handle("POST /logout", authMiddleware(http.HandlerFunc(authHandler.Logout)))
+	mux.Handle("POST /verify-tokens-secure", authMiddleware(http.HandlerFunc(authHandler.VerifyJWT)))
+	mux.HandleFunc("POST /verify-tokens", authHandler.VerifyJWT)
 
 	return mux
 }

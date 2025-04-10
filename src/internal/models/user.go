@@ -34,7 +34,7 @@ type UserLogin struct {
 type RefreshToken struct {
 	gorm.Model
 	UserID   string `gorm:"type:varchar(36);" json:"user_id"`
-	TokenStr string `gorm:"type:varchar(255);" json:"token_str"`
+	TokenStr string `gorm:"type:varchar(1024);" json:"token_str"`
 }
 
 type UserClaims struct {

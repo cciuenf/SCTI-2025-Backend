@@ -75,3 +75,10 @@ func (r *AuthRepo) FindRefreshToken(userID, tokenStr string) *models.RefreshToke
 
 	return &token
 }
+
+func (r *AuthRepo) DeleteRefreshToken(userID, tokenStr string) error {
+	return r.DB.
+		Unscoped().
+		Where("user_id = ? AND token_str = ?", userID, tokenStr).
+		Delete(&models.RefreshToken{}).Error
+}
