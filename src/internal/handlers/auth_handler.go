@@ -34,7 +34,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password)
+	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -53,7 +53,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password)
+	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

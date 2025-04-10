@@ -118,7 +118,7 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 				return
 			}
 
-			newRefreshToken, err := authService.GenerateRefreshToken(user.ID)
+			newRefreshToken, err := authService.GenerateRefreshToken(user.ID, r)
 			if err != nil {
 				utilities.Send(w, "mw-error: Failed to generate new refresh token", nil, http.StatusInternalServerError)
 				return
