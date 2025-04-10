@@ -30,7 +30,26 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			}
 			accessTokenString := strings.TrimPrefix(accessHeader, "Bearer ")
 
+			refreshHeader := r.Header.Get("Refresh")
+			if refreshHeader == "" {
+				utilities.Send(w, "mw-error: Refresh token required for token renewal", nil, http.StatusUnauthorized)
+				return
+			}
+
+			if !strings.HasPrefix(refreshHeader, "Bearer ") {
+				utilities.Send(w, "mw-error: Refresh header format must be Bearer {token}", nil, http.StatusUnauthorized)
+				return
+			}
+			refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
+
 			accessToken, accessTokenErr := jwt.ParseWithClaims(accessTokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, jwt.ErrSignatureInvalid
+				}
+				return []byte(secretKey), nil
+			})
+
+			refreshToken, refreshErr := jwt.ParseWithClaims(refreshTokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, jwt.ErrSignatureInvalid
 				}
@@ -52,31 +71,6 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 					return
 				}
 			}
-
-			if accessToken != nil && accessToken.Valid {
-				ctx := context.WithValue(r.Context(), "user", accessClaims)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-
-			refreshHeader := r.Header.Get("Refresh")
-			if refreshHeader == "" {
-				utilities.Send(w, "mw-error: Refresh token required for token renewal", nil, http.StatusUnauthorized)
-				return
-			}
-
-			if !strings.HasPrefix(refreshHeader, "Bearer ") {
-				utilities.Send(w, "mw-error: Refresh header format must be Bearer {token}", nil, http.StatusUnauthorized)
-				return
-			}
-			refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
-
-			refreshToken, refreshErr := jwt.ParseWithClaims(refreshTokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, jwt.ErrSignatureInvalid
-				}
-				return []byte(secretKey), nil
-			})
 
 			if refreshErr != nil {
 				utilities.Send(w, "mw-error: Invalid refresh token: "+refreshErr.Error(), nil, http.StatusUnauthorized)
@@ -103,6 +97,12 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			storedToken, err := authService.FindRefreshToken(userID, refreshTokenString)
 			if err != nil || storedToken == nil {
 				utilities.Send(w, "mw-error: Refresh token not found or revoked", nil, http.StatusUnauthorized)
+				return
+			}
+
+			if accessToken != nil && accessToken.Valid {
+				ctx := context.WithValue(r.Context(), "user", accessClaims)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
