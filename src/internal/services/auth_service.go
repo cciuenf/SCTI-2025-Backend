@@ -94,6 +94,22 @@ func (s *AuthService) Logout(ID, refreshTokenString string) error {
 	return nil
 }
 
+func (s *AuthService) GetRefreshTokens(userID string) ([]models.RefreshToken, error) {
+	tokens, err := s.AuthRepo.GetRefreshTokens(userID)
+	if err != nil {
+		return nil, err
+	}
+	return tokens, nil
+}
+
+func (s *AuthService) RevokeRefreshToken(userID, tokenStr string) error {
+	err := s.AuthRepo.DeleteRefreshToken(userID, tokenStr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":        user.ID,
