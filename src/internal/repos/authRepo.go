@@ -57,6 +57,15 @@ func (r *AuthRepo) CreateRefreshToken(userID, refreshToken string) error {
 	return nil
 }
 
+func (r *AuthRepo) GetRefreshTokens(userID string) ([]models.RefreshToken, error) {
+	var tokens []models.RefreshToken
+	err := r.DB.Where("user_id = ?", userID).Find(&tokens).Error
+	if err != nil {
+		return nil, err
+	}
+	return tokens, nil
+}
+
 func (r *AuthRepo) UpdateRefreshToken(userID, oldToken, newToken string) error {
 	return r.DB.Model(&models.RefreshToken{}).
 		Where("user_id = ? AND token_str = ?", userID, oldToken).

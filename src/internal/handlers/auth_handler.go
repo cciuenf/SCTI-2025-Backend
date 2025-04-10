@@ -68,7 +68,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	user := utilities.GetUserFromContext(r.Context())
 	if user == nil {
-		u.Send(w, "mw-error: User not found in context", nil, http.StatusUnauthorized)
+		u.Send(w, "User not found in context", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -77,34 +77,50 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	err := h.AuthService.Logout(user.ID, refreshTokenString)
 	if err != nil {
-		u.Send(w, "mw-error: "+err.Error(), nil, http.StatusUnauthorized)
+		u.Send(w, err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
 
 	u.Send(w, "Logged out", nil, http.StatusOK)
 }
 
+func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
+	user := utilities.GetUserFromContext(r.Context())
+	if user == nil {
+		u.Send(w, "User not found in context", nil, http.StatusBadRequest)
+		return
+	}
+
+	refreshTokens, err := h.AuthService.GetRefreshTokens(user.ID)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "", refreshTokens, http.StatusOK)
+}
+
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	var secretKey string = config.GetJWTSecret()
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		u.Send(w, "mw-error: Authorization header is required", nil, http.StatusUnauthorized)
+		u.Send(w, "Authorization header is required", nil, http.StatusUnauthorized)
 		return
 	}
 
 	refreshHeader := r.Header.Get("Refresh")
 	if refreshHeader == "" {
-		u.Send(w, "mw-error: Authorization header is required", nil, http.StatusUnauthorized)
+		u.Send(w, "Authorization header is required", nil, http.StatusUnauthorized)
 		return
 	}
 
 	if !strings.HasPrefix(authHeader, "Bearer ") {
-		u.Send(w, "mw-error: Authorization header format must be Bearer {token}", nil, http.StatusUnauthorized)
+		u.Send(w, "Authorization header format must be Bearer {token}", nil, http.StatusUnauthorized)
 		return
 	}
 
 	if !strings.HasPrefix(refreshHeader, "Bearer ") {
-		u.Send(w, "mw-error: Refresh header format must be Bearer {token}", nil, http.StatusUnauthorized)
+		u.Send(w, "Refresh header format must be Bearer {token}", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -113,32 +129,32 @@ func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, err := jwt.ParseWithClaims(accessTokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			u.Send(w, "mw-error: Invalid signing method", nil, http.StatusUnauthorized)
+			u.Send(w, "Invalid signing method", nil, http.StatusUnauthorized)
 			return nil, jwt.ErrSignatureInvalid
 		}
 		return []byte(secretKey), nil
 	})
 
 	if err != nil {
-		u.Send(w, "mw-error: Invalid access token:"+err.Error(), nil, http.StatusUnauthorized)
+		u.Send(w, "Invalid access token:"+err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
 
 	refreshToken, err := jwt.ParseWithClaims(refreshTokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			u.Send(w, "mw-error: Invalid signing method", nil, http.StatusUnauthorized)
+			u.Send(w, "Invalid signing method", nil, http.StatusUnauthorized)
 			return nil, jwt.ErrSignatureInvalid
 		}
 		return []byte(secretKey), nil
 	})
 
 	if err != nil {
-		u.Send(w, "mw-error: Invalid refresh token:"+err.Error(), nil, http.StatusUnauthorized)
+		u.Send(w, "Invalid refresh token:"+err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
 
 	if !accessToken.Valid || !refreshToken.Valid {
-		u.Send(w, "mw-error: Token is not valid or has expired", nil, http.StatusUnauthorized)
+		u.Send(w, "Token is not valid or has expired", nil, http.StatusUnauthorized)
 		return
 	}
 
