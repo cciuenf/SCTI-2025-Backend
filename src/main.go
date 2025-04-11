@@ -28,6 +28,7 @@ func main() {
 
 func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	authRepo := repos.NewAuthRepo(database)
+	authRepo.CreateMasterUser()
 
 	authService := services.NewAuthService(authRepo, cfg.JWT_SECRET)
 	authHandler := handlers.NewAuthHandler(authService)

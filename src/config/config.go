@@ -29,6 +29,7 @@ var (
 	db_pass     string
 	jwtSecret   string
 	dsn         string
+	systemEmail string
 )
 
 func LoadConfig() *Config {
@@ -44,6 +45,7 @@ func LoadConfig() *Config {
 	db_user = os.Getenv("DATABASE_USER")
 	db_pass = os.Getenv("DATABASE_PASS")
 	jwtSecret = os.Getenv("JWT_SECRET")
+	systemEmail = os.Getenv("SCTI_EMAIL")
 
 	dsn = fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=America/Sao_Paulo", server_host, db_user, db_pass, db, db_port)
 
@@ -89,4 +91,8 @@ func GetJWTSecret() string {
 
 func GetDSN() string {
 	return dsn
+}
+
+func GetSystemEmail() string {
+	return systemEmail
 }

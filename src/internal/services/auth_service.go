@@ -116,7 +116,6 @@ func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 		"name":      user.Name,
 		"last_name": user.LastName,
 		"event":     user.Event,
-		"is_paid":   user.IsPaid,
 		"exp":       time.Now().Add(5 * time.Minute).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
