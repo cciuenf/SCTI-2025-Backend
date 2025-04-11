@@ -2,10 +2,13 @@ package repos
 
 import (
 	"errors"
+	"log"
+	"scti/config"
 	"scti/internal/models"
 
 	"fmt"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -23,6 +26,30 @@ func (r *AuthRepo) CreateUser(user *models.User) error {
 		return errors.New("AUTH-REPO: Error creating user: " + err.Error())
 	}
 	return nil
+}
+
+func (r *AuthRepo) CreateMasterUser() {
+	var existingUser models.User
+	err := r.DB.Where("email = ?", config.GetSystemEmail()).First(&existingUser).Error
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return
+	}
+
+	MasterUser := &models.User{
+		ID:            uuid.New().String(),
+		Name:          "Master",
+		LastName:      "User",
+		Email:         config.GetSystemEmail(),
+		Password:      "$2a$10$ON3gg.Zb/MV7.l/LtYvEUeXxVP4LAKdo/VU1rXXUBxX68LODE5Z7y",
+		IsMasterUser:  true,
+		IsMasterAdmin: true,
+		IsAdmin:       true,
+	}
+
+	err = r.DB.Create(MasterUser).Error
+	if err != nil {
+		log.Println("Could not create MasterUser")
+	}
 }
 
 func (r *AuthRepo) FindUserByEmail(email string) (*models.User, error) {
