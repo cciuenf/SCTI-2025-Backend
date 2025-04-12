@@ -28,10 +28,15 @@ func main() {
 
 func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	authRepo := repos.NewAuthRepo(database)
+	eventRepo := repos.NewEventRepo(database)
+
 	authRepo.CreateMasterUser()
 
 	authService := services.NewAuthService(authRepo, cfg.JWT_SECRET)
+	eventService := services.NewEventService(eventRepo)
+
 	authHandler := handlers.NewAuthHandler(authService)
+	eventHandler := handlers.NewEventHandler(eventService)
 
 	authMiddleware := mw.AuthMiddleware(authService)
 
@@ -44,6 +49,13 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.Handle("POST /logout", authMiddleware(http.HandlerFunc(authHandler.Logout)))
 	mux.Handle("GET /refresh-tokens", authMiddleware(http.HandlerFunc(authHandler.GetRefreshTokens)))
 	mux.Handle("POST /revoke-refresh-token", authMiddleware(http.HandlerFunc(authHandler.RevokeRefreshToken)))
+
+	// Event routes
+	mux.Handle("POST /events", authMiddleware(http.HandlerFunc(eventHandler.CreateEvent)))
+	mux.Handle("PATCH /events", authMiddleware(http.HandlerFunc(eventHandler.UpdateEvent)))
+	mux.Handle("PATCH /events/{slug}", authMiddleware(http.HandlerFunc(eventHandler.UpdateEventBySlug)))
+	mux.HandleFunc("GET /events", eventHandler.GetAllEvents)
+	mux.HandleFunc("GET /events/{slug}", eventHandler.GetEventBySlug)
 
 	return mux
 }

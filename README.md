@@ -27,24 +27,25 @@ Contém a API de backend para o evento da SCTI 2025
 ### Banco de Dados
 - [ ] Modelagem do banco de dados
 - [ ] Usar transações em código crítico
-- [ ] Modelagem do banco no próprio códgio usando GORM
+- [x] Modelagem do banco no próprio códgio usando GORM
 
 
 #### User
 - [x] UUID pk
-- [ ] IsVerified
+- [x] IsVerified
 - [x] IsPaid
 - [ ] Tokens
 - [x] Nome
 - [x] Sobrenome
 - [x] Email
 - [ ] PFP (Path)
-- [ ] IsUenf
-- [ ] Curso
-- [ ] Periodo
-- [ ] Redes
-- [ ] IsAdmin
-- [ ] IsMaster
+- [x] IsUenf
+- [x] Curso
+- [x] Periodo
+- [x] Redes
+- [x] IsAdmin
+- [x] IsMasterAdmin
+- [x] IsMasterUser
 
 
 - Usuários que possuam foto de perfil
