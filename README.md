@@ -15,10 +15,10 @@ Contém a API de backend para o evento da SCTI 2025
 
 ### Autenticação -> Go-Auth
 - [ ] Pacote para autenticação modularizado
-- [ ] JWT + Refresh token por padrão
+- [x] JWT + Refresh token por padrão
 - [ ] Possui uma interface para conectar seu próprio DB
 - [ ] Possui uma interface para interagir com seu usuário
-- [ ] Proporciona o middleware de  autenticação
+- [x] Proporciona o middleware de  autenticação
 - [ ] Proporciona uma função para trocar senha
 - [ ] Proporciona verificação de conta
 - [ ] Possui rate limiting pra evitar ataques de força bruta
@@ -27,24 +27,25 @@ Contém a API de backend para o evento da SCTI 2025
 ### Banco de Dados
 - [ ] Modelagem do banco de dados
 - [ ] Usar transações em código crítico
-- [ ] Modelagem do banco no próprio códgio usando GORM
+- [x] Modelagem do banco no próprio códgio usando GORM
 
 
 #### User
-- [ ] UUID pk
-- [ ] IsVerified
-- [ ] IsPaid
+- [x] UUID pk
+- [x] IsVerified
+- [x] IsPaid
 - [ ] Tokens
-- [ ] Nome
-- [ ] Sobrenome
-- [ ] Email
+- [x] Nome
+- [x] Sobrenome
+- [x] Email
 - [ ] PFP (Path)
-- [ ] IsUenf
-- [ ] Curso
-- [ ] Periodo
-- [ ] Redes
-- [ ] IsAdmin
-- [ ] IsMaster
+- [x] IsUenf
+- [x] Curso
+- [x] Periodo
+- [x] Redes
+- [x] IsAdmin
+- [x] IsMasterAdmin
+- [x] IsMasterUser
 
 
 - Usuários que possuam foto de perfil
