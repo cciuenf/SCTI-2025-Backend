@@ -18,6 +18,13 @@ type User struct {
 	IsMasterAdmin bool `json:"is_master_admin"`
 	IsAdmin       bool `json:"is_admin"`
 
+	IsVerified bool   `json:"is_verified"`
+	IsUenf     bool   `json:"is_uenf"`
+	Curso      string `json:"curso"`
+	Periodo    string `json:"periodo"`
+	Redes      string `json:"redes"`
+
+	Events []Event        `gorm:"many2many:event_users;constraint:OnDelete:CASCADE"`
 	Tokens []RefreshToken `gorm:"foreignKey:UserID;constrainth:OnDelete:CASCADE"`
 }
 
