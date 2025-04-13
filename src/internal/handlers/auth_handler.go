@@ -6,7 +6,6 @@ import (
 	"scti/config"
 	"scti/internal/models"
 	"scti/internal/services"
-	"scti/internal/utilities"
 	u "scti/internal/utilities"
 	"strings"
 
@@ -66,7 +65,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	user := utilities.GetUserFromContext(r.Context())
+	user := u.GetUserFromContext(r.Context())
 	if user == nil {
 		u.Send(w, "User not found in context", nil, http.StatusUnauthorized)
 		return
@@ -85,7 +84,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
-	user := utilities.GetUserFromContext(r.Context())
+	user := u.GetUserFromContext(r.Context())
 	if user == nil {
 		u.Send(w, "User not found in context", nil, http.StatusBadRequest)
 		return
@@ -101,7 +100,7 @@ func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request) {
-	user := utilities.GetUserFromContext(r.Context())
+	user := u.GetUserFromContext(r.Context())
 	if user == nil {
 		u.Send(w, "User not found in context", nil, http.StatusBadRequest)
 		return
