@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"scti/internal/models"
 	"scti/internal/services"
@@ -106,7 +105,6 @@ func (h *EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *EventHandler) UpdateEventBySlug(w http.ResponseWriter, r *http.Request) {
-	log.Println("Here")
 	var event models.Event
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		u.Send(w, "Erro ao ler JSON"+err.Error(), nil, http.StatusBadRequest)
@@ -128,7 +126,6 @@ func (h *EventHandler) UpdateEventBySlug(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	log.Println("HERE")
 	slug := r.PathValue("slug")
 	if slug == "" {
 		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
@@ -142,4 +139,97 @@ func (h *EventHandler) UpdateEventBySlug(w http.ResponseWriter, r *http.Request)
 	}
 
 	u.Send(w, "", UpdatedEvent, http.StatusOK)
+}
+
+// TODO: Cannot delete event if there are paid users registered to it
+func (h *EventHandler) DeleteEventBySlug(w http.ResponseWriter, r *http.Request) {
+	claims := u.GetUserFromContext(r.Context())
+	if claims.ID == "" {
+		u.Send(w, "user not found", nil, http.StatusBadRequest)
+		return
+	}
+
+	isMaster, err := h.EventService.IsMasterUser(claims.ID)
+	if err != nil {
+		u.Send(w, "Erro ao verificar usuário: "+err.Error(), nil, http.StatusInternalServerError)
+		return
+	} else if !isMaster {
+		u.Send(w, "Apenas usuários mestres podem modificar eventos", nil, http.StatusForbidden)
+		return
+	}
+
+	slug := r.PathValue("slug")
+	if slug == "" {
+		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
+		return
+	}
+
+	err = h.EventService.DeleteEventBySlug(slug)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "Deleted Event", nil, http.StatusOK)
+}
+
+func (h *EventHandler) RegisterToEvent(w http.ResponseWriter, r *http.Request) {
+	claims := u.GetUserFromContext(r.Context())
+	if claims.ID == "" {
+		u.Send(w, "user not found", nil, http.StatusBadRequest)
+		return
+	}
+
+	slug := r.PathValue("slug")
+	if slug == "" {
+		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
+		return
+	}
+
+	err := h.EventService.RegisterToEvent(claims.ID, slug)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "Registered to Event", nil, http.StatusOK)
+}
+
+// TODO: Cannot unregister if the user has paid for the event
+func (h *EventHandler) UnregisterToEvent(w http.ResponseWriter, r *http.Request) {
+	claims := u.GetUserFromContext(r.Context())
+	if claims.ID == "" {
+		u.Send(w, "user not found", nil, http.StatusBadRequest)
+		return
+	}
+
+	slug := r.PathValue("slug")
+	if slug == "" {
+		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
+		return
+	}
+
+	err := h.EventService.UnregisterToEvent(claims.ID, slug)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "Unregistered from Event", nil, http.StatusOK)
+}
+
+func (h *EventHandler) GetEventAtendeesBySlug(w http.ResponseWriter, r *http.Request) {
+	eventSlug := r.PathValue("slug")
+	if eventSlug == "" {
+		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
+		return
+	}
+
+	atendees, err := h.EventService.GetEventAtendeesBySlug(eventSlug)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "", atendees, http.StatusOK)
 }

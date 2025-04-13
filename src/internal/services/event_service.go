@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"scti/internal/models"
 	"scti/internal/repos"
 	"strings"
@@ -136,6 +137,23 @@ func (s *EventService) UpdateEventBySlug(Slug string, NewEvent *models.Event) (*
 	return &StoredEvent, nil
 }
 
+func (s *EventService) DeleteEventBySlug(Slug string) error {
+	slug := strings.ToLower(Slug)
+	exists, err := s.EventRepo.ExistsEventBySlug(slug)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.New("event not found")
+	}
+
+	if err := s.EventRepo.DeleteEventBySlug(slug); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *EventService) IsMasterUser(userID string) (bool, error) {
 	user, err := s.EventRepo.GetUserByID(userID)
 	if err != nil {
@@ -145,4 +163,29 @@ func (s *EventService) IsMasterUser(userID string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (s *EventService) RegisterToEvent(userID string, Slug string) error {
+	slug := strings.ToLower(Slug)
+	if err := s.EventRepo.RegisterToEvent(userID, slug); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *EventService) UnregisterToEvent(userID string, Slug string) error {
+	slug := strings.ToLower(Slug)
+	if err := s.EventRepo.UnregisterToEvent(userID, slug); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *EventService) GetEventAtendeesBySlug(slug string) (*[]models.EventUser, error) {
+	slug = strings.ToLower(slug)
+	event, err := s.EventRepo.GetEventAtendeesBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+	return event, nil
 }

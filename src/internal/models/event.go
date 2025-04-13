@@ -9,8 +9,8 @@ import (
 type Event struct {
 	gorm.Model
 	ID          string    `gorm:"type:varchar(36);primaryKey;"`
+	Slug        string    `gorm:"type:varchar(100);primaryKey"`
 	Name        string    `gorm:"type:varchar(100);not null"`
-	Slug        string    `gorm:"type:varchar(100);not null"`
 	Description string    `gorm:"not null"`
 	Location    string    `gorm:"not null"`
 	StartDate   time.Time `gorm:"not null" json:"start_date"`
@@ -25,13 +25,12 @@ type Event struct {
 
 type EventUser struct {
 	gorm.Model
-	EventID string `gorm:"type:varchar(36);primaryKey"`
-	UserID  string `gorm:"type:varchar(36);primaryKey"`
-	User    User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Event   Event  `gorm:"foreignKey:EventID;constraint:OnDelete:CASCADE"`
-	HasPaid bool   `gorm:"default:false"`
-	PaidAt  time.Time
-	Amount  float64
+	EventID   string `gorm:"type:varchar(36);primaryKey"`
+	EventSlug string `gorm:"type:varchar(100);primaryKey"`
+	UserID    string `gorm:"type:varchar(36);primaryKey"`
+	HasPaid   bool   `gorm:"default:false"`
+	PaidAt    time.Time
+	Amount    float64
 }
 
 func (EventUser) TableName() string {

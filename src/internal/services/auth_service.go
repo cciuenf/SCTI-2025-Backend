@@ -111,12 +111,28 @@ func (s *AuthService) RevokeRefreshToken(userID, tokenStr string) error {
 }
 
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
+	var adminType string
+	if user.IsAdmin {
+		adminType = "admin"
+	}
+
+	if user.IsMasterAdmin {
+		adminType = "master_admin"
+	}
+
+	if user.IsMasterUser {
+		adminType = "master_user"
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":        user.ID,
-		"name":      user.Name,
-		"last_name": user.LastName,
-		"event":     user.Event,
-		"exp":       time.Now().Add(5 * time.Minute).Unix(),
+		"id":          user.ID,
+		"name":        user.Name,
+		"last_name":   user.LastName,
+		"email":       user.Email,
+		"event":       user.Event,
+		"admin_type":  adminType,
+		"is_verified": user.IsVerified,
+		"exp":         time.Now().Add(5 * time.Minute).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }
