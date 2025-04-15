@@ -154,15 +154,12 @@ func (s *EventService) DeleteEventBySlug(Slug string) error {
 	return nil
 }
 
-func (s *EventService) IsMasterUser(userID string) (bool, error) {
+func (s *EventService) GetUserByID(userID string) (models.User, error) {
 	user, err := s.EventRepo.GetUserByID(userID)
 	if err != nil {
-		return false, err
+		return user, err
 	}
-	if user.IsMasterUser {
-		return true, nil
-	}
-	return false, nil
+	return user, nil
 }
 
 func (s *EventService) RegisterToEvent(userID string, Slug string) error {
