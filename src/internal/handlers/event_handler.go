@@ -24,16 +24,11 @@ func (h *EventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	claims := u.GetUserFromContext(r.Context())
-	if claims.ID == "" {
-		u.Send(w, "user not found", nil, http.StatusBadRequest)
-		return
-	}
-
-	isMaster, err := h.EventService.IsMasterUser(claims.ID)
+	user, err := h.EventService.GetUserByID(claims.ID)
 	if err != nil {
 		u.Send(w, "Erro ao verificar usuário: "+err.Error(), nil, http.StatusInternalServerError)
 		return
-	} else if !isMaster {
+	} else if !user.IsMasterUser {
 		u.Send(w, "Apenas usuários mestres podem criar eventos", nil, http.StatusForbidden)
 		return
 	}
@@ -81,16 +76,11 @@ func (h *EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	claims := u.GetUserFromContext(r.Context())
-	if claims.ID == "" {
-		u.Send(w, "user not found", nil, http.StatusBadRequest)
-		return
-	}
-
-	isMaster, err := h.EventService.IsMasterUser(claims.ID)
+	user, err := h.EventService.GetUserByID(claims.ID)
 	if err != nil {
 		u.Send(w, "Erro ao verificar usuário: "+err.Error(), nil, http.StatusInternalServerError)
 		return
-	} else if !isMaster {
+	} else if !user.IsMasterUser {
 		u.Send(w, "Apenas usuários mestres podem modificar eventos", nil, http.StatusForbidden)
 		return
 	}
@@ -112,16 +102,11 @@ func (h *EventHandler) UpdateEventBySlug(w http.ResponseWriter, r *http.Request)
 	}
 
 	claims := u.GetUserFromContext(r.Context())
-	if claims.ID == "" {
-		u.Send(w, "user not found", nil, http.StatusBadRequest)
-		return
-	}
-
-	isMaster, err := h.EventService.IsMasterUser(claims.ID)
+	user, err := h.EventService.GetUserByID(claims.ID)
 	if err != nil {
 		u.Send(w, "Erro ao verificar usuário: "+err.Error(), nil, http.StatusInternalServerError)
 		return
-	} else if !isMaster {
+	} else if !user.IsMasterUser {
 		u.Send(w, "Apenas usuários mestres podem modificar eventos", nil, http.StatusForbidden)
 		return
 	}
@@ -144,16 +129,11 @@ func (h *EventHandler) UpdateEventBySlug(w http.ResponseWriter, r *http.Request)
 // TODO: Cannot delete event if there are paid users registered to it
 func (h *EventHandler) DeleteEventBySlug(w http.ResponseWriter, r *http.Request) {
 	claims := u.GetUserFromContext(r.Context())
-	if claims.ID == "" {
-		u.Send(w, "user not found", nil, http.StatusBadRequest)
-		return
-	}
-
-	isMaster, err := h.EventService.IsMasterUser(claims.ID)
+	user, err := h.EventService.GetUserByID(claims.ID)
 	if err != nil {
 		u.Send(w, "Erro ao verificar usuário: "+err.Error(), nil, http.StatusInternalServerError)
 		return
-	} else if !isMaster {
+	} else if !user.IsMasterUser {
 		u.Send(w, "Apenas usuários mestres podem modificar eventos", nil, http.StatusForbidden)
 		return
 	}
@@ -175,11 +155,6 @@ func (h *EventHandler) DeleteEventBySlug(w http.ResponseWriter, r *http.Request)
 
 func (h *EventHandler) RegisterToEvent(w http.ResponseWriter, r *http.Request) {
 	claims := u.GetUserFromContext(r.Context())
-	if claims.ID == "" {
-		u.Send(w, "user not found", nil, http.StatusBadRequest)
-		return
-	}
-
 	slug := r.PathValue("slug")
 	if slug == "" {
 		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
@@ -198,11 +173,6 @@ func (h *EventHandler) RegisterToEvent(w http.ResponseWriter, r *http.Request) {
 // TODO: Cannot unregister if the user has paid for the event
 func (h *EventHandler) UnregisterToEvent(w http.ResponseWriter, r *http.Request) {
 	claims := u.GetUserFromContext(r.Context())
-	if claims.ID == "" {
-		u.Send(w, "user not found", nil, http.StatusBadRequest)
-		return
-	}
-
 	slug := r.PathValue("slug")
 	if slug == "" {
 		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)

@@ -27,6 +27,15 @@ func NewAuthService(repo *repos.AuthRepo, secret string) *AuthService {
 }
 
 func (s *AuthService) Register(email, password, name, last_name string) error {
+	if email == "" || password == "" || name == "" || last_name == "" {
+		return errors.New("AUTH: All fields are required")
+	}
+
+	// Regex to check email
+	if !utilities.IsValidEmail(email) {
+		return errors.New("AUTH: Invalid email format")
+	}
+
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	exists, _ := s.AuthRepo.FindUserByEmail(email)
@@ -54,6 +63,10 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 }
 
 func (s *AuthService) Login(email, password string, r *http.Request) (string, string, error) {
+	if email == "" || password == "" {
+		return "", "", errors.New("AUTH: All fields are required")
+	}
+
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	user, err := s.AuthRepo.FindUserByEmail(email)
