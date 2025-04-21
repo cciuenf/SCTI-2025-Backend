@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"scti/internal/models"
@@ -123,29 +124,45 @@ func (s *AuthService) RevokeRefreshToken(userID, tokenStr string) error {
 	return nil
 }
 
+func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
+	statuses, err := s.AuthRepo.GetAllAdminStatusFromUser(userID)
+	if err != nil {
+		return "", err
+	}
+
+	if statuses == nil {
+		return "", errors.New("AUTH: User has no admin status")
+	}
+
+	adminMap := make(map[string]map[string]string)
+	for _, status := range statuses {
+		if _, ok := adminMap[status.EventSlug]; !ok {
+			adminMap[status.EventSlug] = make(map[string]string)
+		}
+		adminMap[status.EventSlug][string(status.AdminType)] = status.EventID
+	}
+
+	jsonString, err := json.Marshal(adminMap)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonString), nil
+}
+
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
-	var adminType string
-	if user.IsAdmin {
-		adminType = "admin"
-	}
-
-	if user.IsMasterAdmin {
-		adminType = "master_admin"
-	}
-
-	if user.IsMasterUser {
-		adminType = "master_user"
+	adminMap, err := s.MakeJSONAdminMap(user.ID)
+	if err != nil {
+		return "", err
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":          user.ID,
-		"name":        user.Name,
-		"last_name":   user.LastName,
-		"email":       user.Email,
-		"event":       user.Event,
-		"admin_type":  adminType,
-		"is_verified": user.IsVerified,
-		"exp":         time.Now().Add(5 * time.Minute).Unix(),
+		"id":           user.ID,
+		"name":         user.Name,
+		"last_name":    user.LastName,
+		"email":        user.Email,
+		"admin_status": adminMap,
+		"is_verified":  user.IsVerified,
+		"exp":          time.Now().Add(5 * time.Minute).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }

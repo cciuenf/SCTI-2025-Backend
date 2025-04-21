@@ -36,14 +36,12 @@ func (r *AuthRepo) CreateMasterUser() {
 	}
 
 	MasterUser := &models.User{
-		ID:            uuid.New().String(),
-		Name:          "Master",
-		LastName:      "User",
-		Email:         config.GetSystemEmail(),
-		Password:      "$2a$10$ON3gg.Zb/MV7.l/LtYvEUeXxVP4LAKdo/VU1rXXUBxX68LODE5Z7y",
-		IsMasterUser:  true,
-		IsMasterAdmin: true,
-		IsAdmin:       true,
+		ID:           uuid.New().String(),
+		Name:         "Master",
+		LastName:     "User",
+		Email:        config.GetSystemEmail(),
+		Password:     "$2a$10$ON3gg.Zb/MV7.l/LtYvEUeXxVP4LAKdo/VU1rXXUBxX68LODE5Z7y",
+		IsMasterUser: true,
 	}
 
 	err = r.DB.Create(MasterUser).Error
@@ -116,4 +114,13 @@ func (r *AuthRepo) DeleteRefreshToken(userID, tokenStr string) error {
 	return r.DB.
 		Where("user_id = ? AND token_str = ?", userID, tokenStr).
 		Delete(&models.RefreshToken{}).Error
+}
+
+func (r *AuthRepo) GetAllAdminStatusFromUser(userID string) ([]models.AdminStatus, error) {
+	var adminStatuses []models.AdminStatus
+	err := r.DB.Where("user_id = ?", userID).Find(&adminStatuses).Error
+	if err != nil {
+		return nil, err
+	}
+	return adminStatuses, nil
 }
