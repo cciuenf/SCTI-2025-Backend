@@ -10,6 +10,7 @@ func Migrate() {
 
 	err := DB.AutoMigrate(
 		&models.User{},
+		&models.UserPass{},
 		&models.RefreshToken{},
 		&models.Event{},
 		&models.EventUser{},

@@ -21,15 +21,16 @@ type Config struct {
 }
 
 var (
-	server_host string
-	server_port string
-	db          string
-	db_port     string
-	db_user     string
-	db_pass     string
-	jwtSecret   string
-	dsn         string
-	systemEmail string
+	server_host    string
+	server_port    string
+	db             string
+	db_port        string
+	db_user        string
+	db_pass        string
+	jwtSecret      string
+	dsn            string
+	systemEmail    string
+	masterUserPass string
 )
 
 func LoadConfig() *Config {
@@ -46,6 +47,7 @@ func LoadConfig() *Config {
 	db_pass = os.Getenv("DATABASE_PASS")
 	jwtSecret = os.Getenv("JWT_SECRET")
 	systemEmail = os.Getenv("SCTI_EMAIL")
+	masterUserPass = os.Getenv("MASTER_USER_PASS")
 
 	dsn = fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=America/Sao_Paulo", server_host, db_user, db_pass, db, db_port)
 
@@ -95,4 +97,8 @@ func GetDSN() string {
 
 func GetSystemEmail() string {
 	return systemEmail
+}
+
+func GetMasterUserPass() string {
+	return masterUserPass
 }

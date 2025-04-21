@@ -49,12 +49,17 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 		return err
 	}
 
+	userID := uuid.New().String()
 	user := &models.User{
-		ID:       uuid.New().String(),
-		Name:     name,
-		LastName: last_name,
-		Email:    email,
-		Password: string(hashedPassword),
+		ID:         userID,
+		Name:       name,
+		LastName:   last_name,
+		Email:      email,
+		IsVerified: false,
+		UserPass: models.UserPass{
+			ID:       userID,
+			Password: string(hashedPassword),
+		},
 	}
 
 	if err := s.AuthRepo.CreateUser(user); err != nil {
@@ -79,7 +84,7 @@ func (s *AuthService) Login(email, password string, r *http.Request) (string, st
 		return "", "", errors.New("AUTH: User with specified email not found")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.UserPass.Password), []byte(password)); err != nil {
 		return "", "", errors.New("AUTH: Invalid password")
 	}
 
