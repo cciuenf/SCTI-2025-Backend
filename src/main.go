@@ -22,7 +22,7 @@ func main() {
 	if cfg.PORT == "" {
 		cfg.PORT = "8080"
 	}
-	log.Println("Started server on port: " +cfg.PORT)
+	log.Println("Started server on port: " + cfg.PORT)
 	log.Fatal(http.ListenAndServe(":"+cfg.PORT, mux))
 }
 
