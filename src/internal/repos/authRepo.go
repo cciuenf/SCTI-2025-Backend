@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -35,24 +36,38 @@ func (r *AuthRepo) CreateMasterUser() {
 		return
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(config.GetMasterUserPass()), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatal("Could not hash password for MasterUser")
+	}
+
+	userID := uuid.New().String()
 	MasterUser := &models.User{
-		ID:           uuid.New().String(),
-		Name:         "Master",
-		LastName:     "User",
-		Email:        config.GetSystemEmail(),
-		Password:     "$2a$10$ON3gg.Zb/MV7.l/LtYvEUeXxVP4LAKdo/VU1rXXUBxX68LODE5Z7y",
+		ID:         userID,
+		Name:       "Master",
+		LastName:   "User",
+		Email:      config.GetSystemEmail(),
+		IsVerified: true,
+		UserPass: models.UserPass{
+			ID:       userID,
+			Password: string(hashedPassword),
+		},
 		IsMasterUser: true,
 	}
 
 	err = r.DB.Create(MasterUser).Error
 	if err != nil {
-		log.Println("Could not create MasterUser")
+		log.Fatal("Could not create MasterUser")
 	}
 }
 
 func (r *AuthRepo) FindUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	err := r.DB.Where("email = ?", email).First(&user).Error
+	err := r.DB.
+		Preload("UserPass").
+		Where("email = ?", email).
+		First(&user).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("AUTH-REPO: User not found: %v", err)
 	}
@@ -61,7 +76,11 @@ func (r *AuthRepo) FindUserByEmail(email string) (*models.User, error) {
 
 func (r *AuthRepo) FindUserByID(id string) (*models.User, error) {
 	var user models.User
-	err := r.DB.Where("id = ?", id).First(&user).Error
+	err := r.DB.
+		Preload("UserPass").
+		Where("id = ?", id).
+		First(&user).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("AUTH-REPO: User not found: %v", err)
 	}

@@ -1,20 +1,25 @@
 package models
 
 import (
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
-	ID         string `gorm:"type:varchar(36);primaryKey;"`
-	Name       string `gorm:"not null"`
-	LastName   string `gorm:"not null" json:"last_name"`
-	Email      string `gorm:"unique;not null"`
-	Password   string `gorm:"not null"`
-	IsVerified bool   `json:"is_verified"`
+	ID         string   `gorm:"type:varchar(36);primaryKey;" json:"id"`
+	Name       string   `gorm:"not null" json:"name"`
+	LastName   string   `gorm:"not null" json:"last_name"`
+	Email      string   `gorm:"unique;not null" json:"email"`
+	IsVerified bool     `gorm:"default:false" json:"is_verified"`
+	UserPass   UserPass `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE"`
 
-	IsMasterUser bool `json:"is_master_user"`
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"autoDeleteTime" json:"deleted_at,omitempty"`
+
+	IsMasterUser bool `gorm:"default:false" json:"is_master_user"`
 
 	// Maybe do these
 	// IsUenf  bool   `json:"is_uenf"`
@@ -22,7 +27,20 @@ type User struct {
 	// Periodo string `json:"periodo"`
 
 	Events []Event        `gorm:"many2many:event_users;constraint:OnDelete:CASCADE"`
-	Tokens []RefreshToken `gorm:"foreignKey:UserID;constrainth:OnDelete:CASCADE"`
+	Tokens []RefreshToken `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+}
+
+type UserPass struct {
+	ID       string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	Password string `gorm:"not null" json:"password"`
+
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"autoDeleteTime" json:"deleted_at,omitempty"`
+}
+
+func (UserPass) TableName() string {
+	return "user_pass"
 }
 
 type AdminType string
