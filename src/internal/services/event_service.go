@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type EventService struct {
@@ -81,10 +82,6 @@ func (s *EventService) UpdateEvent(NewEvent *models.Event) (*models.Event, error
 		StoredEvent.EndDate = NewEvent.EndDate
 	}
 
-	if NewEvent.Redes != "" {
-		StoredEvent.Redes = NewEvent.Redes
-	}
-
 	StoredEvent.UpdatedAt = time.Now()
 
 	if err := s.EventRepo.UpdateEvent(&StoredEvent); err != nil {
@@ -123,10 +120,6 @@ func (s *EventService) UpdateEventBySlug(Slug string, NewEvent *models.Event) (*
 
 	if !NewEvent.EndDate.IsZero() {
 		StoredEvent.EndDate = NewEvent.EndDate
-	}
-
-	if NewEvent.Redes != "" {
-		StoredEvent.Redes = NewEvent.Redes
 	}
 
 	StoredEvent.UpdatedAt = time.Now()
@@ -185,4 +178,196 @@ func (s *EventService) GetEventAtendeesBySlug(slug string) (*[]models.EventUser,
 		return nil, err
 	}
 	return event, nil
+}
+
+func (s *EventService) IsUserRegistered(userID string, slug string) (bool, error) {
+	slug = strings.ToLower(slug)
+	registered, err := s.EventRepo.IsUserRegistered(userID, slug)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+	return registered, nil
+}
+
+func (s *EventService) IsAdminOf(userID string, slug string) (bool, *models.AdminStatus, error) {
+	slug = strings.ToLower(slug)
+	adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(userID, slug)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil, nil
+		}
+		return false, nil, err
+	} else if adminStatus == nil {
+		return false, nil, nil
+	}
+	return true, adminStatus, nil
+}
+
+func (s *EventService) PromoteUserOfEventBySlug(email, requesterID, slug string) error {
+	requester, err := s.EventRepo.GetUserByID(requesterID)
+	if err != nil {
+		return err
+	}
+	user, err := s.EventRepo.GetUserByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	if requester.ID == user.ID {
+		return errors.New("user cannot alter his own admin status")
+	}
+
+	if user.IsMasterUser {
+		return errors.New("can't change a master user admin status")
+	}
+
+	slug = strings.ToLower(slug)
+
+	status, err := s.IsUserRegistered(user.ID, slug)
+	if err != nil || !status {
+		if !status {
+			return errors.New("user not registered to event")
+		}
+		return err
+	}
+
+	var isRequesterAdmin bool
+	var requesterAdminStatus *models.AdminStatus
+	if !requester.IsMasterUser {
+		if requesterAdminStatus, err = s.EventRepo.GetUserAdminStatusBySlug(requester.ID, slug); err != nil || requesterAdminStatus == nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.New("requester is not an admin")
+			} else if err != nil {
+				return err
+			} else if requesterAdminStatus == nil {
+				return errors.New("requester is not an admin")
+			}
+		} else {
+			isRequesterAdmin = true
+		}
+	} else {
+		isRequesterAdmin = true
+	}
+
+	var isUserAdmin bool
+	userAdminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			isUserAdmin = false
+		} else {
+			return err
+		}
+	} else {
+		isUserAdmin = true
+	}
+
+	if requester.IsMasterUser {
+		if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeMaster {
+			return errors.New("user is already a master admin of this event")
+		} else if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeNormal {
+			err = s.EventRepo.PromoteUserOfEventBySlug(user.ID, slug)
+			if err != nil {
+				return err
+			}
+			return nil
+		} else if !isUserAdmin {
+			err = s.EventRepo.MakeAdminOfEventBySlug(user.ID, slug)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	if isRequesterAdmin && requesterAdminStatus.AdminType == models.AdminTypeMaster {
+		if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeMaster {
+			return errors.New("master admins can't change another master admin status")
+		} else if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeNormal {
+			return errors.New("master admins can't promote admins to master admins")
+		} else if !isUserAdmin {
+			err = s.EventRepo.MakeAdminOfEventBySlug(user.ID, slug)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return errors.New("requester is not a master admin or master user")
+}
+
+func (s *EventService) DemoteUserOfEventBySlug(email, requesterID, slug string) error {
+	requester, err := s.EventRepo.GetUserByID(requesterID)
+	if err != nil {
+		return err
+	}
+	user, err := s.EventRepo.GetUserByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	if requester.ID == user.ID {
+		return errors.New("user cannot alter his own admin status")
+	}
+
+	if user.IsMasterUser {
+		return errors.New("can't change a master user admin status")
+	}
+
+	slug = strings.ToLower(slug)
+
+	var isRequesterAdmin bool
+	var requesterAdminStatus *models.AdminStatus
+	if !requester.IsMasterUser {
+		if requesterAdminStatus, err = s.EventRepo.GetUserAdminStatusBySlug(requester.ID, slug); err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.New("requester is not an admin")
+			} else {
+				return err
+			}
+		} else {
+			isRequesterAdmin = true
+		}
+	} else {
+		isRequesterAdmin = true
+	}
+
+	var isUserAdmin bool
+	userAdminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			isUserAdmin = false
+		} else {
+			return err
+		}
+	} else {
+		isUserAdmin = true
+	}
+
+	if requester.IsMasterUser {
+		if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeMaster {
+			s.EventRepo.DemoteUserOfEventBySlug(user.ID, slug)
+			return nil
+		} else if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeNormal {
+			s.EventRepo.RemoveAdminOfEventBySlug(user.ID, slug)
+			return nil
+		} else if !isUserAdmin {
+			return errors.New("user is not an admin of this event")
+		}
+	}
+
+	if isRequesterAdmin && requesterAdminStatus.AdminType == models.AdminTypeMaster {
+		if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeMaster {
+			return errors.New("master admins can't change another master admin status")
+		} else if isUserAdmin && userAdminStatus.AdminType == models.AdminTypeNormal {
+			s.EventRepo.RemoveAdminOfEventBySlug(user.ID, slug)
+			return nil
+		} else if !isUserAdmin {
+			return errors.New("user is not an admin of this event")
+		}
+	}
+
+	return errors.New("requester is not a master admin or master user")
 }

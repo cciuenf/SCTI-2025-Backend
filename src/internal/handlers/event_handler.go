@@ -19,7 +19,7 @@ func NewEventHandler(service *services.EventService) *EventHandler {
 func (h *EventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	var event models.Event
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		u.Send(w, "Erro ao ler JSON", nil, http.StatusBadRequest)
+		u.Send(w, "Error parsing response body: "+err.Error(), nil, http.StatusBadRequest)
 		return
 	}
 
@@ -202,4 +202,58 @@ func (h *EventHandler) GetEventAtendeesBySlug(w http.ResponseWriter, r *http.Req
 	}
 
 	u.Send(w, "", atendees, http.StatusOK)
+}
+
+func (h *EventHandler) PromoteUserOfEventBySlug(w http.ResponseWriter, r *http.Request) {
+	claims := u.GetUserFromContext(r.Context())
+	slug := r.PathValue("slug")
+	if slug == "" {
+		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
+		return
+	}
+
+	type emailBody struct {
+		Email string `json:"email"`
+	}
+
+	var body emailBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		u.Send(w, "Erro ao ler JSON"+err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	err := h.EventService.PromoteUserOfEventBySlug(body.Email, claims.ID, slug)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "User of event "+slug+" promoted", nil, http.StatusOK)
+}
+
+func (h *EventHandler) DemoteUserOfEventBySlug(w http.ResponseWriter, r *http.Request) {
+	claims := u.GetUserFromContext(r.Context())
+	slug := r.PathValue("slug")
+	if slug == "" {
+		u.Send(w, "slug não pode ser vazio", nil, http.StatusBadRequest)
+		return
+	}
+
+	type emailBody struct {
+		Email string `json:"email"`
+	}
+
+	var body emailBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		u.Send(w, "Erro ao ler JSON"+err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	err := h.EventService.DemoteUserOfEventBySlug(body.Email, claims.ID, slug)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "User of event "+slug+" demoted", nil, http.StatusOK)
 }

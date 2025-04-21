@@ -52,16 +52,19 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.Handle("POST /secure-verify-tokens", authMiddleware(http.HandlerFunc(authHandler.VerifyJWT)))
 
 	// Event routes
+	mux.HandleFunc("GET /events", eventHandler.GetAllEvents)
+	mux.HandleFunc("GET /events/{slug}", eventHandler.GetEventBySlug)
 	mux.Handle("POST /events", authMiddleware(http.HandlerFunc(eventHandler.CreateEvent)))
 	mux.Handle("PATCH /events", authMiddleware(http.HandlerFunc(eventHandler.UpdateEvent)))
 	mux.Handle("PATCH /events/{slug}", authMiddleware(http.HandlerFunc(eventHandler.UpdateEventBySlug)))
 	mux.Handle("DELETE /events/{slug}", authMiddleware(http.HandlerFunc(eventHandler.DeleteEventBySlug)))
-	mux.HandleFunc("GET /events", eventHandler.GetAllEvents)
-	mux.HandleFunc("GET /events/{slug}", eventHandler.GetEventBySlug)
 	mux.Handle("POST /events/{slug}/attend", authMiddleware(http.HandlerFunc(eventHandler.RegisterToEvent)))
 	mux.Handle("POST /events/{slug}/unattend", authMiddleware(http.HandlerFunc(eventHandler.UnregisterToEvent)))
 	mux.Handle("GET /events/{slug}/attendees", authMiddleware(http.HandlerFunc(eventHandler.GetEventAtendeesBySlug)))
-	// mux.Handle("POST /events/{slug}/pay", authMiddleware(http.HandlerFunc(eventHandler.PayEvent)))
+
+	// Admin routes
+	mux.Handle("POST /events/{slug}/promote", authMiddleware(http.HandlerFunc(eventHandler.PromoteUserOfEventBySlug)))
+	mux.Handle("POST /events/{slug}/demote", authMiddleware(http.HandlerFunc(eventHandler.DemoteUserOfEventBySlug)))
 
 	return mux
 }
