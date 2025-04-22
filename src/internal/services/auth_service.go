@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"scti/internal/models"
-	"scti/internal/repos"
+	repos "scti/internal/repositories"
 	"scti/internal/utilities"
 	"strings"
 	"time"

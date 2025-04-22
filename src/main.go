@@ -7,7 +7,7 @@ import (
 	"scti/internal/db"
 	"scti/internal/handlers"
 	mw "scti/internal/middleware"
-	"scti/internal/repos"
+	repos "scti/internal/repositories"
 	"scti/internal/services"
 
 	"gorm.io/gorm"
