@@ -1,0 +1,1067 @@
+basePath: /
+definitions:
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  handlers.AuthStandardErrorResponse:
+    properties:
+      errors:
+        example:
+        - some error message
+        items:
+          type: string
+        type: array
+      stack:
+        example: auth-stack
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  handlers.AuthTokensResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  handlers.CreateEventRequest:
+    properties:
+      description:
+        example: Learn Go programming
+        type: string
+      end_date:
+        example: "2025-05-01T17:00:00Z"
+        type: string
+      location:
+        example: Room 101
+        type: string
+      name:
+        example: Go Workshop
+        type: string
+      slug:
+        example: gws
+        type: string
+      start_date:
+        example: "2025-05-01T14:00:00Z"
+        type: string
+    type: object
+  handlers.DemoteUserRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+    type: object
+  handlers.EventStandardErrorResponse:
+    properties:
+      errors:
+        example:
+        - some error message
+        items:
+          type: string
+        type: array
+      stack:
+        example: event-stack
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  handlers.NoDataSuccessResponse:
+    properties:
+      data: {}
+      message:
+        example: some success message
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  handlers.NoMessageSuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  handlers.PromoteUserRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+    type: object
+  handlers.RevokeTokenRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  handlers.UpdateEventByIDRequest:
+    properties:
+      description:
+        example: Updated workshop description
+        type: string
+      end_date:
+        example: "2030-11-11T23:59:59Z"
+        type: string
+      id:
+        example: be7b5a6d-ae48-4bda-b01e-58a12eeb65f5
+        type: string
+      location:
+        example: Room 202
+        type: string
+      name:
+        example: Updated Workshop
+        type: string
+      slug:
+        example: uw
+        type: string
+      start_date:
+        example: "2030-11-11T00:00:00Z"
+        type: string
+    type: object
+  handlers.UpdateEventRequest:
+    properties:
+      description:
+        example: Updated workshop description
+        type: string
+      end_date:
+        example: "2030-11-11T23:59:59Z"
+        type: string
+      location:
+        example: Room 202
+        type: string
+      name:
+        example: Updated Workshop
+        type: string
+      slug:
+        example: uw
+        type: string
+      start_date:
+        example: "2030-11-11T00:00:00Z"
+        type: string
+    type: object
+  handlers.UserLoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+    type: object
+  handlers.UserRegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      lastName:
+        example: Doe
+        type: string
+      name:
+        example: John
+        type: string
+      password:
+        example: password123
+        type: string
+    type: object
+  handlers.VerifyAccountRequest:
+    properties:
+      token:
+        example: "123456"
+        type: string
+    type: object
+  models.Event:
+    properties:
+      atendees:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: string
+      location:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      start_date:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.EventUser:
+    properties:
+      amount:
+        type: number
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      event_id:
+        type: string
+      event_slug:
+        type: string
+      has_paid:
+        type: boolean
+      id:
+        type: integer
+      paid_at:
+        type: string
+      updatedAt:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.RefreshToken:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      token_str:
+        type: string
+      updatedAt:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      email:
+        type: string
+      events:
+        items:
+          $ref: '#/definitions/models.Event'
+        type: array
+      id:
+        type: string
+      is_master_user:
+        type: boolean
+      is_verified:
+        type: boolean
+      last_name:
+        type: string
+      name:
+        type: string
+      tokens:
+        items:
+          $ref: '#/definitions/models.RefreshToken'
+        type: array
+      updated_at:
+        type: string
+      userPass:
+        $ref: '#/definitions/models.UserPass'
+      userVerification:
+        $ref: '#/definitions/models.UserVerification'
+    type: object
+  models.UserPass:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      password:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.UserVerification:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      updated_at:
+        type: string
+      verification_number:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API Server for SCTI 2025
+  title: SCTI 2025 API
+  version: "1.0"
+paths:
+  /events:
+    get:
+      description: Returns a list of all events
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Event'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      summary: Get all events
+      tags:
+      - events
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing event using its ID. Only master users can update
+        events
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event update info with ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateEventByIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Event'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update an event by ID
+      tags:
+      - events
+    post:
+      consumes:
+      - application/json
+      description: Creates a new event. Only master users can create events
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event creation info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateEventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Event'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new event
+      tags:
+      - events
+  /events/{slug}:
+    delete:
+      description: Deletes an existing event using its slug. Only master users can
+        delete events
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete an event by slug
+      tags:
+      - events
+    get:
+      description: Returns an event's details by its slug
+      parameters:
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Event'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      summary: Get event by slug
+      tags:
+      - events
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing event using its slug. Only master users can
+        update events
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Event update info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateEventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Event'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update an event by slug
+      tags:
+      - events
+  /events/{slug}/attend:
+    post:
+      description: Registers the authenticated user to an event by its slug
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Register to an event
+      tags:
+      - events
+  /events/{slug}/attendees:
+    get:
+      description: Returns a list of all user IDs registered to an event by its slug
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.EventUser'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get event attendees
+      tags:
+      - events
+  /events/{slug}/demote:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Demotes a user from their admin role in an event. The following rules apply:
+        - Only master users and master admins can demote others
+        - Master users can demote any admin (master or normal)
+        - Master admins can only demote normal admins
+        - Users cannot demote themselves
+        - Master users cannot be demoted
+        - Target must be an admin of the event
+        - Targets can be demoted if they unregister from the event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: User email to demote
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DemoteUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Demote user in event
+      tags:
+      - events
+  /events/{slug}/promote:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Promotes a user to organizer role in an event. The following rules apply:
+        - Only master users and master admins can promote others
+        - Master users can promote normal users to admin or admins to master admin
+        - Master admins can only promote normal users to admin
+        - Users must be registered to the event to be promoted
+        - Users cannot promote themselves
+        - Master users cannot be promoted
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: User email to promote
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PromoteUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Promote user in event
+      tags:
+      - events
+  /events/{slug}/unattend:
+    post:
+      description: Unregisters the authenticated user from an event by its slug
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Unregister from an event
+      tags:
+      - events
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Logging successfully creates a refresh token in the database so the user can
+        invalidate specific session from any other session\n
+        Returns both an Access Token of 5 minutes duration and a Refresh Token of 2 days duration
+      parameters:
+      - description: User login info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.AuthTokensResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      summary: Logs in the user
+      tags:
+      - auth
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates the refresh token used in the request in the database,
+        effectively logging out the user from the current session
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Logs out the user
+      tags:
+      - auth
+  /refresh-tokens:
+    get:
+      description: Returns all refresh tokens associated with the user's account
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.RefreshToken'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user's refresh tokens
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Register a new user in the system, generates a verification code that is stored
+        in the database for 24 hours and sent in a verification email to the user
+      parameters:
+      - description: User registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.AuthTokensResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      summary: Register new user and send a verification email
+      tags:
+      - auth
+  /revoke-refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Invalidates a specific refresh token for the authenticated user
+        Can't be passed the same refresh token the user is using to access the route
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Refresh token to revoke
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RevokeTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Revoke a refresh token
+      tags:
+      - auth
+  /verify-account:
+    post:
+      consumes:
+      - application/json
+      description: Validates the verification token sent to user's email and marks
+        the account as verified
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Verification token from email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.VerifyAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Verify user account with token
+      tags:
+      - auth
+  /verify-tokens:
+    post:
+      description: Validates both access token and refresh token signatures
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      summary: Verify JWT tokens
+      tags:
+      - auth
+swagger: "2.0"

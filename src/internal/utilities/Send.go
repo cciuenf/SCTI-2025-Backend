@@ -6,28 +6,33 @@ import (
 )
 
 type Response struct {
-	Msg     string      `json:"message,omitempty"`
-	Payload interface{} `json:"data,omitempty"`
+	Success bool     `json:"success"`
+	Message string   `json:"message,omitempty"`
+	Data    any      `json:"data,omitempty"`
+	Module  string   `json:"module,omitempty"`
+	Errors  []string `json:"errors,omitempty"`
 }
 
-func (r *Response) Send(w http.ResponseWriter, code int) {
+func SendSuccess(w http.ResponseWriter, data any, message string, code int) {
+	response := Response{
+		Success: true,
+		Data:    data,
+		Message: message,
+	}
+	sendJSON(w, response, code)
+}
+
+func SendError(w http.ResponseWriter, errors []string, module string, code int) {
+	response := Response{
+		Success: false,
+		Module:  module,
+		Errors:  errors,
+	}
+	sendJSON(w, response, code)
+}
+
+func sendJSON(w http.ResponseWriter, response any, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-
-	if r.Msg == "" && r.Payload == nil {
-		return
-	} else if r.Msg == "" {
-		json.NewEncoder(w).Encode(r.Payload)
-	} else if r.Payload == nil {
-		json.NewEncoder(w).Encode(r.Msg)
-	} else {
-		json.NewEncoder(w).Encode(Response{Msg: r.Msg, Payload: r.Payload})
-	}
-}
-
-func Send(w http.ResponseWriter, msg string, data interface{}, code int) {
-	var r Response
-	r.Msg = msg
-	r.Payload = data
-	r.Send(w, code)
+	json.NewEncoder(w).Encode(response)
 }

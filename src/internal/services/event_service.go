@@ -23,15 +23,8 @@ func NewEventService(repo *repos.EventRepo) *EventService {
 
 func (s *EventService) CreateEvent(event *models.Event) error {
 	event.ID = uuid.New().String()
-	event.CreatedAt = time.Now()
-	event.UpdatedAt = time.Now()
-
 	event.Slug = strings.ToLower(event.Slug)
-
-	if err := s.EventRepo.CreateEvent(event); err != nil {
-		return err
-	}
-	return nil
+	return s.EventRepo.CreateEvent(event)
 }
 
 func (s *EventService) GetEventBySlug(Slug string) (models.Event, error) {

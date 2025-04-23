@@ -21,5 +21,5 @@ func Migrate() {
 		log.Fatalf("migrations failed: %v", err)
 	}
 
-	log.Println("Database migrated successfully")
+	log.Println("database migrated successfully")
 }

@@ -8,7 +8,7 @@ import (
 	"scti/config"
 	"scti/internal/models"
 	"scti/internal/services"
-	"scti/internal/utilities"
+	u "scti/internal/utilities"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -20,24 +20,24 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 
 			accessHeader := r.Header.Get("Authorization")
 			if accessHeader == "" {
-				utilities.Send(w, "mw-error: Authorization header is required", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"authorization header is required"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
 			if !strings.HasPrefix(accessHeader, "Bearer ") {
-				utilities.Send(w, "mw-error: Authorization header format must be Bearer {token}", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"authorization header format must be Bearer {token}"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 			accessTokenString := strings.TrimPrefix(accessHeader, "Bearer ")
 
 			refreshHeader := r.Header.Get("Refresh")
 			if refreshHeader == "" {
-				utilities.Send(w, "mw-error: Refresh token required for token renewal", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"refresh token required for access"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
 			if !strings.HasPrefix(refreshHeader, "Bearer ") {
-				utilities.Send(w, "mw-error: Refresh header format must be Bearer {token}", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"refresh header format must be \"Bearer {token}\""}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 			refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
@@ -57,7 +57,7 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			})
 
 			if accessTokenErr != nil && !strings.Contains(accessTokenErr.Error(), "token is expired") {
-				utilities.Send(w, "mw-error: Invalid access token: "+accessTokenErr.Error(), nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"invalid access token: " + accessTokenErr.Error()}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
@@ -67,36 +67,36 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			if accessToken != nil {
 				accessClaims, ok = accessToken.Claims.(*models.UserClaims)
 				if !ok {
-					utilities.Send(w, "mw-error: Invalid token claims", nil, http.StatusUnauthorized)
+					u.SendError(w, []string{"invalid access token claims"}, "auth-middleware", http.StatusUnauthorized)
 					return
 				}
 			}
 
 			if refreshErr != nil {
-				utilities.Send(w, "mw-error: Invalid refresh token: "+refreshErr.Error(), nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"invalid refresh token: " + refreshErr.Error()}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
 			if !refreshToken.Valid {
-				utilities.Send(w, "mw-error: Refresh token is expired or invalid", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"refresh token is expired or invalid"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
 			refreshClaims, ok := refreshToken.Claims.(*jwt.MapClaims)
 			if !ok {
-				utilities.Send(w, "mw-error: Invalid token claims", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"invalid refresh token claims"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
 			userID, ok := (*refreshClaims)["id"].(string)
 			if !ok {
-				utilities.Send(w, "mw-error: Invalid user ID in refresh token", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"invalid user_id in refresh token"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
 			storedToken, err := authService.FindRefreshToken(userID, refreshTokenString)
 			if err != nil || storedToken == nil {
-				utilities.Send(w, "mw-error: Refresh token not found or revoked", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"refresh token not found or revoked"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
@@ -108,24 +108,24 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 
 			user, err := authService.AuthRepo.FindUserByID(userID)
 			if err != nil {
-				utilities.Send(w, "mw-error: User not found", nil, http.StatusUnauthorized)
+				u.SendError(w, []string{"request user not found"}, "auth-middleware", http.StatusUnauthorized)
 				return
 			}
 
 			newAccessToken, err := authService.GenerateAcessToken(user)
 			if err != nil {
-				utilities.Send(w, "mw-error: Failed to generate new access token", nil, http.StatusInternalServerError)
+				u.SendError(w, []string{"failed to generate new access token"}, "auth-middleware", http.StatusInternalServerError)
 				return
 			}
 
 			newRefreshToken, err := authService.GenerateRefreshToken(user.ID, r)
 			if err != nil {
-				utilities.Send(w, "mw-error: Failed to generate new refresh token", nil, http.StatusInternalServerError)
+				u.SendError(w, []string{"failed to generate new refresh token"}, "auth-middleware", http.StatusInternalServerError)
 				return
 			}
 
 			if err := authService.AuthRepo.UpdateRefreshToken(user.ID, refreshTokenString, newRefreshToken); err != nil {
-				utilities.Send(w, "mw-error: Failed to update refresh token", nil, http.StatusInternalServerError)
+				u.SendError(w, []string{"failed to update refresh token"}, "auth-middleware", http.StatusInternalServerError)
 				return
 			}
 
