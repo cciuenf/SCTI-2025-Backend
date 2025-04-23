@@ -12,6 +12,7 @@ import (
 
 	_ "scti/docs"
 
+	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"gorm.io/gorm"
@@ -28,11 +29,19 @@ func main() {
 	db.Migrate()
 
 	mux := initializeMux(database, cfg)
+
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"}, // change to localhost:PORT of frontend
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}).Handler(mux)
+
 	if cfg.PORT == "" {
 		cfg.PORT = "8080"
 	}
 	log.Println("Started server on port: " + cfg.PORT)
-	log.Fatal(http.ListenAndServe(":"+cfg.PORT, mux))
+	log.Fatal(http.ListenAndServe(":"+cfg.PORT, corsHandler))
 }
 
 func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
