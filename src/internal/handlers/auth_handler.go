@@ -20,6 +20,18 @@ func NewAuthHandler(service *services.AuthService) *AuthHandler {
 	return &AuthHandler{AuthService: service}
 }
 
+type AuthTokensResponse struct {
+	AccessToken  string `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+type UserRegisterRequest struct {
+	Email    string `json:"email" example:"user@example.com"`
+	Password string `json:"password" example:"password123"`
+	Name     string `json:"name" example:"John"`
+	LastName string `json:"lastName" example:"Doe"`
+}
+
 // Register godoc
 // @Summary      Register new user and send a verification email
 // @Description  Register a new user in the system, generates a verification code that is stored
@@ -27,10 +39,10 @@ func NewAuthHandler(service *services.AuthService) *AuthHandler {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        request body docs.UserRegisterRequest true "User registration info"
-// @Success      201  {object}  docs.StandardResponse
-// @Failure      400  {object}  docs.StandardResponse
-// @Failure      500  {object}  docs.StandardResponse
+// @Param        request body UserRegisterRequest true "User registration info"
+// @Success      201  {object}  NoMessageSuccessResponse{data=AuthTokensResponse}
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
 // @Router       /register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var user models.UserRegister
@@ -54,9 +66,27 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	u.SendSuccess(w, map[string]string{
 		"access_token":  acess_token,
 		"refresh_token": refresh,
-	}, "", http.StatusOK)
+	}, "", http.StatusCreated)
 }
 
+type UserLoginRequest struct {
+	Email    string `json:"email" example:"user@example.com"`
+	Password string `json:"password" example:"password123"`
+}
+
+// Login godoc
+// @Summary      Logs in the user
+// @Description  Logging successfully creates a refresh token in the database so the user can
+// @Description  invalidate specific session from any other session\n
+// @Description  Returns both an Access Token of 5 minutes duration and a Refresh Token of 2 days duration
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body UserLoginRequest true "User login info"
+// @Success      200  {object}  NoMessageSuccessResponse{data=AuthTokensResponse}
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var user models.UserLogin
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -76,6 +106,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}, "", http.StatusOK)
 }
 
+// Logout godoc
+// @Summary      Logs out the user
+// @Description  Invalidates the refresh token used in the request in the database, effectively logging out the user from the current session
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	user := u.GetUserFromContext(r.Context())
 
@@ -88,9 +130,20 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.SendSuccess(w, nil, "logged out", http.StatusOK)
+	u.SendSuccess(w, nil, "logged out successfully", http.StatusOK)
 }
 
+// GetRefreshTokens godoc
+// @Summary      Get user's refresh tokens
+// @Description  Returns all refresh tokens associated with the user's account
+// @Tags         auth
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.RefreshToken}
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /refresh-tokens [get]
 func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
 	user := u.GetUserFromContext(r.Context())
 
@@ -103,13 +156,29 @@ func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
 	u.SendSuccess(w, refreshTokens, "", http.StatusOK)
 }
 
+type RevokeTokenRequest struct {
+	Token string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+// RevokeRefreshToken godoc
+// @Summary      Revoke a refresh token
+// @Description  Invalidates a specific refresh token for the authenticated user
+// @Description  Can't be passed the same refresh token the user is using to access the route
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body RevokeTokenRequest true "Refresh token to revoke"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /revoke-refresh-token [post]
 func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request) {
 	user := u.GetUserFromContext(r.Context())
 
-	var requestBody struct {
-		Token string `json:"refresh_token"`
-	}
-
+	var requestBody RevokeTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		u.SendError(w, []string{"error reading json:" + err.Error()}, "auth-stack", http.StatusBadRequest)
 		return
@@ -129,13 +198,28 @@ func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request)
 	u.SendSuccess(w, nil, "refresh token revoked successfully", http.StatusOK)
 }
 
+type VerifyAccountRequest struct {
+	Token string `json:"token" example:"123456"`
+}
+
+// VerifyAccount godoc
+// @Summary      Verify user account with token
+// @Description  Validates the verification token sent to user's email and marks the account as verified
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body VerifyAccountRequest true "Verification token from email"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /verify-account [post]
 func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 	userClaims := u.GetUserFromContext(r.Context())
 
-	var requestBody struct {
-		Token string `json:"token"`
-	}
-
+	var requestBody VerifyAccountRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		u.SendError(w, []string{"error reading json: " + err.Error()}, "auth-stack", http.StatusBadRequest)
 		return
@@ -158,9 +242,19 @@ func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.SendSuccess(w, nil, "Account verified", http.StatusOK)
+	u.SendSuccess(w, nil, "account verified", http.StatusOK)
 }
 
+// VerifyJWT godoc
+// @Summary      Verify JWT tokens
+// @Description  Validates both access token and refresh token signatures
+// @Tags         auth
+// @Produce      json
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Router       /verify-tokens [post]
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	var secretKey string = config.GetJWTSecret()
 	authHeader := r.Header.Get("Authorization")
@@ -217,5 +311,5 @@ func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.SendSuccess(w, nil, "Success", http.StatusOK)
+	u.SendSuccess(w, nil, "success", http.StatusOK)
 }

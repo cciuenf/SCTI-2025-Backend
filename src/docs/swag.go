@@ -18,15 +18,3 @@ package docs
 // @in header
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
-
-type StandardResponse struct {
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
-type UserRegisterRequest struct {
-	Email    string `json:"email" example:"user@example.com"`
-	Password string `json:"password" example:"password123"`
-	Name     string `json:"name" example:"John"`
-	LastName string `json:"lastName" example:"Doe"`
-}
