@@ -38,19 +38,19 @@ func NewAuthService(repo *repos.AuthRepo, secret string) *AuthService {
 
 func (s *AuthService) Register(email, password, name, last_name string) error {
 	if email == "" || password == "" || name == "" || last_name == "" {
-		return errors.New("AUTH: All fields are required")
+		return errors.New("all fields are required")
 	}
 
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	// Regex to check email
 	if !utilities.IsValidEmail(email) {
-		return errors.New("AUTH: Invalid email format")
+		return errors.New("invalid email format")
 	}
 
 	exists, _ := s.AuthRepo.FindUserByEmail(email)
 	if exists != nil {
-		return errors.New("AUTH: User already exists")
+		return errors.New("user already exists")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -197,7 +197,7 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 
 func (s *AuthService) Login(email, password string, r *http.Request) (string, string, error) {
 	if email == "" || password == "" {
-		return "", "", errors.New("AUTH: All fields are required")
+		return "", "", errors.New("all fields are required")
 	}
 
 	email = strings.TrimSpace(strings.ToLower(email))
@@ -208,11 +208,11 @@ func (s *AuthService) Login(email, password string, r *http.Request) (string, st
 	}
 
 	if user == nil {
-		return "", "", errors.New("AUTH: User with specified email not found")
+		return "", "", errors.New("user with specified email not found")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.UserPass.Password), []byte(password)); err != nil {
-		return "", "", errors.New("AUTH: Invalid password")
+		return "", "", errors.New("invalid password")
 	}
 
 	accessToken, err := s.GenerateAcessToken(user)
@@ -263,7 +263,7 @@ func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
 	}
 
 	if statuses == nil {
-		return "", errors.New("AUTH: User has no admin status")
+		return "", errors.New("user has no admin status")
 	}
 
 	adminMap := make(map[string]map[string]string)
@@ -320,7 +320,7 @@ func (s *AuthService) GenerateRefreshToken(userID string, r *http.Request) (stri
 func (s *AuthService) FindRefreshToken(userID, tokenStr string) (*models.RefreshToken, error) {
 	token := s.AuthRepo.FindRefreshToken(userID, tokenStr)
 	if token == nil {
-		return nil, errors.New("AUTH: Refresh token not found")
+		return nil, errors.New("refresh token not found")
 	}
 	return token, nil
 }

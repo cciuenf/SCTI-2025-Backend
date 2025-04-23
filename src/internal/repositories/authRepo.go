@@ -6,8 +6,6 @@ import (
 	"scti/config"
 	"scti/internal/models"
 
-	"fmt"
-
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -24,7 +22,7 @@ func NewAuthRepo(db *gorm.DB) *AuthRepo {
 func (r *AuthRepo) CreateUser(user *models.User) error {
 	err := r.DB.Create(user).Error
 	if err != nil {
-		return errors.New("AUTH-REPO: Error creating user: " + err.Error())
+		return errors.New("error creating user: " + err.Error())
 	}
 	return nil
 }
@@ -35,7 +33,7 @@ func (r *AuthRepo) CreateUserVerification(userID string, verificationNumber int)
 		VerificationNumber: verificationNumber,
 	}
 	if err := r.DB.Create(v).Error; err != nil {
-		return errors.New("AUTH-REPO: Could not create verification number: " + err.Error())
+		return errors.New("could not create verification number: " + err.Error())
 	}
 	return nil
 }
@@ -59,7 +57,7 @@ func (r *AuthRepo) CreateMasterUser() {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(config.GetMasterUserPass()), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatal("Could not hash password for MasterUser")
+		log.Fatal("could not hash password for master user")
 	}
 
 	userID := uuid.New().String()
@@ -78,7 +76,7 @@ func (r *AuthRepo) CreateMasterUser() {
 
 	err = r.DB.Create(MasterUser).Error
 	if err != nil {
-		log.Fatal("Could not create MasterUser")
+		log.Fatal("could not create master user")
 	}
 }
 
@@ -90,7 +88,7 @@ func (r *AuthRepo) FindUserByEmail(email string) (*models.User, error) {
 		First(&user).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("AUTH-REPO: User not found: %v", err)
+		return nil, err
 	}
 	return &user, nil
 }
@@ -103,7 +101,7 @@ func (r *AuthRepo) FindUserByID(id string) (*models.User, error) {
 		First(&user).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("AUTH-REPO: User not found: %v", err)
+		return nil, err
 	}
 	return &user, nil
 }

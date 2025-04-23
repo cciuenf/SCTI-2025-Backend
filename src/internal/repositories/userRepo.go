@@ -1,7 +1,6 @@
 package repos
 
 import (
-	"fmt"
 	"scti/internal/models"
 
 	"gorm.io/gorm"
@@ -19,7 +18,7 @@ func (r *UserRepo) FindByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := r.DB.Where("email = ?", email).First(&user).Error
 	if err != nil {
-		return nil, fmt.Errorf("usuario nao encontrado: %v", err)
+		return nil, err
 	}
 	return &user, nil
 }

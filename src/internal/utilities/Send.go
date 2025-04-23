@@ -6,37 +6,33 @@ import (
 )
 
 type Response struct {
-	Message string      `json:"message"`
-	Payload interface{} `json:"data"`
+	Success bool     `json:"success"`
+	Message string   `json:"message,omitempty"`
+	Data    any      `json:"data,omitempty"`
+	Module  string   `json:"module,omitempty"`
+	Errors  []string `json:"errors,omitempty"`
 }
 
-func (r *Response) Send(w http.ResponseWriter, code int) {
+func SendSuccess(w http.ResponseWriter, data any, message string, code int) {
+	response := Response{
+		Success: true,
+		Data:    data,
+		Message: message,
+	}
+	sendJSON(w, response, code)
+}
+
+func SendError(w http.ResponseWriter, errors []string, module string, code int) {
+	response := Response{
+		Success: false,
+		Module:  module,
+		Errors:  errors,
+	}
+	sendJSON(w, response, code)
+}
+
+func sendJSON(w http.ResponseWriter, response any, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-
-	response := Response{
-		Message: "",
-		Payload: map[string]any{},
-	}
-
-	if r.Message != "" {
-		response.Message = r.Message
-	}
-
-	if r.Payload != nil {
-		response.Payload = r.Payload
-	}
-
 	json.NewEncoder(w).Encode(response)
-}
-
-func Send(w http.ResponseWriter, msg string, data interface{}, code int) {
-	if data == nil {
-		data = map[string]any{}
-	}
-
-	var r Response
-	r.Message = msg
-	r.Payload = data
-	r.Send(w, code)
 }
