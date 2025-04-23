@@ -15,6 +15,7 @@ func Migrate() {
 		&models.Event{},
 		&models.EventUser{},
 		&models.AdminStatus{},
+		&models.UserVerification{},
 	)
 	if err != nil {
 		log.Fatalf("migrations failed: %v", err)

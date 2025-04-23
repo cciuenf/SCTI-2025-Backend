@@ -129,6 +129,41 @@ func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request)
 	u.Send(w, "Refresh token revoked", nil, http.StatusOK)
 }
 
+func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
+	userClaims := u.GetUserFromContext(r.Context())
+	if userClaims == nil {
+		u.Send(w, "User not found in context", nil, http.StatusBadRequest)
+		return
+	}
+
+	var requestBody struct {
+		Token string `json:"token"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		u.Send(w, "Error decoding JSON", nil, http.StatusBadRequest)
+		return
+	}
+
+	if requestBody.Token == "" {
+		u.Send(w, "Token is required", nil, http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.AuthService.AuthRepo.FindUserByID(userClaims.ID)
+	if err != nil {
+		u.Send(w, "couldn't find user", nil, http.StatusBadRequest)
+	}
+
+	err = h.AuthService.VerifyUser(user, requestBody.Token)
+	if err != nil {
+		u.Send(w, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
+
+	u.Send(w, "Account verified", nil, http.StatusOK)
+}
+
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	var secretKey string = config.GetJWTSecret()
 	authHeader := r.Header.Get("Authorization")

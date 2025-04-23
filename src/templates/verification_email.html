@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Verificação de Conta</title>
+  </head>
+  <body style="margin:0; padding:0;">
+    <div style="
+      font-family: Arial, Verdana, Segoe UI, sans-serif;
+      line-height: 1.55;
+      color: #ffffff;
+      background:
+        linear-gradient(135deg, rgba(21,61,179,0.1) 25%, transparent 25%) 0 0,
+        linear-gradient(225deg, rgba(21,61,179,0.1) 25%, transparent 25%) 10px 0,
+        linear-gradient(315deg, rgba(21,61,179,0.1) 25%, transparent 25%) 0 10px,
+        linear-gradient(45deg, rgba(21,61,179,0.1) 25%, transparent 25%) 10px 10px,
+        #1F1F1F;
+      background-size: 20px 20px;
+      max-width:600px; margin:32px auto; border-radius:15px; overflow:hidden;
+      box-shadow:0 4px 22px 3px #153DB347;
+    ">
+      <!-- Header -->
+      <div style="
+        background: #44125f;
+        color: #BDF50B;
+        padding:30px 20px 20px 20px;
+        text-align:center;
+      ">
+        <h1 style="
+          margin:0; font-family:Orbitron,Arial,sans-serif; font-weight:900;
+          font-size:2rem; letter-spacing:.1em; color:#BDF50B;
+          text-shadow:0 2px 24px #BDF50B66;
+        ">Verificação de Conta</h1>
+      </div>
+
+      <!-- Content -->
+      <div style="padding:26px 20px 12px 20px; background:transparent;">
+        <p>
+          <span style="color:#BDF50B; font-weight:700;">Olá</span>
+          <span style="color:#fff;">{{.UserName}}</span>,
+        </p>
+        <p style="color:#fff;">
+          Obrigado por criar uma conta. Para completar seu registro, use o código de verificação abaixo na tela de verificação que aparece após o login.
+        </p>
+        <p style="color:#BDF50B; font-weight:600; margin-bottom:8px;">
+          Seu código de verificação é:
+        </p>
+
+        <!-- Verification Code Display -->
+        <div style="
+          display:inline-block;
+          background: #1F1F1F;
+          color: #BDF50B;
+          border-radius: 10px;
+          padding: 10px 32px;
+          font-variant-numeric: tabular-nums;
+          font-weight: 700;
+          font-size: 30px;
+          letter-spacing:0.18em;
+          box-shadow:0 0 0px 2px #44125f, 0 6px 30px 1px rgba(189,245,11,0.13);
+          font-family: monospace;
+          margin-bottom: 8px;
+        ">
+          <span style="letter-spacing:0.12em;color:#BDF50B;">
+            {{substr .VerificationCode 0 3}} {{substr .VerificationCode 3 6}}
+          </span>
+        </div>
+
+        <p style="color:#fff;margin-top:22px;">
+          Entre com este código na tela de verificação para ativar sua conta.
+        </p>
+        <p style="color:#fff;font-size:15px;opacity:.7;">
+          Se você não criou uma conta conosco, por favor ignore este email.
+        </p>
+        <p>
+          <span style="font-weight:500;color:#fff;">
+            Se tiver dúvidas ou precisar de ajuda, entre em contato pelo email
+          </span>
+          <a href="mailto:{{.SupportEmail}}" style="color:#BDF50B;text-decoration:underline;font-weight:700;">
+            {{.SupportEmail}}
+          </a>.
+        </p>
+        <p style="
+          margin-top:22px;
+          color:#BDF50B;
+          font-family: Orbitron, Arial, monospace;
+          text-shadow: 0 1px 16px #BDF50B44;
+        ">
+          Atenciosamente,<br />
+          Equipe de Suporte
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="
+        background:#44125f;
+        padding:13px 15px;
+        text-align:center;
+        font-size:12px;
+        color:#BDF50B;
+      ">
+        <p style="margin:0;font-weight:500;">
+          Este email foi enviado para verificar sua conta. Por favor não responda esta mensagem.
+        </p>
+        <p style="margin:0;opacity:.8;">
+          Este código de verificação irá expirar em 24 horas.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

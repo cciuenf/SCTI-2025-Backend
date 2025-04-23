@@ -2,7 +2,7 @@ package services
 
 import (
 	"scti/internal/models"
-	"scti/internal/repos"
+	repos "scti/internal/repositories"
 )
 
 type UserService struct {

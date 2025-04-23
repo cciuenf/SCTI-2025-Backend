@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"scti/internal/models"
-	"scti/internal/repos"
+	repos "scti/internal/repositories"
 	"strings"
 	"time"
 
