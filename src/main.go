@@ -10,9 +10,18 @@ import (
 	repos "scti/internal/repositories"
 	"scti/internal/services"
 
+	_ "scti/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
+
 	"gorm.io/gorm"
 )
 
+// @title           SCTI 2025 API
+// @version         1.0
+// @description     API Server for SCTI 2025
+// @host            localhost:8080
+// @BasePath        /
 func main() {
 	cfg := config.LoadConfig()
 	database := db.Connect(*cfg)
@@ -41,6 +50,9 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	authMiddleware := mw.AuthMiddleware(authService)
 
 	mux := http.NewServeMux()
+
+	// API documentation routes
+	mux.HandleFunc("/swagger/", httpSwagger.Handler(httpSwagger.URL("http://localhost:"+cfg.PORT+"/swagger/doc.json")))
 
 	// Authentication routes
 	mux.HandleFunc("POST /register", authHandler.Register)

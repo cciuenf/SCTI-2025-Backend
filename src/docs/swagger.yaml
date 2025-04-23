@@ -1,0 +1,63 @@
+basePath: /
+definitions:
+  docs.StandardResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+  docs.UserRegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      lastName:
+        example: Doe
+        type: string
+      name:
+        example: John
+        type: string
+      password:
+        example: password123
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API Server for SCTI 2025
+  title: SCTI 2025 API
+  version: "1.0"
+paths:
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Register a new user in the system, generates a verification code that is stored
+        in the database for 24 hours and sent in a verification email to the user
+      parameters:
+      - description: User registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/docs.UserRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/docs.StandardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.StandardResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.StandardResponse'
+      summary: Register new user and send a verification email
+      tags:
+      - auth
+swagger: "2.0"

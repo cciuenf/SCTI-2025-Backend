@@ -20,6 +20,18 @@ func NewAuthHandler(service *services.AuthService) *AuthHandler {
 	return &AuthHandler{AuthService: service}
 }
 
+// Register godoc
+// @Summary      Register new user and send a verification email
+// @Description  Register a new user in the system, generates a verification code that is stored
+// @Description  in the database for 24 hours and sent in a verification email to the user
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body docs.UserRegisterRequest true "User registration info"
+// @Success      201  {object}  docs.StandardResponse
+// @Failure      400  {object}  docs.StandardResponse
+// @Failure      500  {object}  docs.StandardResponse
+// @Router       /register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var user models.UserRegister
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
