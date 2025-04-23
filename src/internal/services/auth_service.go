@@ -3,16 +3,25 @@ package services
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"net/smtp"
+	"os"
+	"path/filepath"
+	"scti/config"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
 	"scti/internal/utilities"
+	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type AuthService struct {
@@ -32,12 +41,12 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 		return errors.New("AUTH: All fields are required")
 	}
 
+	email = strings.TrimSpace(strings.ToLower(email))
+
 	// Regex to check email
 	if !utilities.IsValidEmail(email) {
 		return errors.New("AUTH: Invalid email format")
 	}
-
-	email = strings.TrimSpace(strings.ToLower(email))
 
 	exists, _ := s.AuthRepo.FindUserByEmail(email)
 	if exists != nil {
@@ -63,6 +72,124 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 	}
 
 	if err := s.AuthRepo.CreateUser(user); err != nil {
+		return err
+	}
+
+	verificationNumber := utilities.GenerateVerificationCode()
+
+	if err := s.AuthRepo.CreateUserVerification(user.ID, verificationNumber); err != nil {
+		return err
+	}
+
+	err = s.SendVerificationEmail(user, verificationNumber)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type verificationEmailData struct {
+	UserName         string
+	VerificationCode string
+	SupportEmail     string
+}
+
+var templateFuncs = template.FuncMap{
+	"substr": func(s string, i, j int) string {
+		if i >= len(s) {
+			return ""
+		}
+		if j > len(s) {
+			j = len(s)
+		}
+		return s[i:j]
+	},
+}
+
+func (s *AuthService) SendVerificationEmail(user *models.User, verificationNumber int) error {
+	from := config.GetSystemEmail()
+	password := config.GetSystemEmailPass()
+
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+
+	templatePath := filepath.Join("templates", "verification_email.html")
+
+	file, err := os.Open(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to open email template: %v", err)
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("failed to read email template: %v", err)
+	}
+
+	tmpl, err := template.New("emailTemplate").Funcs(templateFuncs).Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	verificationCode := fmt.Sprintf("%06d", verificationNumber)
+
+	data := verificationEmailData{
+		UserName:         user.Name + " " + user.LastName,
+		VerificationCode: verificationCode,
+		SupportEmail:     config.GetSystemEmail(),
+	}
+
+	var body strings.Builder
+	if err := tmpl.Execute(&body, data); err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	subject := "Verificação de Conta"
+
+	message := []byte(fmt.Sprintf("Subject: %s\r\nMIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n%s",
+		subject, body.String()))
+
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+
+	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{user.Email}, message)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
+
+	return nil
+}
+
+func (s *AuthService) VerifyUser(user *models.User, token string) error {
+	if user.IsVerified {
+		return errors.New("user is already verified")
+	}
+
+	storedToken, err := s.AuthRepo.GetUserVerification(user.ID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New("no verification token found")
+		}
+		return err
+	}
+
+	tokenInt, err := strconv.Atoi(token)
+	if err != nil {
+		return err
+	}
+
+	if storedToken != tokenInt {
+		return errors.New("invalid verification token")
+	}
+
+	user.IsVerified = true
+	err = s.AuthRepo.UpdateUser(user)
+	if err != nil {
+		return err
+	}
+
+	err = s.AuthRepo.DeleteUserVerification(user.ID)
+	if err != nil {
 		return err
 	}
 	return nil

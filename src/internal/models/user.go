@@ -26,13 +26,23 @@ type User struct {
 	// Curso   string `json:"curso"`
 	// Periodo string `json:"periodo"`
 
-	Events []Event        `gorm:"many2many:event_users;constraint:OnDelete:CASCADE"`
-	Tokens []RefreshToken `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	UserVerification UserVerification `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE"`
+	Events           []Event          `gorm:"many2many:event_users;constraint:OnDelete:CASCADE"`
+	Tokens           []RefreshToken   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 type UserPass struct {
 	ID       string `gorm:"type:varchar(36);primaryKey" json:"id"`
 	Password string `gorm:"not null" json:"password"`
+
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"autoDeleteTime" json:"deleted_at,omitempty"`
+}
+
+type UserVerification struct {
+	ID                 string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	VerificationNumber int    `gorm:"not null" json:"verification_number"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

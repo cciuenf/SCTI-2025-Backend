@@ -50,6 +50,7 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.Handle("GET /refresh-tokens", authMiddleware(http.HandlerFunc(authHandler.GetRefreshTokens)))
 	mux.Handle("POST /revoke-refresh-token", authMiddleware(http.HandlerFunc(authHandler.RevokeRefreshToken)))
 	mux.Handle("POST /secure-verify-tokens", authMiddleware(http.HandlerFunc(authHandler.VerifyJWT)))
+	mux.Handle("POST /verify-account", authMiddleware(http.HandlerFunc(authHandler.VerifyAccount)))
 
 	// Event routes
 	mux.HandleFunc("GET /events", eventHandler.GetAllEvents)

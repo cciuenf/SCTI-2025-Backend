@@ -29,6 +29,27 @@ func (r *AuthRepo) CreateUser(user *models.User) error {
 	return nil
 }
 
+func (r *AuthRepo) CreateUserVerification(userID string, verificationNumber int) error {
+	v := &models.UserVerification{
+		ID:                 userID,
+		VerificationNumber: verificationNumber,
+	}
+	if err := r.DB.Create(v).Error; err != nil {
+		return errors.New("AUTH-REPO: Could not create verification number: " + err.Error())
+	}
+	return nil
+}
+
+func (r *AuthRepo) GetUserVerification(userID string) (int, error) {
+	var verification models.UserVerification
+	err := r.DB.Where("id = ?", userID).First(&verification).Error
+	return verification.VerificationNumber, err
+}
+
+func (r *AuthRepo) DeleteUserVerification(userID string) error {
+	return r.DB.Where("id = ?", userID).Unscoped().Delete(&models.UserVerification{}).Error
+}
+
 func (r *AuthRepo) CreateMasterUser() {
 	var existingUser models.User
 	err := r.DB.Where("email = ?", config.GetSystemEmail()).First(&existingUser).Error
@@ -85,6 +106,10 @@ func (r *AuthRepo) FindUserByID(id string) (*models.User, error) {
 		return nil, fmt.Errorf("AUTH-REPO: User not found: %v", err)
 	}
 	return &user, nil
+}
+
+func (r *AuthRepo) UpdateUser(user *models.User) error {
+	return r.DB.Save(user).Error
 }
 
 func (r *AuthRepo) CreateRefreshToken(userID, refreshToken string) error {
