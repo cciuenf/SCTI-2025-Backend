@@ -29,7 +29,7 @@ type UserRegisterRequest struct {
 	Email    string `json:"email" example:"user@example.com"`
 	Password string `json:"password" example:"password123"`
 	Name     string `json:"name" example:"John"`
-	LastName string `json:"lastName" example:"Doe"`
+	LastName string `json:"last_name" example:"Doe"`
 }
 
 // Register godoc
