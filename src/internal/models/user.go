@@ -27,7 +27,8 @@ type User struct {
 	// Periodo string `json:"periodo"`
 
 	UserVerification UserVerification `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE"`
-	Events           []Event          `gorm:"many2many:event_users;constraint:OnDelete:CASCADE"`
+	Events           []Event          `gorm:"many2many:event_users;constraint:OnDelete:CASCADE" json:"events"`
+	Activities       []Activity       `gorm:"many2many:activity_registrations;OnDelete:CASCADE" json:"activities"`
 	Tokens           []RefreshToken   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
