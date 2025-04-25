@@ -166,7 +166,7 @@ func (r *EventRepo) GetAtendeeByIDAndSlug(userID, slug string) (*models.EventUse
 	return eventUser, nil
 }
 
-func (r *EventRepo) IsUserRegistered(userID string, slug string) (bool, error) {
+func (r *EventRepo) IsUserRegisteredToEvent(userID string, slug string) (bool, error) {
 	var eventUser models.EventUser
 	if err := r.DB.Where("user_id = ? AND event_slug = ?", userID, slug).First(&eventUser).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {

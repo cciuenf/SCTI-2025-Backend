@@ -86,6 +86,7 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.Handle("GET /events/{slug}/attendees", authMiddleware(http.HandlerFunc(eventHandler.GetEventAttendeesBySlug)))
 	// Event Activity routes
 	mux.Handle("POST /events/{slug}/activity", authMiddleware(http.HandlerFunc(eventHandler.CreateEventActivity)))
+	mux.Handle("POST /activity/register", authMiddleware(http.HandlerFunc(eventHandler.RegisterUserToActivity)))
 
 	// Admin routes
 	mux.Handle("POST /events/{slug}/promote", authMiddleware(http.HandlerFunc(eventHandler.PromoteUserOfEventBySlug)))

@@ -57,3 +57,34 @@ func (s *EventService) CreateEventActivity(activity *models.Activity, Slug strin
 
 	return s.EventRepo.CreateEventActivity(activity)
 }
+
+// TODO: Implement check with blocked_by, and check with has_fee
+func (s *EventService) RegisterUserToActivity(user models.User, activityID string) error {
+	activity, err := s.EventRepo.GetActivityByID(activityID)
+	if err != nil {
+		return err
+	}
+
+	if activity.IsStandalone {
+		err := s.EventRepo.RegisterUserToActivity(user, activity, nil)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	status, err := s.EventRepo.IsUserRegisteredToEvent(user.ID, activity.EventSlug)
+	if err != nil {
+		return err
+	}
+	if !status {
+		return errors.New("user is not registered to the event of the activity")
+	}
+
+	event, err := s.EventRepo.GetEventBySlug(activity.EventSlug)
+	if err != nil {
+		return err
+	}
+
+	return s.EventRepo.RegisterUserToActivity(user, activity, &event)
+}

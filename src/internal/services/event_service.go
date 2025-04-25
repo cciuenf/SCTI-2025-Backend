@@ -221,9 +221,9 @@ func (s *EventService) GetEventAttendeesBySlug(slug string) (*[]models.User, err
 	return attendees, nil
 }
 
-func (s *EventService) IsUserRegistered(userID string, slug string) (bool, error) {
+func (s *EventService) IsUserRegisteredToEvent(userID string, slug string) (bool, error) {
 	slug = strings.ToLower(slug)
-	registered, err := s.EventRepo.IsUserRegistered(userID, slug)
+	registered, err := s.EventRepo.IsUserRegisteredToEvent(userID, slug)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, nil
@@ -289,7 +289,7 @@ func (s *EventService) PromoteUserOfEventBySlug(email, requesterID, slug string)
 
 	slug = strings.ToLower(slug)
 
-	status, err := s.IsUserRegistered(user.ID, slug)
+	status, err := s.IsUserRegisteredToEvent(user.ID, slug)
 	if err != nil || !status {
 		if !status {
 			return errors.New("user not registered to event")
