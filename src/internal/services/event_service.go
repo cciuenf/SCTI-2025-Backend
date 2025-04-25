@@ -199,6 +199,28 @@ func (s *EventService) IsAdminOf(userID string, slug string) (bool, *models.Admi
 	return true, adminStatus, nil
 }
 
+func (s *EventService) IsAdminTypeOf(user models.User, adminType models.AdminType, slug string) (bool, error) {
+	// Master users are considered to be every type of admin
+	if user.IsMasterUser {
+		return true, nil
+	}
+
+	slug = strings.ToLower(slug)
+	adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if adminStatus != nil && adminStatus.AdminType == adminType {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (s *EventService) PromoteUserOfEventBySlug(email, requesterID, slug string) error {
 	requester, err := s.EventRepo.GetUserByID(requesterID)
 	if err != nil {
