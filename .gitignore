@@ -2,3 +2,4 @@ src/.env
 .env
 src/tmp
 src/app.log
+node_modules/
