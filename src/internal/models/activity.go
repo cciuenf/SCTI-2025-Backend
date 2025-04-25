@@ -37,8 +37,7 @@ type Activity struct {
 	IsStandalone   bool   `gorm:"default:false" json:"is_standalone"`  // If it can be registered to or exist without an event
 	StandaloneSlug string `gorm:"varchar(100)" json:"standalone_slug"` // Used as event slug
 
-	Event         Event                  `gorm:"foreignKey:EventID,EventSlug;references:ID,Slug;constraint:OnDelete:CASCADE"`
-	Registrations []ActivityRegistration `gorm:"foreignKey:ActivityID;constraint:OnDelete:CASCADE"`
+	Registrants []User `gorm:"many2many:activity_registrations;constraint:OnDelete:CASCADE" json:"-"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
@@ -46,10 +45,8 @@ type Activity struct {
 }
 
 type ActivityRegistration struct {
-	ID string `gorm:"type:varchar(36);primaryKey;"`
-
-	ActivityID string `gorm:"type:varchar(36);not null" json:"activity_id"`
-	UserID     string `gorm:"type:varchar(36);not null" json:"user_id"`
+	ActivityID string `gorm:"type:varchar(36);primaryKey" json:"activity_id"`
+	UserID     string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
 	EventID    string `gorm:"type:varchar(36)" json:"event_id"`
 	EventSlug  string `gorm:"type:varchar(100)" json:"event_slug"`
 
@@ -57,10 +54,7 @@ type ActivityRegistration struct {
 	HasAttended  bool       `gorm:"default:false" json:"has_attended"`
 	AttendedAt   *time.Time `json:"attended_at"`
 
-	IsStandaloneRegistration bool `json:"is_standalone_registration"`
-
-	Activity Activity `gorm:"foreignKey:ActivityID;references:ID;constraint:OnDelete:CASCADE"`
-	User     User     `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
+	IsStandaloneRegstration bool `json:"is_standalone_registration"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

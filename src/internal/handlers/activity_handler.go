@@ -33,7 +33,8 @@ type CreateEventActivityRequest struct {
 // @Summary      Creates a new activity for that event
 // @Description  Creates a new activity for that event. Only master users or master admins can create event activities
 // @Description  Activities created on this endpoint will not be created as standalone, but can be made standalone after creation
-// @Tags         events
+// @Description  Activities created with 0 MaxCapaxity will have unlimited capacity
+// @Tags         activities
 // @Accept       json
 // @Produce      json
 // @Security     Bearer

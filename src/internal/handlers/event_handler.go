@@ -92,6 +92,31 @@ func (h *EventHandler) GetEventBySlug(w http.ResponseWriter, r *http.Request) {
 	u.SendSuccess(w, event, "", http.StatusOK)
 }
 
+// GetEventBySlugWithActivities godoc
+// @Summary      Get event by slug with all its activities
+// @Description  Returns an event's details by its slug with all its activities filled with their data
+// @Tags         events
+// @Produce      json
+// @Param        slug path string true "Event slug"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.Event}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/activities [get]
+func (h *EventHandler) GetEventBySlugWithActivities(w http.ResponseWriter, r *http.Request) {
+	eventSlug := r.PathValue("slug")
+	if eventSlug == "" {
+		u.SendError(w, []string{"the event slug can't be empty"}, "event-stack", http.StatusBadRequest)
+		return
+	}
+
+	event, err := h.EventService.GetEventBySlugWithActivities(eventSlug)
+	if err != nil {
+		u.SendError(w, []string{"error getting event: " + err.Error()}, "event-stack", http.StatusBadRequest)
+		return
+	}
+
+	u.SendSuccess(w, event, "", http.StatusOK)
+}
+
 // GetAllEvents godoc
 // @Summary      Get all events
 // @Description  Returns a list of all events
@@ -335,20 +360,20 @@ func (h *EventHandler) UnregisterToEvent(w http.ResponseWriter, r *http.Request)
 // @Failure      400  {object}  EventStandardErrorResponse
 // @Failure      401  {object}  EventStandardErrorResponse
 // @Router       /events/{slug}/attendees [get]
-func (h *EventHandler) GetEventAtendeesBySlug(w http.ResponseWriter, r *http.Request) {
+func (h *EventHandler) GetEventAttendeesBySlug(w http.ResponseWriter, r *http.Request) {
 	eventSlug := r.PathValue("slug")
 	if eventSlug == "" {
 		u.SendError(w, []string{"the event slug can't be empty"}, "event-stack", http.StatusBadRequest)
 		return
 	}
 
-	atendees, err := h.EventService.GetEventAtendeesBySlug(eventSlug)
+	attendees, err := h.EventService.GetEventAttendeesBySlug(eventSlug)
 	if err != nil {
-		u.SendError(w, []string{"error getting event atendees: " + err.Error()}, "event-stack", http.StatusBadRequest)
+		u.SendError(w, []string{"error getting event attendees: " + err.Error()}, "event-stack", http.StatusBadRequest)
 		return
 	}
 
-	u.SendSuccess(w, atendees, "", http.StatusOK)
+	u.SendSuccess(w, attendees, "", http.StatusOK)
 }
 
 type PromoteUserRequest struct {

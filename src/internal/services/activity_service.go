@@ -29,10 +29,6 @@ func (s *EventService) CreateEventActivity(activity *models.Activity, Slug strin
 		return errors.New("activity name can't be empty")
 	}
 
-	activity.ID = uuid.New().String()
-	activity.EventSlug = slug
-	activity.EventID = event.ID
-
 	if activity.Type == models.ActivityPalestra {
 		activity.IsMandatory = true
 	}
@@ -45,6 +41,17 @@ func (s *EventService) CreateEventActivity(activity *models.Activity, Slug strin
 		return errors.New("activity start can't be before its event start")
 	}
 
+	if activity.StartTime.After(event.EndDate) {
+		return errors.New("activity start can't be afetr event end")
+	}
+
+	if activity.EndTime.After(event.EndDate) {
+		return errors.New("activity end can't be after event end")
+	}
+
+	activity.ID = uuid.New().String()
+	activity.EventSlug = slug
+	activity.EventID = event.ID
 	activity.IsStandalone = false
 	activity.StandaloneSlug = ""
 

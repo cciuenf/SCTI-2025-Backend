@@ -36,6 +36,15 @@ func (s *EventService) GetEventBySlug(Slug string) (models.Event, error) {
 	return event, nil
 }
 
+func (s *EventService) GetEventBySlugWithActivities(Slug string) (models.Event, error) {
+	slug := strings.ToLower(Slug)
+	event, err := s.EventRepo.GetEventBySlugWithActivities(slug)
+	if err != nil {
+		return models.Event{}, err
+	}
+	return event, nil
+}
+
 func (s *EventService) GetAllEvents() ([]models.Event, error) {
 	events, err := s.EventRepo.GetAllEvents()
 	if err != nil {
@@ -150,7 +159,23 @@ func (s *EventService) GetUserByID(userID string) (models.User, error) {
 
 func (s *EventService) RegisterToEvent(userID string, Slug string) error {
 	slug := strings.ToLower(Slug)
-	if err := s.EventRepo.RegisterToEvent(userID, slug); err != nil {
+
+	user, err := s.EventRepo.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.EventRepo.GetUserEventRegistration(user, event)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+
+	if err := s.EventRepo.RegisterToEvent(user, event); err != nil {
 		return err
 	}
 	return nil
@@ -158,19 +183,42 @@ func (s *EventService) RegisterToEvent(userID string, Slug string) error {
 
 func (s *EventService) UnregisterToEvent(userID string, Slug string) error {
 	slug := strings.ToLower(Slug)
-	if err := s.EventRepo.UnregisterToEvent(userID, slug); err != nil {
+
+	user, err := s.EventRepo.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	event, err := s.GetEventBySlug(slug)
+	if err != nil {
+		return err
+	}
+
+	registration, err := s.EventRepo.GetUserEventRegistration(user, event)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New("user already not registered")
+		}
+		return err
+	}
+
+	if registration.HasPaid {
+		return errors.New("user can't unregister after payment")
+	}
+
+	if err := s.EventRepo.UnregisterToEvent(registration); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *EventService) GetEventAtendeesBySlug(slug string) (*[]models.EventUser, error) {
+func (s *EventService) GetEventAttendeesBySlug(slug string) (*[]models.User, error) {
 	slug = strings.ToLower(slug)
-	event, err := s.EventRepo.GetEventAtendeesBySlug(slug)
+	attendees, err := s.EventRepo.GetEventAttendeesBySlug(slug)
 	if err != nil {
 		return nil, err
 	}
-	return event, nil
+	return attendees, nil
 }
 
 func (s *EventService) IsUserRegistered(userID string, slug string) (bool, error) {
