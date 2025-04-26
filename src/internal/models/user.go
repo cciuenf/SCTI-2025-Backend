@@ -13,7 +13,7 @@ type User struct {
 	LastName   string   `gorm:"not null" json:"last_name"`
 	Email      string   `gorm:"unique;not null" json:"email"`
 	IsVerified bool     `gorm:"default:false" json:"is_verified"`
-	UserPass   UserPass `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE"`
+	UserPass   UserPass `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
@@ -26,10 +26,10 @@ type User struct {
 	// Curso   string `json:"curso"`
 	// Periodo string `json:"periodo"`
 
-	UserVerification UserVerification `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE"`
-	Events           []Event          `gorm:"many2many:event_users;constraint:OnDelete:CASCADE" json:"events"`
-	Activities       []Activity       `gorm:"many2many:activity_registrations;OnDelete:CASCADE" json:"activities"`
-	Tokens           []RefreshToken   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	UserVerification UserVerification `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	Events           []Event          `gorm:"many2many:event_users;constraint:OnDelete:CASCADE" json:"-"`
+	Activities       []Activity       `gorm:"many2many:activity_registrations;constraint:OnDelete:CASCADE" json:"-"`
+	Tokens           []RefreshToken   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 }
 
 type UserPass struct {

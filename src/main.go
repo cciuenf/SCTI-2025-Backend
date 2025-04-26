@@ -76,15 +76,23 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	// Event routes
 	mux.HandleFunc("GET /events", eventHandler.GetAllEvents)
 	mux.HandleFunc("GET /events/{slug}", eventHandler.GetEventBySlug)
+	mux.HandleFunc("GET /events/{slug}/activities", eventHandler.GetEventBySlugWithActivities)
 	mux.Handle("POST /events", authMiddleware(http.HandlerFunc(eventHandler.CreateEvent)))
 	mux.Handle("PATCH /events", authMiddleware(http.HandlerFunc(eventHandler.UpdateEvent)))
 	mux.Handle("PATCH /events/{slug}", authMiddleware(http.HandlerFunc(eventHandler.UpdateEventBySlug)))
 	mux.Handle("DELETE /events/{slug}", authMiddleware(http.HandlerFunc(eventHandler.DeleteEventBySlug)))
 	mux.Handle("POST /events/{slug}/attend", authMiddleware(http.HandlerFunc(eventHandler.RegisterToEvent)))
-	mux.Handle("POST /events/{slug}/unattend", authMiddleware(http.HandlerFunc(eventHandler.UnregisterToEvent)))
-	mux.Handle("GET /events/{slug}/attendees", authMiddleware(http.HandlerFunc(eventHandler.GetEventAtendeesBySlug)))
+	mux.Handle("POST /events/{slug}/unattend", authMiddleware(http.HandlerFunc(eventHandler.UnregisterFromEvent)))
+	mux.Handle("GET /events/{slug}/attendees", authMiddleware(http.HandlerFunc(eventHandler.GetEventAttendeesBySlug)))
 	// Event Activity routes
+	mux.HandleFunc("GET /activities/{slug}", eventHandler.GetAllActivitiesFromEvent)
 	mux.Handle("POST /events/{slug}/activity", authMiddleware(http.HandlerFunc(eventHandler.CreateEventActivity)))
+	mux.Handle("POST /events/{slug}/activity/register", authMiddleware(http.HandlerFunc(eventHandler.RegisterUserToActivity)))
+	mux.Handle("POST /events/{slug}/activity/unregister", authMiddleware(http.HandlerFunc(eventHandler.UnregisterUserFromActivity)))
+	// Standalone activity routes
+	mux.Handle("POST /activity", authMiddleware(http.HandlerFunc(eventHandler.CreateEventActivity)))
+	mux.Handle("POST /activity/register", authMiddleware(http.HandlerFunc(eventHandler.RegisterUserToActivity)))
+	mux.Handle("POST /activity/unregister", authMiddleware(http.HandlerFunc(eventHandler.UnregisterUserFromActivity)))
 
 	// Admin routes
 	mux.Handle("POST /events/{slug}/promote", authMiddleware(http.HandlerFunc(eventHandler.PromoteUserOfEventBySlug)))
