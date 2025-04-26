@@ -117,7 +117,7 @@ func (r *EventRepo) ExistsUserByID(userID string) (bool, error) {
 	return true, nil
 }
 
-func (r *EventRepo) GetUserEventRegistration(user models.User, event models.Event) (models.EventUser, error) {
+func (r *EventRepo) GetUserEventRegistration(user models.User, event models.Event) (*models.EventUser, error) {
 	var eventUser models.EventUser
 	err := r.DB.Where(
 		"user_id = ? AND event_id = ? AND event_slug = ?",
@@ -125,7 +125,10 @@ func (r *EventRepo) GetUserEventRegistration(user models.User, event models.Even
 		event.ID,
 		event.Slug,
 	).First(&eventUser).Error
-	return eventUser, err
+	if err != nil {
+		return nil, err
+	}
+	return &eventUser, err
 }
 
 func (r *EventRepo) RegisterToEvent(user models.User, event models.Event) error {
@@ -137,13 +140,15 @@ func (r *EventRepo) RegisterToEvent(user models.User, event models.Event) error 
 	return r.DB.Create(&eventUser).Error
 }
 
-func (r *EventRepo) UnregisterToEvent(registration models.EventUser) error {
-	return r.DB.Where(
-		"event_id = ? AND event_slug = ? AND user_id = ?",
-		registration.EventID,
-		registration.EventSlug,
-		registration.UserID,
-	).Delete(&models.EventUser{}).Error
+func (r *EventRepo) UnregisterFromEvent(registration *models.EventUser) error {
+	return r.DB.
+		Unscoped().
+		Where(
+			"event_id = ? AND event_slug = ? AND user_id = ?",
+			registration.EventID,
+			registration.EventSlug,
+			registration.UserID,
+		).Delete(&models.EventUser{}).Error
 }
 
 func (r *EventRepo) GetEventAttendeesBySlug(slug string) (*[]models.User, error) {

@@ -330,7 +330,7 @@ func (h *EventHandler) RegisterToEvent(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  EventStandardErrorResponse
 // @Failure      401  {object}  EventStandardErrorResponse
 // @Router       /events/{slug}/unattend [post]
-func (h *EventHandler) UnregisterToEvent(w http.ResponseWriter, r *http.Request) {
+func (h *EventHandler) UnregisterFromEvent(w http.ResponseWriter, r *http.Request) {
 	claims := u.GetUserFromContext(r.Context())
 	slug := r.PathValue("slug")
 	if slug == "" {
@@ -338,9 +338,9 @@ func (h *EventHandler) UnregisterToEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err := h.EventService.UnregisterToEvent(claims.ID, slug)
+	err := h.EventService.UnregisterFromEvent(claims.ID, slug)
 	if err != nil {
-		u.SendError(w, []string{"error unregistering to event" + err.Error()}, "event-stack", http.StatusBadRequest)
+		u.SendError(w, []string{"error unregistering to event: " + err.Error()}, "event-stack", http.StatusBadRequest)
 		return
 	}
 

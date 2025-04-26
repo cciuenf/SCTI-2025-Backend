@@ -17,8 +17,8 @@ const (
 type Activity struct {
 	ID string `gorm:"type:varchar(36);primaryKey;"`
 
-	EventID   string `gorm:"type:varchar(36)" json:"event_id"`
-	EventSlug string `gorm:"type:varchar(100)" json:"event_slug"`
+	EventID   *string `gorm:"type:varchar(36)" json:"event_id"`
+	EventSlug *string `gorm:"type:varchar(100)" json:"event_slug"`
 
 	Name        string `gorm:"type:varchar(100);not null" json:"name"`
 	Description string `json:"description"`
@@ -50,9 +50,10 @@ type ActivityRegistration struct {
 	EventID    string `gorm:"type:varchar(36)" json:"event_id"`
 	EventSlug  string `gorm:"type:varchar(100)" json:"event_slug"`
 
-	RegisteredAt time.Time  `gorm:"autoCreateTime" json:"registered_at"`
-	HasAttended  bool       `gorm:"default:false" json:"has_attended"`
-	AttendedAt   *time.Time `json:"attended_at"`
+	RegisteredFromEvent bool       `gorm:"default:false" json:"registered_from_event"`
+	RegisteredAt        time.Time  `gorm:"autoCreateTime" json:"registered_at"`
+	HasAttended         bool       `gorm:"default:false" json:"has_attended"`
+	AttendedAt          *time.Time `json:"attended_at"`
 
 	IsStandaloneRegstration bool `json:"is_standalone_registration"`
 

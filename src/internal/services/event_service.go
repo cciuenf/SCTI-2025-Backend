@@ -170,9 +170,13 @@ func (s *EventService) RegisterToEvent(userID string, Slug string) error {
 		return err
 	}
 
-	_, err = s.EventRepo.GetUserEventRegistration(user, event)
+	registration, err := s.EventRepo.GetUserEventRegistration(user, event)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
+	}
+
+	if registration != nil {
+		return errors.New("user already registered to event")
 	}
 
 	if err := s.EventRepo.RegisterToEvent(user, event); err != nil {
@@ -181,7 +185,7 @@ func (s *EventService) RegisterToEvent(userID string, Slug string) error {
 	return nil
 }
 
-func (s *EventService) UnregisterToEvent(userID string, Slug string) error {
+func (s *EventService) UnregisterFromEvent(userID string, Slug string) error {
 	slug := strings.ToLower(Slug)
 
 	user, err := s.EventRepo.GetUserByID(userID)
@@ -206,7 +210,7 @@ func (s *EventService) UnregisterToEvent(userID string, Slug string) error {
 		return errors.New("user can't unregister after payment")
 	}
 
-	if err := s.EventRepo.UnregisterToEvent(registration); err != nil {
+	if err := s.EventRepo.UnregisterFromEvent(registration); err != nil {
 		return err
 	}
 	return nil
