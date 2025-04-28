@@ -298,7 +298,7 @@ func (h *EventHandler) DeleteEventBySlug(w http.ResponseWriter, r *http.Request)
 // @Success      200  {object}  NoDataSuccessResponse
 // @Failure      400  {object}  EventStandardErrorResponse
 // @Failure      401  {object}  EventStandardErrorResponse
-// @Router       /events/{slug}/attend [post]
+// @Router       /events/{slug}/register [post]
 func (h *EventHandler) RegisterToEvent(w http.ResponseWriter, r *http.Request) {
 	claims := u.GetUserFromContext(r.Context())
 	slug := r.PathValue("slug")
@@ -329,7 +329,7 @@ func (h *EventHandler) RegisterToEvent(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  NoDataSuccessResponse
 // @Failure      400  {object}  EventStandardErrorResponse
 // @Failure      401  {object}  EventStandardErrorResponse
-// @Router       /events/{slug}/unattend [post]
+// @Router       /events/{slug}/unregister [post]
 func (h *EventHandler) UnregisterFromEvent(w http.ResponseWriter, r *http.Request) {
 	claims := u.GetUserFromContext(r.Context())
 	slug := r.PathValue("slug")

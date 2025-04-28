@@ -50,12 +50,12 @@ type ActivityRegistration struct {
 	EventID    string `gorm:"type:varchar(36)" json:"event_id"`
 	EventSlug  string `gorm:"type:varchar(100)" json:"event_slug"`
 
-	RegisteredFromEvent bool       `gorm:"default:false" json:"registered_from_event"`
-	RegisteredAt        time.Time  `gorm:"autoCreateTime" json:"registered_at"`
-	HasAttended         bool       `gorm:"default:false" json:"has_attended"`
-	AttendedAt          *time.Time `json:"attended_at"`
+	RegisteredFromEvent bool      `gorm:"default:false" json:"registered_from_event"`
+	RegisteredAt        time.Time `gorm:"autoCreateTime" json:"registered_at"`
+	HasAttended         bool      `gorm:"default:false" json:"has_attended"`
+	AttendedAt          time.Time `json:"attended_at"`
 
-	IsStandaloneRegstration bool `json:"is_standalone_registration"`
+	IsStandaloneRegistration bool `json:"is_standalone_registration"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

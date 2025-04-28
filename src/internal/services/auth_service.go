@@ -324,3 +324,90 @@ func (s *AuthService) FindRefreshToken(userID, tokenStr string) (*models.Refresh
 	}
 	return token, nil
 }
+
+func (s *AuthService) GeneratePasswordResetToken(userID string) (string, error) {
+	claims := &models.PasswordResetClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+		UserID:          userID,
+		IsPasswordReset: true,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(s.JWTSecret))
+}
+
+func (s *AuthService) SendPasswordResetEmail(user *models.User, resetToken string) error {
+	from := config.GetSystemEmail()
+	password := config.GetSystemEmailPass()
+
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+
+	resetLink := fmt.Sprintf("http://%s/change-password?token=%s", config.GetSiteURL(), resetToken)
+
+	templatePath := filepath.Join("templates", "password_reset_email.html")
+	file, err := os.Open(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to open email template: %v", err)
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("failed to read email template: %v", err)
+	}
+
+	tmpl, err := template.New("resetTemplate").Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	data := struct {
+		UserName     string
+		ResetLink    string
+		SupportEmail string
+	}{
+		UserName:     user.Name + " " + user.LastName,
+		ResetLink:    resetLink,
+		SupportEmail: config.GetSystemEmail(),
+	}
+
+	var body strings.Builder
+	if err := tmpl.Execute(&body, data); err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	subject := "Redefinição de Senha"
+	message := []byte(fmt.Sprintf(
+		"Subject: %s\r\nMIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n%s",
+		subject, body.String()))
+
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+	return smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{user.Email}, message)
+}
+
+func (s *AuthService) InitiatePasswordReset(email string) error {
+	user, err := s.AuthRepo.FindUserByEmail(email)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	resetToken, err := s.GeneratePasswordResetToken(user.ID)
+	if err != nil {
+		return err
+	}
+
+	return s.SendPasswordResetEmail(user, resetToken)
+}
+
+func (s *AuthService) ChangePassword(userID string, newPassword string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return s.AuthRepo.UpdateUserPassword(userID, string(hashedPassword))
+}

@@ -98,3 +98,9 @@ type UserClaims struct {
 	AdminStatus string `json:"admin_status"`
 	jwt.RegisteredClaims
 }
+
+type PasswordResetClaims struct {
+	jwt.RegisteredClaims
+	UserID          string `json:"user_id"`
+	IsPasswordReset bool   `json:"is_password_reset"`
+}

@@ -32,6 +32,7 @@ var (
 	systemEmail    string
 	emailPass      string
 	masterUserPass string
+	siteURL        string
 )
 
 func LoadConfig() *Config {
@@ -50,6 +51,7 @@ func LoadConfig() *Config {
 	systemEmail = os.Getenv("SCTI_EMAIL")
 	masterUserPass = os.Getenv("MASTER_USER_PASS")
 	emailPass = os.Getenv("SCTI_APP_PASSWORD")
+	siteURL = os.Getenv("SITE_URL")
 
 	dsn = fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=America/Sao_Paulo", server_host, db_user, db_pass, db, db_port)
 
@@ -107,4 +109,8 @@ func GetSystemEmailPass() string {
 
 func GetMasterUserPass() string {
 	return masterUserPass
+}
+
+func GetSiteURL() string {
+	return siteURL
 }
