@@ -166,3 +166,19 @@ func (r *AuthRepo) GetAllAdminStatusFromUser(userID string) ([]models.AdminStatu
 	}
 	return adminStatuses, nil
 }
+
+func (r *AuthRepo) UpdateUserPassword(userID string, hashedPassword string) error {
+	result := r.DB.Model(&models.UserPass{}).
+		Where("id = ?", userID).
+		Update("password", hashedPassword)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}

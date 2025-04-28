@@ -257,6 +257,23 @@ func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 // @Router       /verify-tokens [post]
 func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	var secretKey string = config.GetJWTSecret()
+	resetHeader := r.Header.Get("Reset")
+	if resetHeader != "" {
+		resetToken := strings.TrimPrefix(resetHeader, "Bearer ")
+		claims := &models.PasswordResetClaims{}
+		token, err := jwt.ParseWithClaims(resetToken, claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte(secretKey), nil
+		})
+
+		if err != nil || !token.Valid || !claims.IsPasswordReset {
+			u.SendError(w, []string{"invalid reset token"}, "auth-stack", http.StatusUnauthorized)
+			return
+		}
+
+		u.SendSuccess(w, claims, "valid reset token", http.StatusOK)
+		return
+	}
+
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		u.SendError(w, []string{"\"Authorization\" header is required"}, "auth-stack", http.StatusBadRequest)
@@ -312,4 +329,59 @@ func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.SendSuccess(w, nil, "success", http.StatusOK)
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		u.SendError(w, []string{"error reading json: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.AuthService.InitiatePasswordReset(req.Email); err != nil {
+		u.SendError(w, []string{err.Error()}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	u.SendSuccess(w, nil, "password reset email sent", http.StatusOK)
+}
+
+type ChangePasswordRequest struct {
+	NewPassword string `json:"new_password"`
+}
+
+func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var secretKey string = config.GetJWTSecret()
+	resetToken := r.URL.Query().Get("token")
+	if resetToken == "" {
+		u.SendError(w, []string{"missing reset token"}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		u.SendError(w, []string{"invalid request"}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	claims := &models.PasswordResetClaims{}
+	token, err := jwt.ParseWithClaims(resetToken, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+
+	if err != nil || !token.Valid || !claims.IsPasswordReset {
+		u.SendError(w, []string{"invalid or expired reset token"}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.AuthService.ChangePassword(claims.UserID, req.NewPassword); err != nil {
+		u.SendError(w, []string{err.Error()}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	u.SendSuccess(w, nil, "password changed successfully", http.StatusOK)
 }
