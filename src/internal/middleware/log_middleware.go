@@ -3,7 +3,6 @@ package middleware
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -140,68 +139,52 @@ func LoggingMiddleware(next http.Handler, logsDir string) http.Handler {
 			strings.HasPrefix(r.URL.Path, "/change-password") ||
 			strings.HasPrefix(r.URL.Path, "/refresh-tokens") ||
 			strings.HasPrefix(r.URL.Path, "/revoke-refresh-token") {
-			// Auth routes go to system_logs.json
-			writeToSystemLog(logsDir, logEntry, &authMutex)
+			// Auth routes go to system.log
+			writeLogLine(logsDir, "system.log", logEntry, &authMutex)
 		} else if matches := eventRegex.FindStringSubmatch(r.URL.Path); len(matches) > 1 {
-			// Event routes go to events/{slug}_logs.json
+			// Event routes go to events/{slug}.log
 			slug := matches[1]
-			writeToEventLog(logsDir, slug, logEntry, &eventMutexes, &eventMutexLock)
+
+			eventMutexLock.Lock()
+			mutex, exists := eventMutexes[slug]
+			if !exists {
+				mutex = &sync.Mutex{}
+				eventMutexes[slug] = mutex
+			}
+			eventMutexLock.Unlock()
+
+			writeLogLine(logsDir, fmt.Sprintf("events/%s.log", slug), logEntry, mutex)
 		} else {
-			// Any other route goes to system_logs.json
-			writeToSystemLog(logsDir, logEntry, &authMutex)
+			// Any other route goes to system.log
+			writeLogLine(logsDir, "system.log", logEntry, &authMutex)
 		}
 	})
 }
 
-func writeToSystemLog(logsDir string, entry LogEntry, mutex *sync.Mutex) {
+func writeLogLine(logsDir, fileName string, entry LogEntry, mutex *sync.Mutex) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	logFilePath := filepath.Join(logsDir, "system_logs.json")
-	writeLogEntry(logFilePath, entry)
-}
+	logFilePath := filepath.Join(logsDir, fileName)
 
-func writeToEventLog(logsDir string, slug string, entry LogEntry, mutexes *map[string]*sync.Mutex, mutexLock *sync.Mutex) {
-	mutexLock.Lock()
-	mutex, exists := (*mutexes)[slug]
-	if !exists {
-		mutex = &sync.Mutex{}
-		(*mutexes)[slug] = mutex
-	}
-	mutexLock.Unlock()
-
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	logFilePath := filepath.Join(logsDir, "events", fmt.Sprintf("%s_logs.json", slug))
-	writeLogEntry(logFilePath, entry)
-}
-
-func writeLogEntry(filePath string, entry LogEntry) {
-	var entries []LogEntry
-
-	if file, err := os.OpenFile(filePath, os.O_RDONLY, 0644); err == nil {
-		defer file.Close()
-
-		data, err := io.ReadAll(file)
-		if err == nil && len(data) > 0 {
-			err = json.Unmarshal(data, &entries)
-			if err != nil {
-				entries = []LogEntry{}
-			}
-		}
-	}
-
-	entries = append(entries, entry)
-
-	data, err := json.MarshalIndent(entries, "", "  ")
+	// Create the file if it doesn't exist
+	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Printf("Error marshaling log entries: %v\n", err)
+		fmt.Printf("Error opening log file %s: %v\n", logFilePath, err)
+		return
+	}
+	defer file.Close()
+
+	// Marshal log entry to JSON
+	data, err := json.Marshal(entry)
+	if err != nil {
+		fmt.Printf("Error marshaling log entry: %v\n", err)
 		return
 	}
 
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
-		fmt.Printf("Error writing to log file %s: %v\n", filePath, err)
+	// Write as a single line with newline
+	if _, err := file.Write(append(data, '\n')); err != nil {
+		fmt.Printf("Error writing to log file %s: %v\n", logFilePath, err)
 	}
 }
 
