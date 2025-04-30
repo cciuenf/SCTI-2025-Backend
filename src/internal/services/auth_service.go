@@ -291,6 +291,8 @@ func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 		"email":        user.Email,
 		"admin_status": adminMap,
 		"is_verified":  user.IsVerified,
+		"is_master":    user.IsMasterUser,
+		"is_super":     user.IsSuperUser,
 		"exp":          time.Now().Add(5 * time.Minute).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
