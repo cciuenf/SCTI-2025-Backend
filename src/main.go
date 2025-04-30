@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"scti/config"
 	"scti/internal/db"
 	"scti/internal/handlers"
@@ -30,17 +32,25 @@ func main() {
 
 	mux := initializeMux(database, cfg)
 
+	logsDir := "logs"
+	if err := os.MkdirAll(logsDir, 0755); err != nil {
+		log.Printf("Error creating logs directory: %v\n", err)
+	}
+
+	loggingMux := mw.WithLogging(mux, logsDir)
+
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // change to localhost:PORT of frontend
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
-	}).Handler(mux)
+	}).Handler(loggingMux)
 
 	if cfg.PORT == "" {
 		cfg.PORT = "8080"
 	}
 	log.Println("Started server on port: " + cfg.PORT)
+	log.Println("Request logs will be saved to: " + filepath.Join(logsDir))
 	log.Fatal(http.ListenAndServe(":"+cfg.PORT, corsHandler))
 }
 

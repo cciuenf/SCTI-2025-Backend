@@ -258,7 +258,7 @@ func (s *AuthService) RevokeRefreshToken(userID, tokenStr string) error {
 
 func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
 	statuses, err := s.AuthRepo.GetAllAdminStatusFromUser(userID)
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return "", err
 	}
 
@@ -280,8 +280,12 @@ func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
 
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	adminMap, err := s.MakeJSONAdminMap(user.ID)
-	if err != nil {
+	if err != nil && err.Error() != "user has no admin status" {
 		return "", err
+	}
+
+	if adminMap == "" {
+		adminMap = "{}"
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

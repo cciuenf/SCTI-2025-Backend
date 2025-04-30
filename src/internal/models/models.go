@@ -141,12 +141,8 @@ type UserToken struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-// QRCode model (preserved from original code)
 type QRCode struct {
-	ID        string    `gorm:"type:varchar(36);primaryKey" json:"id"`
-	Code      string    `gorm:"type:varchar(100);unique;not null" json:"code"`
-	UserID    string    `gorm:"type:varchar(36);index" json:"user_id"`
-	ExpiresAt time.Time `json:"expires_at"`
+	UserID string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

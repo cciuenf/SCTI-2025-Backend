@@ -149,7 +149,7 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 	return activity, nil
 }
 
-// TODO: Prohibit deleting activities that have attendees or paid participants
+// TODO: Prohibit deleting activities that have/had attendees or paid participants
 func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -179,7 +179,6 @@ func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string
 	return nil
 }
 
-// TODO: Implement token logic for only allowing user with tokens to register to an activity with a fee
 func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -237,7 +236,6 @@ func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug str
 	return nil
 }
 
-// TODO: Prohibit unregistering from activities that they have already attended or paid for
 func (s *ActivityService) UnregisterUserFromActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -327,7 +325,6 @@ func (s *ActivityService) RegisterUserToStandaloneActivity(user models.User, eve
 	return nil
 }
 
-// TODO: Prohibit unregistering from activities that they have already attended or paid for
 func (s *ActivityService) UnregisterUserFromStandaloneActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {

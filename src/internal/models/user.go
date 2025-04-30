@@ -86,6 +86,8 @@ type UserClaims struct {
 	LastName    string `json:"last_name"`
 	IsVerified  bool   `json:"is_verified"`
 	AdminStatus string `json:"admin_status"`
+	IsMaster    bool   `json:"is_master"`
+	IsSuper     bool   `json:"is_super"`
 	jwt.RegisteredClaims
 }
 

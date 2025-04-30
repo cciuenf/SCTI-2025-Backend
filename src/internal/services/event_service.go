@@ -93,8 +93,6 @@ func (s *EventService) UpdateEvent(user models.User, slug string, newData *model
 	return event, err
 }
 
-// TODO: Prohibit deletion if any product from the event was bought or any user attended any activity
-// This includes if the only bought product is a ticket from outside the event for a standalone activity
 func (s *EventService) DeleteEvent(user models.User, slug string) error {
 	event, err := s.EventRepo.GetEventBySlug(slug)
 	if err != nil {
@@ -141,8 +139,6 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 	return s.EventRepo.CreateEventRegistration(&registration)
 }
 
-// TODO: Prohibit unregistration if the user paid for any product from the event
-// Also if the user attended any activity from the event
 func (s *EventService) UnregisterUserFromEvent(user models.User, slug string) error {
 	event, err := s.EventRepo.GetEventBySlug(slug)
 	if err != nil {
