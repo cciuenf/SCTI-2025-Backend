@@ -13,7 +13,7 @@ func Migrate() {
 		&models.UserPass{},
 		&models.RefreshToken{},
 		&models.Event{},
-		&models.EventUser{},
+		&models.EventRegistration{},
 		&models.AdminStatus{},
 		&models.UserVerification{},
 		&models.Activity{},

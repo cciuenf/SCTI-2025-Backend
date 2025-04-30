@@ -3,190 +3,446 @@ package services
 import (
 	"errors"
 	"scti/internal/models"
+	repos "scti/internal/repositories"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
-func (s *EventService) CreateEventActivity(activity *models.Activity, Slug string) error {
-	slug := strings.ToLower(Slug)
-	event, err := s.EventRepo.GetEventBySlug(slug)
-	if err != nil {
-		return err
-	}
-
-	if activity.Type != models.ActivityMiniCurso &&
-		activity.Type != models.ActivityPalestra &&
-		activity.Type != models.ActivityVisitaTecnica {
-		return errors.New("unsupported activity type, should be either of {\"mini-curso\", \"palestra\", \"visita-tecnica\"}")
-	}
-
-	if activity.MaxCapacity < 0 {
-		return errors.New("max capacity can't be negative")
-	}
-
-	if activity.Name == "" {
-		return errors.New("activity name can't be empty")
-	}
-
-	if activity.Type == models.ActivityPalestra {
-		activity.IsMandatory = true
-	}
-
-	if activity.EndTime.Before(activity.StartTime) {
-		return errors.New("activity end can't be before its start")
-	}
-
-	if activity.StartTime.Before(event.StartDate) {
-		return errors.New("activity start can't be before its event start")
-	}
-
-	if activity.StartTime.After(event.EndDate) {
-		return errors.New("activity start can't be afetr event end")
-	}
-
-	if activity.EndTime.After(event.EndDate) {
-		return errors.New("activity end can't be after event end")
-	}
-
-	if activity.StartTime.Before(time.Now()) {
-		return errors.New("activities can't be created in the past")
-	}
-
-	if activity.HasFee && activity.IsMandatory {
-		return errors.New("activity can't be mandatory and have a fee")
-	}
-
-	activity.ID = uuid.New().String()
-	activity.EventSlug = &slug
-	activity.EventID = &event.ID
-
-	if activity.IsStandalone && activity.StandaloneSlug == "" {
-		return errors.New("an activity thats created as standalone needs a standalone_slug")
-	}
-
-	return s.EventRepo.CreateActivity(activity)
+type ActivityService struct {
+	ActivityRepo *repos.ActivityRepo
 }
 
-func (s *EventService) CreateEventlessActivity(activity *models.Activity) error {
-	if activity.Type != models.ActivityMiniCurso &&
-		activity.Type != models.ActivityPalestra &&
-		activity.Type != models.ActivityVisitaTecnica {
-		return errors.New("unsupported activity type, should be either of {\"mini-curso\", \"palestra\", \"visita-tecnica\"}")
+func NewActivityService(activityRepo *repos.ActivityRepo) *ActivityService {
+	return &ActivityService{
+		ActivityRepo: activityRepo,
+	}
+}
+
+func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string, req models.CreateActivityRequest) (*models.Activity, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
 	}
 
-	if activity.MaxCapacity < 0 {
-		return errors.New("max capacity can't be negative")
+	if event.CreatedBy != user.ID && !user.IsSuperUser {
+		isMasterAdmin, err := s.ActivityRepo.GetUserAdminStatusBySlug(user.ID, eventSlug)
+		if err != nil || isMasterAdmin.AdminType != models.AdminTypeMaster {
+			return nil, errors.New("unauthorized to create activities for this event")
+		}
 	}
 
-	if activity.Name == "" {
-		return errors.New("activity name can't be empty")
+	if req.EndTime.Before(req.StartTime) {
+		return nil, errors.New("activity end time cannot be before start time")
 	}
 
-	if activity.StartTime.Before(time.Now()) {
-		return errors.New("activities can't be created in the past")
+	if req.StartTime.Before(event.StartDate) || req.EndTime.After(event.EndDate) {
+		return nil, errors.New("activity must be scheduled within event timeframe")
 	}
 
-	if activity.EndTime.Before(activity.StartTime) {
-		return errors.New("activity end can't be before its start")
+	activity := models.Activity{
+		ID:                   uuid.New().String(),
+		EventID:              &event.ID,
+		Name:                 req.Name,
+		Description:          req.Description,
+		Speaker:              req.Speaker,
+		Location:             req.Location,
+		Type:                 req.Type,
+		StartTime:            req.StartTime,
+		EndTime:              req.EndTime,
+		HasUnlimitedCapacity: req.HasUnlimitedCapacity,
+		MaxCapacity:          req.MaxCapacity,
+		IsMandatory:          req.IsMandatory,
+		HasFee:               req.HasFee,
+		IsStandalone:         req.IsStandalone,
+		IsHidden:             req.IsHidden,
+		IsBlocked:            req.IsBlocked,
 	}
 
-	if activity.StandaloneSlug == "" {
-		return errors.New("a fully standalone activity needs a standalone_slug")
+	if req.IsStandalone {
+		if req.StandaloneSlug == "" {
+			return nil, errors.New("standalone activities must have a slug")
+		}
+		activity.StandaloneSlug = strings.ToLower(req.StandaloneSlug)
 	}
 
+	if err := s.ActivityRepo.CreateActivity(&activity); err != nil {
+		return nil, errors.New("failed to create activity: " + err.Error())
+	}
+
+	return &activity, nil
+}
+
+func (s *ActivityService) GetAllActivitiesFromEvent(eventSlug string) ([]models.Activity, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	activities, err := s.ActivityRepo.GetAllActivitiesFromEvent(event.ID)
+	if err != nil {
+		return nil, errors.New("failed to get activities: " + err.Error())
+	}
+
+	return activities, nil
+}
+
+func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string, activityID string, req models.CreateActivityRequest) (*models.Activity, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return nil, errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return nil, errors.New("activity does not belong to this event")
+	}
+
+	if event.CreatedBy != user.ID && !user.IsSuperUser {
+		isMasterAdmin, err := s.ActivityRepo.GetUserAdminStatusBySlug(user.ID, eventSlug)
+		if err != nil || isMasterAdmin.AdminType != models.AdminTypeMaster {
+			return nil, errors.New("unauthorized to update activities for this event")
+		}
+	}
+
+	if req.EndTime.Before(req.StartTime) {
+		return nil, errors.New("activity end time cannot be before start time")
+	}
+
+	if req.StartTime.Before(event.StartDate) || req.EndTime.After(event.EndDate) {
+		return nil, errors.New("activity must be scheduled within event timeframe")
+	}
+
+	activity.Name = req.Name
+	activity.Description = req.Description
+	activity.Speaker = req.Speaker
+	activity.Location = req.Location
+	activity.Type = req.Type
+	activity.StartTime = req.StartTime
+	activity.EndTime = req.EndTime
+	activity.HasUnlimitedCapacity = req.HasUnlimitedCapacity
+	activity.MaxCapacity = req.MaxCapacity
+	activity.IsMandatory = req.IsMandatory
+	activity.HasFee = req.HasFee
+	activity.IsHidden = req.IsHidden
+	activity.IsBlocked = req.IsBlocked
+
+	if req.IsStandalone {
+		if req.StandaloneSlug == "" {
+			return nil, errors.New("standalone activities must have a slug")
+		}
+		activity.IsStandalone = true
+		activity.StandaloneSlug = strings.ToLower(req.StandaloneSlug)
+	} else {
+		activity.IsStandalone = false
+		activity.StandaloneSlug = ""
+	}
+
+	if err := s.ActivityRepo.UpdateActivity(activity); err != nil {
+		return nil, errors.New("failed to update activity: " + err.Error())
+	}
+
+	return activity, nil
+}
+
+// TODO: Prohibit deleting activities that have attendees or paid participants
+func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string, activityID string) error {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return errors.New("activity does not belong to this event")
+	}
+
+	if event.CreatedBy != user.ID && !user.IsSuperUser {
+		isMasterAdmin, err := s.ActivityRepo.GetUserAdminStatusBySlug(user.ID, eventSlug)
+		if err != nil || isMasterAdmin.AdminType != models.AdminTypeMaster {
+			return errors.New("unauthorized to delete activities for this event")
+		}
+	}
+
+	if err := s.ActivityRepo.DeleteActivity(activityID); err != nil {
+		return errors.New("failed to delete activity: " + err.Error())
+	}
+
+	return nil
+}
+
+// TODO: Implement token logic for only allowing user with tokens to register to an activity with a fee
+func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug string, activityID string) error {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return errors.New("activity does not belong to this event")
+	}
+
+	isRegistered, err := s.ActivityRepo.IsUserRegisteredToEvent(user.ID, eventSlug)
+	if err != nil {
+		return errors.New("error checking event registration: " + err.Error())
+	}
+
+	if !isRegistered {
+		return errors.New("user must be registered to the event first")
+	}
+
+	if !activity.HasUnlimitedCapacity {
+		currentRegistrations, maxCapacity, err := s.ActivityRepo.GetActivityCapacity(activityID)
+		if err != nil {
+			return errors.New("error checking activity capacity: " + err.Error())
+		}
+
+		if currentRegistrations >= maxCapacity {
+			return errors.New("activity has reached maximum capacity")
+		}
+	}
+
+	if activity.IsBlocked {
+		return errors.New("activity is currently blocked")
+	}
+
+	// TODO: Implement token logic for only allowing user with tokens to register to an activity with a fee
 	if activity.HasFee {
-		return errors.New("a fully standalone activity can't have a fee")
+		return errors.New("this activity requires a token or payment")
 	}
 
-	if activity.IsMandatory {
-		return errors.New("a fully standalone activity can't be mandatory")
+	registration := &models.ActivityRegistration{
+		ActivityID:   activityID,
+		UserID:       user.ID,
+		AccessMethod: string(models.AccessMethodEvent), // Registered through event registration
 	}
 
-	activity.ID = uuid.New().String()
-	activity.EventSlug = nil
-	activity.EventID = nil
-	activity.IsStandalone = true
+	if err := s.ActivityRepo.RegisterUserToActivity(registration); err != nil {
+		return errors.New("failed to register to activity: " + err.Error())
+	}
 
-	return s.EventRepo.CreateActivity(activity)
+	return nil
 }
 
-// TODO: Implement check with blocked_by, and check with has_fee
-func (s *EventService) RegisterUserToStandaloneActivity(user models.User, activityID string) error {
-	activity, err := s.EventRepo.GetActivityByID(activityID)
+// TODO: Prohibit unregistering from activities that they have already attended or paid for
+func (s *ActivityService) UnregisterUserFromActivity(user models.User, eventSlug string, activityID string) error {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
-		return err
+		return errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return errors.New("activity does not belong to this event")
+	}
+
+	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)
+	if err != nil {
+		return errors.New("error checking activity registration: " + err.Error())
+	}
+
+	if !isRegistered {
+		return errors.New("user is not registered to this activity")
+	}
+
+	// TODO: Prohibit unregistering from activities that they have already attended
+
+	// TODO: Prohibit unregistering from activities that they have already paid for
+
+	if activity.IsBlocked {
+		return errors.New("activity is currently blocked")
+	}
+
+	if err := s.ActivityRepo.UnregisterUserFromActivity(activityID, user.ID); err != nil {
+		return errors.New("failed to unregister from activity: " + err.Error())
+	}
+
+	return nil
+}
+
+// TODO: When user buys the ticket to a standalone activity, we need to register them to the activity automatically
+// so when that logic is implemented, we can remove the need to call this function and delete it
+func (s *ActivityService) RegisterUserToStandaloneActivity(user models.User, eventSlug string, activityID string) error {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return errors.New("activity does not belong to this event")
 	}
 
 	if !activity.IsStandalone {
-		return errors.New("this isn't a standalone activity")
+		return errors.New("this activity does not support standalone registration")
 	}
 
-	return s.EventRepo.RegisterUserToStandaloneActivity(user, activity)
-}
-
-// TODO: Implement check with blocked_by, and check with has_fee if registering through event
-func (s *EventService) RegisterUserToActivityFromEvent(user models.User, activityID string) error {
-	activity, err := s.EventRepo.GetActivityByID(activityID)
-	if err != nil {
-		return err
-	}
-
-	if activity.EventID == nil || activity.EventSlug == nil {
-		return errors.New("this is a fully standalone activity, use the correct endpoint")
-	}
-
-	status, err := s.EventRepo.IsUserRegisteredToEvent(user.ID, *activity.EventSlug)
-	if err != nil {
-		return err
-	}
-	if !status {
-		return errors.New("user is not registered to the event of the activity")
-	}
-
-	event, err := s.EventRepo.GetEventBySlug(*activity.EventSlug)
-	if err != nil {
-		return err
-	}
-
-	return s.EventRepo.RegisterUserToActivityFromEvent(user, activity, event)
-}
-
-// TODO: don't let paid users from a standalone activity that registered to it outside an event unregister
-func (s *EventService) UnregisterUserFromActivity(user models.User, activityID string) error {
-	activity, err := s.EventRepo.GetActivityByID(activityID)
-	if err != nil {
-		return err
-	}
-
-	registration, err := s.EventRepo.GetActivityRegistrationByID(activity.ID, user.ID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.New("user is already unregistered from activity")
-		}
-		return err
-	}
-
-	if registration.HasAttended {
-		return errors.New("can't unregister from an activity that user has attended")
-	}
-
-	if registration.RegisteredFromEvent {
-		status, err := s.EventRepo.IsUserRegisteredToEvent(user.ID, *activity.EventSlug)
+	if !activity.HasUnlimitedCapacity {
+		currentRegistrations, maxCapacity, err := s.ActivityRepo.GetActivityCapacity(activityID)
 		if err != nil {
-			return err
+			return errors.New("error checking activity capacity: " + err.Error())
 		}
-		if !status {
-			return errors.New("can't unregister from activity if not attending the event")
+
+		if currentRegistrations >= maxCapacity {
+			return errors.New("activity has reached maximum capacity")
 		}
 	}
 
-	return s.EventRepo.UnregisterUserFromActivity(user, activity)
+	if activity.IsBlocked {
+		return errors.New("activity is currently blocked")
+	}
+
+	registration := &models.ActivityRegistration{
+		ActivityID:               activityID,
+		UserID:                   user.ID,
+		IsStandaloneRegistration: true,
+		AccessMethod:             string(models.AccessMethodDirect), // Direct registration without event registration
+	}
+
+	if err := s.ActivityRepo.RegisterUserToActivity(registration); err != nil {
+		return errors.New("failed to register to activity: " + err.Error())
+	}
+
+	return nil
 }
 
-func (s *EventService) GetAllEventActivities(Slug string) ([]models.Activity, error) {
-	slug := strings.ToLower(Slug)
-	return s.EventRepo.GetAllEventActivities(slug)
+// TODO: Prohibit unregistering from activities that they have already attended or paid for
+func (s *ActivityService) UnregisterUserFromStandaloneActivity(user models.User, eventSlug string, activityID string) error {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return errors.New("activity does not belong to this event")
+	}
+
+	if !activity.IsStandalone {
+		return errors.New("this activity does not support standalone registration")
+	}
+
+	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)
+	if err != nil {
+		return errors.New("error checking activity registration: " + err.Error())
+	}
+
+	if !isRegistered {
+		return errors.New("user is not registered to this activity")
+	}
+
+	// TODO: Prohibit unregistering from activities that they have already attended
+
+	// TODO: Prohibit unregistering from activities that they have already paid for
+
+	if activity.IsBlocked {
+		return errors.New("activity is currently blocked")
+	}
+
+	if err := s.ActivityRepo.UnregisterUserFromActivity(activityID, user.ID); err != nil {
+		return errors.New("failed to unregister from activity: " + err.Error())
+	}
+
+	return nil
+}
+
+func (s *ActivityService) AttendActivity(admin models.User, eventSlug string, activityID string, userID string) error {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return errors.New("activity does not belong to this event")
+	}
+
+	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
+		adminStatus, err := s.ActivityRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return errors.New("unauthorized: only admins can mark attendance")
+		}
+	}
+
+	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, userID)
+	if err != nil {
+		return errors.New("error checking activity registration: " + err.Error())
+	}
+
+	if !isRegistered {
+		return errors.New("user is not registered to this activity")
+	}
+
+	if err := s.ActivityRepo.SetUserAttendance(activityID, userID, true); err != nil {
+		return errors.New("failed to mark attendance: " + err.Error())
+	}
+
+	return nil
+}
+
+func (s *ActivityService) UnattendActivity(admin models.User, eventSlug string, activityID string, userID string) error {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return errors.New("activity does not belong to this event")
+	}
+
+	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
+		adminStatus, err := s.ActivityRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
+		if err != nil || adminStatus.AdminType != models.AdminTypeMaster {
+			return errors.New("unauthorized: only master admins, event creators, or super users can remove attendance")
+		}
+	}
+
+	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, userID)
+	if err != nil {
+		return errors.New("error checking activity registration: " + err.Error())
+	}
+
+	if !isRegistered {
+		return errors.New("user is not registered to this activity")
+	}
+
+	if err := s.ActivityRepo.SetUserAttendance(activityID, userID, false); err != nil {
+		return errors.New("failed to remove attendance: " + err.Error())
+	}
+
+	return nil
 }

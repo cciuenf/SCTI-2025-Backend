@@ -48,7 +48,7 @@ func (r *AuthRepo) DeleteUserVerification(userID string) error {
 	return r.DB.Where("id = ?", userID).Unscoped().Delete(&models.UserVerification{}).Error
 }
 
-func (r *AuthRepo) CreateMasterUser() {
+func (r *AuthRepo) CreateSuperUser() {
 	var existingUser models.User
 	err := r.DB.Where("email = ?", config.GetSystemEmail()).First(&existingUser).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -72,6 +72,7 @@ func (r *AuthRepo) CreateMasterUser() {
 			Password: string(hashedPassword),
 		},
 		IsMasterUser: true,
+		IsSuperUser:  true,
 	}
 
 	err = r.DB.Create(MasterUser).Error

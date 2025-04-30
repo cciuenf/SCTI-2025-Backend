@@ -29,3 +29,9 @@ type EventStandardErrorResponse struct {
 	Stack   string   `json:"stack,omitempty" example:"event-stack"`
 	Errors  []string `json:"errors" example:"some error message"`
 }
+
+type ActivityStandardErrorResponse struct {
+	Success bool     `json:"success" example:"false"`
+	Stack   string   `json:"stack,omitempty" example:"activity-stack"`
+	Errors  []string `json:"errors" example:"some error message"`
+}

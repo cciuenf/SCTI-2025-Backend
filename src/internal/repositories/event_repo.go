@@ -16,139 +16,58 @@ func NewEventRepo(db *gorm.DB) *EventRepo {
 }
 
 func (r *EventRepo) CreateEvent(event *models.Event) error {
-	if err := r.DB.Create(event).Error; err != nil {
-		return err
-	}
-	return nil
+	return r.DB.Create(event).Error
 }
 
-func (r *EventRepo) GetEventByID(eventID string) (models.Event, error) {
+func (r *EventRepo) GetEventBySlug(slug string) (*models.Event, error) {
 	var event models.Event
-	if err := r.DB.Where("id = ?", eventID).First(&event).Error; err != nil {
-		return models.Event{}, err
+	if err := r.DB.Where("slug = ? AND is_hidden = ?", slug, false).First(&event).Error; err != nil {
+		return nil, err
 	}
-	return event, nil
+	return &event, nil
 }
 
 func (r *EventRepo) GetAllEvents() ([]models.Event, error) {
 	var events []models.Event
-	if err := r.DB.Find(&events).Error; err != nil {
+	if err := r.DB.Where("is_hidden = ?", false).Find(&events).Error; err != nil {
 		return nil, err
 	}
 	return events, nil
 }
 
-func (r *EventRepo) GetEventBySlug(slug string) (models.Event, error) {
-	var event models.Event
-	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
-		return models.Event{}, err
-	}
-	return event, nil
-}
-
-func (r *EventRepo) GetEventBySlugWithActivities(slug string) (models.Event, error) {
-	var event models.Event
-	if err := r.DB.Preload("Activities").Where("slug = ?", slug).First(&event).Error; err != nil {
-		return models.Event{}, err
-	}
-	return event, nil
-}
-
-func (r *EventRepo) ExistsEventBySlug(slug string) (bool, error) {
-	var event models.Event
-	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func (r *EventRepo) ExistsEventByID(eventID string) (bool, error) {
-	var event models.Event
-	if err := r.DB.Where("id = ?", eventID).First(&event).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
 func (r *EventRepo) UpdateEvent(event *models.Event) error {
-	if err := r.DB.Save(event).Error; err != nil {
-		return err
-	}
-	return nil
+	return r.DB.Save(event).Error
 }
 
-func (r *EventRepo) DeleteEventBySlug(slug string) error {
-	if err := r.DB.Where("slug = ?", slug).Delete(&models.Event{}).Error; err != nil {
-		return err
-	}
-	return nil
+func (r *EventRepo) DeleteEvent(slug string) error {
+	return r.DB.Where("slug = ?", slug).Delete(&models.Event{}).Error
 }
 
-func (r *EventRepo) GetUserByID(userID string) (models.User, error) {
-	var user models.User
-	if err := r.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		return models.User{}, err
-	}
-	return user, nil
+func (r *EventRepo) CreateEventRegistration(registration *models.EventRegistration) error {
+	return r.DB.Create(registration).Error
 }
 
-func (r *EventRepo) GetUserByEmail(email string) (models.User, error) {
-	var user models.User
-	if err := r.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		return models.User{}, err
-	}
-	return user, nil
+func (r *EventRepo) DeleteEventRegistration(userID string, eventID string) error {
+	return r.DB.Where("user_id = ? AND event_id = ?", userID, eventID).
+		Delete(&models.EventRegistration{}).Error
 }
 
-func (r *EventRepo) ExistsUserByID(userID string) (bool, error) {
-	var user models.User
-	if err := r.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
+func (r *EventRepo) IsUserRegisteredToEvent(userID string, slug string) (bool, error) {
+	var event models.Event
+	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
 		return false, err
 	}
-	return true, nil
-}
 
-func (r *EventRepo) GetUserEventRegistration(user models.User, event models.Event) (*models.EventUser, error) {
-	var eventUser models.EventUser
-	err := r.DB.Where(
-		"user_id = ? AND event_id = ? AND event_slug = ?",
-		user.ID,
-		event.ID,
-		event.Slug,
-	).First(&eventUser).Error
+	var count int64
+	err := r.DB.Model(&models.EventRegistration{}).
+		Where("user_id = ? AND event_id = ?", userID, event.ID).
+		Count(&count).Error
+
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	return &eventUser, err
-}
 
-func (r *EventRepo) RegisterToEvent(user models.User, event models.Event) error {
-	eventUser := models.EventUser{
-		UserID:    user.ID,
-		EventID:   event.ID,
-		EventSlug: event.Slug,
-	}
-	return r.DB.Create(&eventUser).Error
-}
-
-func (r *EventRepo) UnregisterFromEvent(registration *models.EventUser) error {
-	return r.DB.
-		Unscoped().
-		Where(
-			"event_id = ? AND event_slug = ? AND user_id = ?",
-			registration.EventID,
-			registration.EventSlug,
-			registration.UserID,
-		).Delete(&models.EventUser{}).Error
+	return count > 0, nil
 }
 
 func (r *EventRepo) GetEventAttendeesBySlug(slug string) (*[]models.User, error) {
@@ -163,56 +82,28 @@ func (r *EventRepo) GetEventAttendeesBySlug(slug string) (*[]models.User, error)
 	return &event.Attendees, nil
 }
 
-func (r *EventRepo) GetAtendeeByIDAndSlug(userID, slug string) (*models.EventUser, error) {
-	var eventUser *models.EventUser
-	if err := r.DB.Where("user_id = ? and event_slug = ?", userID, slug).First(&eventUser).Error; err != nil {
-		return nil, err
-	}
-	return eventUser, nil
-}
-
-func (r *EventRepo) IsUserRegisteredToEvent(userID string, slug string) (bool, error) {
-	var eventUser models.EventUser
-	if err := r.DB.Where("user_id = ? AND event_slug = ?", userID, slug).First(&eventUser).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
 func (r *EventRepo) GetUserAdminStatusBySlug(userID string, slug string) (*models.AdminStatus, error) {
-	var adminStatus models.AdminStatus
-	if err := r.DB.Where("user_id = ? AND event_slug = ?", userID, slug).First(&adminStatus).Error; err != nil {
+	var event models.Event
+	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
 		return nil, err
 	}
+
+	var adminStatus models.AdminStatus
+	if err := r.DB.Where("user_id = ? AND event_id = ?", userID, event.ID).First(&adminStatus).Error; err != nil {
+		return nil, err
+	}
+
 	return &adminStatus, nil
 }
 
-func (r *EventRepo) MakeAdminOfEventBySlug(userID string, slug string) error {
+func (r *EventRepo) PromoteUserOfEventBySlug(userID string, slug string) error {
 	var event models.Event
 	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
 		return err
 	}
 
-	adminStatus := models.AdminStatus{
-		UserID:    userID,
-		EventID:   event.ID,
-		EventSlug: event.Slug,
-		AdminType: models.AdminTypeNormal,
-	}
-
-	if err := r.DB.Create(&adminStatus).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *EventRepo) PromoteUserOfEventBySlug(userID string, slug string) error {
 	var adminStatus models.AdminStatus
-	if err := r.DB.Where("user_id = ? AND event_slug = ?", userID, slug).First(&adminStatus).Error; err != nil {
+	if err := r.DB.Where("user_id = ? AND event_id = ?", userID, event.ID).First(&adminStatus).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return errors.New("a user that is not an admin can't be promoted")
 		}
@@ -232,9 +123,14 @@ func (r *EventRepo) PromoteUserOfEventBySlug(userID string, slug string) error {
 	return nil
 }
 
-func (r *EventRepo) DemoteUserOfEventBySlug(userID, slug string) error {
+func (r *EventRepo) DemoteUserOfEventBySlug(userID string, slug string) error {
+	var event models.Event
+	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
+		return err
+	}
+
 	var adminStatus models.AdminStatus
-	if err := r.DB.Where("user_id = ? AND event_slug = ?", userID, slug).First(&adminStatus).Error; err != nil {
+	if err := r.DB.Where("user_id = ? AND event_id = ?", userID, event.ID).First(&adminStatus).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return errors.New("a user that is not an admin can't be demoted")
 		}
@@ -254,9 +150,33 @@ func (r *EventRepo) DemoteUserOfEventBySlug(userID, slug string) error {
 	return nil
 }
 
+func (r *EventRepo) MakeAdminOfEventBySlug(userID string, slug string) error {
+	var event models.Event
+	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
+		return err
+	}
+
+	adminStatus := models.AdminStatus{
+		UserID:    userID,
+		EventID:   event.ID,
+		AdminType: models.AdminTypeNormal,
+	}
+
+	if err := r.DB.Create(&adminStatus).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *EventRepo) RemoveAdminOfEventBySlug(userID string, slug string) error {
+	var event models.Event
+	if err := r.DB.Where("slug = ?", slug).First(&event).Error; err != nil {
+		return err
+	}
+
 	var adminStatus models.AdminStatus
-	if err := r.DB.Where("user_id = ? AND event_slug = ?", userID, slug).First(&adminStatus).Error; err != nil {
+	if err := r.DB.Where("user_id = ? AND event_id = ?", userID, event.ID).First(&adminStatus).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return errors.New("user already not an admin")
 		}
@@ -268,4 +188,20 @@ func (r *EventRepo) RemoveAdminOfEventBySlug(userID string, slug string) error {
 	}
 
 	return nil
+}
+
+func (r *EventRepo) GetUserByID(userID string) (models.User, error) {
+	var user models.User
+	if err := r.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
+
+func (r *EventRepo) GetUserByEmail(email string) (models.User, error) {
+	var user models.User
+	if err := r.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return models.User{}, err
+	}
+	return user, nil
 }

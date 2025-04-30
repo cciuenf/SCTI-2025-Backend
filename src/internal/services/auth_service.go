@@ -262,23 +262,20 @@ func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
 		return "", err
 	}
 
-	if statuses == nil {
+	if len(statuses) == 0 {
 		return "", errors.New("user has no admin status")
 	}
 
-	adminMap := make(map[string]map[string]string)
+	adminMap := make(map[string]string)
 	for _, status := range statuses {
-		if _, ok := adminMap[status.EventSlug]; !ok {
-			adminMap[status.EventSlug] = make(map[string]string)
-		}
-		adminMap[status.EventSlug][string(status.AdminType)] = status.EventID
+		adminMap[status.EventID] = string(status.AdminType)
 	}
 
-	jsonString, err := json.Marshal(adminMap)
+	jsonBytes, err := json.Marshal(adminMap)
 	if err != nil {
 		return "", err
 	}
-	return string(jsonString), nil
+	return string(jsonBytes), nil
 }
 
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
