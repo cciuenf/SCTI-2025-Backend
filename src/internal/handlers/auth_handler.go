@@ -242,6 +242,23 @@ func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refreshHeader := r.Header.Get("Refresh")
+	refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
+	err = h.AuthService.Logout(user.ID, refreshTokenString)
+	if err != nil {
+		u.SendError(w, []string{"error logging out:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	access_token, refresh_token, err := h.AuthService.GenerateTokenPair(user, r)
+	if err != nil {
+		u.SendError(w, []string{"error generating token pair:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("X-New-Access-Token", access_token)
+	w.Header().Set("X-New-Refresh-Token", refresh_token)
+
 	u.SendSuccess(w, nil, "account verified", http.StatusOK)
 }
 
