@@ -258,33 +258,34 @@ func (s *AuthService) RevokeRefreshToken(userID, tokenStr string) error {
 
 func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
 	statuses, err := s.AuthRepo.GetAllAdminStatusFromUser(userID)
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return "", err
 	}
 
-	if statuses == nil {
+	if len(statuses) == 0 {
 		return "", errors.New("user has no admin status")
 	}
 
-	adminMap := make(map[string]map[string]string)
+	adminMap := make(map[string]string)
 	for _, status := range statuses {
-		if _, ok := adminMap[status.EventSlug]; !ok {
-			adminMap[status.EventSlug] = make(map[string]string)
-		}
-		adminMap[status.EventSlug][string(status.AdminType)] = status.EventID
+		adminMap[status.EventID] = string(status.AdminType)
 	}
 
-	jsonString, err := json.Marshal(adminMap)
+	jsonBytes, err := json.Marshal(adminMap)
 	if err != nil {
 		return "", err
 	}
-	return string(jsonString), nil
+	return string(jsonBytes), nil
 }
 
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	adminMap, err := s.MakeJSONAdminMap(user.ID)
-	if err != nil {
+	if err != nil && err.Error() != "user has no admin status" {
 		return "", err
+	}
+
+	if adminMap == "" {
+		adminMap = "{}"
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -294,6 +295,8 @@ func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 		"email":        user.Email,
 		"admin_status": adminMap,
 		"is_verified":  user.IsVerified,
+		"is_master":    user.IsMasterUser,
+		"is_super":     user.IsSuperUser,
 		"exp":          time.Now().Add(5 * time.Minute).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))

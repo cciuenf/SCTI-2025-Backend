@@ -20,6 +20,7 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"autoDeleteTime" json:"deleted_at,omitempty"`
 
 	IsMasterUser bool `gorm:"default:false" json:"is_master_user"`
+	IsSuperUser  bool `gorm:"default:false" json:"is_super_user"`
 
 	// Maybe do these
 	// IsUenf  bool   `json:"is_uenf"`
@@ -32,18 +33,13 @@ type User struct {
 	Tokens           []RefreshToken   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 }
 
+func (User) TableName() string {
+	return "users"
+}
+
 type UserPass struct {
 	ID       string `gorm:"type:varchar(36);primaryKey" json:"id"`
 	Password string `gorm:"not null" json:"password"`
-
-	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"autoDeleteTime" json:"deleted_at,omitempty"`
-}
-
-type UserVerification struct {
-	ID                 string `gorm:"type:varchar(36);primaryKey" json:"id"`
-	VerificationNumber int    `gorm:"not null" json:"verification_number"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
@@ -54,19 +50,13 @@ func (UserPass) TableName() string {
 	return "user_pass"
 }
 
-type AdminType string
+type UserVerification struct {
+	ID                 string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	VerificationNumber int    `gorm:"not null" json:"verification_number"`
 
-const (
-	AdminTypeMaster AdminType = "master_admin"
-	AdminTypeNormal AdminType = "admin"
-)
-
-type AdminStatus struct {
-	gorm.Model
-	UserID    string    `gorm:"type:varchar(36)"`
-	EventID   string    `gorm:"type:varchar(36)"`
-	EventSlug string    `gorm:"type:varchar(100)"`
-	AdminType AdminType `gorm:"type:varchar(20)"`
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"autoDeleteTime" json:"deleted_at,omitempty"`
 }
 
 type UserRegister struct {
@@ -96,6 +86,8 @@ type UserClaims struct {
 	LastName    string `json:"last_name"`
 	IsVerified  bool   `json:"is_verified"`
 	AdminStatus string `json:"admin_status"`
+	IsMaster    bool   `json:"is_master"`
+	IsSuper     bool   `json:"is_super"`
 	jwt.RegisteredClaims
 }
 

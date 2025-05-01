@@ -87,7 +87,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.CreateEventRequest"
+                            "$ref": "#/definitions/models.CreateEventRequest"
                         }
                     }
                 ],
@@ -129,49 +129,18 @@
                         }
                     }
                 }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Updates an existing event using its ID. Only master users can update events",
-                "consumes": [
-                    "application/json"
-                ],
+            }
+        },
+        "/events/public": {
+            "get": {
+                "description": "Returns a list of all public events (where IsPublic=true)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "events"
                 ],
-                "summary": "Update an event by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {access_token}",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer {refresh_token}",
-                        "name": "Refresh",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Event update info with ID",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.UpdateEventByIDRequest"
-                        }
-                    }
-                ],
+                "summary": "Get all public events",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -184,7 +153,10 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.Event"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Event"
+                                            }
                                         }
                                     }
                                 }
@@ -193,18 +165,6 @@
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/handlers.EventStandardErrorResponse"
                         }
@@ -367,7 +327,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.UpdateEventRequest"
+                            "$ref": "#/definitions/models.UpdateEventRequest"
                         }
                     }
                 ],
@@ -411,96 +371,17 @@
                 }
             }
         },
-        "/events/{slug}/attend": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Registers the authenticated user to an event by its slug",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "events"
-                ],
-                "summary": "Register to an event",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {access_token}",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer {refresh_token}",
-                        "name": "Refresh",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Event slug",
-                        "name": "slug",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/events/{slug}/attendees": {
+        "/events/{slug}/activities": {
             "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Returns a list of all user IDs registered to an event by its slug",
+                "description": "Returns all activities for the specified event",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "events"
+                    "activities"
                 ],
-                "summary": "Get event attendees",
+                "summary": "Get all activities for an event",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {access_token}",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer {refresh_token}",
-                        "name": "Refresh",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Event slug",
@@ -523,7 +404,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.EventUser"
+                                                "$ref": "#/definitions/models.Activity"
                                             }
                                         }
                                     }
@@ -534,13 +415,705 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Creates a new activity for the specified event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Create a new activity for an event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Activity creation info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateActivityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Activity"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes an existing activity from the specified event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Delete an activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Activity deletion info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityDeleteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Updates an existing activity for the specified event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Update an activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Activity update info with ID",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Activity"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity/attend": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Marks a user as having attended an activity (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Mark attendance for an activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Attendance info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity/register": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Registers the authenticated user to an activity within an event they are already registered for",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Register to an activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Activity registration info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity/register-standalone": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Registers the authenticated user to a standalone activity without requiring event registration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Register to a standalone activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Activity registration info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity/unattend": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Removes a user's attendance record for an activity (master admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Remove attendance for an activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Attendance info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity/unregister": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Unregisters the authenticated user from an activity within an event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Unregister from an activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Activity registration info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity/unregister-standalone": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Unregisters the authenticated user from a standalone activity",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Unregister from a standalone activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Activity registration info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
                         }
                     }
                 }
@@ -553,7 +1126,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Demotes a user from their admin role in an event. The following rules apply:\n- Only master users and master admins can demote others\n- Master users can demote any admin (master or normal)\n- Master admins can only demote normal admins\n- Users cannot demote themselves\n- Master users cannot be demoted\n- Target must be an admin of the event\n- Targets can be demoted if they unregister from the event",
+                "description": "Demotes a user from their admin role in an event. The following rules apply:\n- Only super users, event creators and master admins can demote others\n- Super users and event creators can demote any admin (master or normal)\n- Master admins can only demote normal admins\n- Users cannot demote themselves\n- Super users and event creators cannot be demoted\n- Super users and event creators cannot be promoted\n- Target must be an admin of the event\n- Targets can be demoted if they unregister from the event",
                 "consumes": [
                     "application/json"
                 ],
@@ -592,7 +1165,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.DemoteUserRequest"
+                            "$ref": "#/definitions/handlers.UserAdminActionRequest"
                         }
                     }
                 ],
@@ -670,7 +1243,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.PromoteUserRequest"
+                            "$ref": "#/definitions/handlers.UserAdminActionRequest"
                         }
                     }
                 ],
@@ -702,7 +1275,67 @@
                 }
             }
         },
-        "/events/{slug}/unattend": {
+        "/events/{slug}/register": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Registers the authenticated user to an event by its slug",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Register to an event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/unregister": {
             "post": {
                 "security": [
                     {
@@ -1176,6 +1809,28 @@
                 }
             }
         },
+        "handlers.ActivityStandardErrorResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "some error message"
+                    ]
+                },
+                "stack": {
+                    "type": "string",
+                    "example": "activity-stack"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
         "handlers.AuthStandardErrorResponse": {
             "type": "object",
             "properties": {
@@ -1208,44 +1863,6 @@
                 "refresh_token": {
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                }
-            }
-        },
-        "handlers.CreateEventRequest": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Learn Go programming"
-                },
-                "end_date": {
-                    "type": "string",
-                    "example": "2025-05-01T17:00:00Z"
-                },
-                "location": {
-                    "type": "string",
-                    "example": "Room 101"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Go Workshop"
-                },
-                "slug": {
-                    "type": "string",
-                    "example": "gws"
-                },
-                "start_date": {
-                    "type": "string",
-                    "example": "2025-05-01T14:00:00Z"
-                }
-            }
-        },
-        "handlers.DemoteUserRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "user@example.com"
                 }
             }
         },
@@ -1298,15 +1915,6 @@
                 }
             }
         },
-        "handlers.PromoteUserRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "user@example.com"
-                }
-            }
-        },
         "handlers.RevokeTokenRequest": {
             "type": "object",
             "properties": {
@@ -1316,65 +1924,12 @@
                 }
             }
         },
-        "handlers.UpdateEventByIDRequest": {
+        "handlers.UserAdminActionRequest": {
             "type": "object",
             "properties": {
-                "description": {
+                "email": {
                     "type": "string",
-                    "example": "Updated workshop description"
-                },
-                "end_date": {
-                    "type": "string",
-                    "example": "2030-11-11T23:59:59Z"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "be7b5a6d-ae48-4bda-b01e-58a12eeb65f5"
-                },
-                "location": {
-                    "type": "string",
-                    "example": "Room 202"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Updated Workshop"
-                },
-                "slug": {
-                    "type": "string",
-                    "example": "uw"
-                },
-                "start_date": {
-                    "type": "string",
-                    "example": "2030-11-11T00:00:00Z"
-                }
-            }
-        },
-        "handlers.UpdateEventRequest": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Updated workshop description"
-                },
-                "end_date": {
-                    "type": "string",
-                    "example": "2030-11-11T23:59:59Z"
-                },
-                "location": {
-                    "type": "string",
-                    "example": "Room 202"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Updated Workshop"
-                },
-                "slug": {
-                    "type": "string",
-                    "example": "uw"
-                },
-                "start_date": {
-                    "type": "string",
-                    "example": "2030-11-11T00:00:00Z"
+                    "example": "user@example.com"
                 }
             }
         },
@@ -1398,7 +1953,7 @@
                     "type": "string",
                     "example": "user@example.com"
                 },
-                "lastName": {
+                "last_name": {
                     "type": "string",
                     "example": "Doe"
                 },
@@ -1421,19 +1976,285 @@
                 }
             }
         },
+        "models.AccessTarget": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_event": {
+                    "description": "True if target is an event, false if activity",
+                    "type": "boolean"
+                },
+                "product_id": {
+                    "type": "string"
+                },
+                "target_id": {
+                    "description": "Event ID or Activity ID",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Activity": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "event_id": {
+                    "description": "Event relationship - nullable for standalone activities",
+                    "type": "string"
+                },
+                "has_fee": {
+                    "description": "If a token is required for this activity",
+                    "type": "boolean"
+                },
+                "has_unlimited_capacity": {
+                    "description": "Changed from int to boolean flags for capacity management",
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_blocked": {
+                    "description": "Whether the activity is blocked from interactions",
+                    "type": "boolean"
+                },
+                "is_hidden": {
+                    "description": "Visibility and blocking",
+                    "type": "boolean"
+                },
+                "is_mandatory": {
+                    "description": "Access control",
+                    "type": "boolean"
+                },
+                "is_standalone": {
+                    "description": "Standalone properties",
+                    "type": "boolean"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "max_capacity": {
+                    "description": "Max capacity when HasUnlimitedCapacity is false",
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "speaker": {
+                    "type": "string"
+                },
+                "standalone_slug": {
+                    "description": "Used when standalone",
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.ActivityType"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ActivityDeleteRequest": {
+            "type": "object",
+            "properties": {
+                "activity_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "models.ActivityRegistrationRequest": {
+            "type": "object",
+            "properties": {
+                "activity_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "user_id": {
+                    "description": "Optional, used for admin actions on other users",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "models.ActivityType": {
+            "type": "string",
+            "enum": [
+                "palestra",
+                "mini-curso",
+                "visita-tecnica"
+            ],
+            "x-enum-varnames": [
+                "ActivityPalestra",
+                "ActivityMiniCurso",
+                "ActivityVisitaTecnica"
+            ]
+        },
+        "models.ActivityUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "activity": {
+                    "$ref": "#/definitions/models.CreateActivityRequest"
+                },
+                "activity_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "models.CreateActivityRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Workshop introdutório sobre a linguagem Go"
+                },
+                "end_time": {
+                    "type": "string",
+                    "example": "2024-10-15T16:00:00Z"
+                },
+                "has_fee": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "has_unlimited_capacity": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_blocked": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_hidden": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_mandatory": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_standalone": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Sala 101"
+                },
+                "max_capacity": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Workshop de Go"
+                },
+                "speaker": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "standalone_slug": {
+                    "type": "string",
+                    "example": "workshop-go-2024"
+                },
+                "start_time": {
+                    "type": "string",
+                    "example": "2024-10-15T14:00:00Z"
+                },
+                "type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ActivityType"
+                        }
+                    ],
+                    "example": "palestra"
+                }
+            }
+        },
+        "models.CreateEventRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Learn Go programming"
+                },
+                "end_date": {
+                    "type": "string",
+                    "example": "2025-05-01T17:00:00Z"
+                },
+                "is_blocked": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_hidden": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Room 101"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Go Workshop"
+                },
+                "slug": {
+                    "type": "string",
+                    "example": "gws"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2025-05-01T14:00:00Z"
+                }
+            }
+        },
         "models.Event": {
             "type": "object",
             "properties": {
-                "atendees": {
+                "activities": {
+                    "description": "Relationships",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Activity"
+                    }
+                },
+                "attendees": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.User"
                     }
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
-                "deletedAt": {
+                "created_by": {
+                    "type": "string"
+                },
+                "deleted_at": {
                     "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "description": {
@@ -1445,11 +2266,29 @@
                 "id": {
                     "type": "string"
                 },
+                "is_blocked": {
+                    "description": "Whether the event is blocked from interactions",
+                    "type": "boolean"
+                },
+                "is_hidden": {
+                    "description": "Visibility and blocking",
+                    "type": "boolean"
+                },
+                "is_public": {
+                    "description": "Admission control",
+                    "type": "boolean"
+                },
                 "location": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
+                },
+                "products": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Product"
+                    }
                 },
                 "slug": {
                     "type": "string"
@@ -1457,42 +2296,87 @@
                 "start_date": {
                     "type": "string"
                 },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "models.EventUser": {
+        "models.Product": {
             "type": "object",
             "properties": {
-                "amount": {
-                    "type": "number"
+                "access_targets": {
+                    "description": "Relationships - combined into single table with type flag",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AccessTarget"
+                    }
                 },
-                "createdAt": {
+                "bundled_products": {
+                    "description": "Bundling",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Product"
+                    }
+                },
+                "created_at": {
                     "type": "string"
                 },
-                "deletedAt": {
+                "deleted_at": {
                     "$ref": "#/definitions/gorm.DeletedAt"
                 },
-                "event_id": {
+                "description": {
                     "type": "string"
                 },
-                "event_slug": {
-                    "type": "string"
-                },
-                "has_paid": {
+                "has_unlimited_quantity": {
+                    "description": "Stock management (for physical items)",
                     "type": "boolean"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "is_activity_access": {
+                    "description": "Grants activity access",
+                    "type": "boolean"
+                },
+                "is_activity_token": {
+                    "description": "Can be used as tokens for fee-based activities",
+                    "type": "boolean"
+                },
+                "is_blocked": {
+                    "description": "Whether the product is blocked from purchases",
+                    "type": "boolean"
+                },
+                "is_event_access": {
+                    "description": "Product type flags - a product can be multiple types",
+                    "type": "boolean"
+                },
+                "is_hidden": {
+                    "description": "Visibility and blocking",
+                    "type": "boolean"
+                },
+                "is_physical_item": {
+                    "description": "Is a physical merchandise item",
+                    "type": "boolean"
+                },
+                "is_ticket_type": {
+                    "description": "Is a ticket type (user can only have one)",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "description": "Available quantity",
                     "type": "integer"
                 },
-                "paid_at": {
-                    "type": "string"
+                "token_quantity": {
+                    "description": "Token properties",
+                    "type": "integer"
                 },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "user_id": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1520,6 +2404,43 @@
                 }
             }
         },
+        "models.UpdateEventRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Updated workshop description"
+                },
+                "end_date": {
+                    "type": "string",
+                    "example": "2030-11-11T23:59:59Z"
+                },
+                "is_blocked": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_hidden": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Room 202"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Updated Workshop"
+                },
+                "slug": {
+                    "type": "string",
+                    "example": "uws"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2030-11-11T00:00:00Z"
+                }
+            }
+        },
         "models.User": {
             "type": "object",
             "properties": {
@@ -1532,16 +2453,13 @@
                 "email": {
                     "type": "string"
                 },
-                "events": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Event"
-                    }
-                },
                 "id": {
                     "type": "string"
                 },
                 "is_master_user": {
+                    "type": "boolean"
+                },
+                "is_super_user": {
                     "type": "boolean"
                 },
                 "is_verified": {
@@ -1553,60 +2471,8 @@
                 "name": {
                     "type": "string"
                 },
-                "tokens": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.RefreshToken"
-                    }
-                },
                 "updated_at": {
                     "type": "string"
-                },
-                "userPass": {
-                    "$ref": "#/definitions/models.UserPass"
-                },
-                "userVerification": {
-                    "$ref": "#/definitions/models.UserVerification"
-                }
-            }
-        },
-        "models.UserPass": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.UserVerification": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "verification_number": {
-                    "type": "integer"
                 }
             }
         }

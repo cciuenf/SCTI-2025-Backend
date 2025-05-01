@@ -8,6 +8,21 @@ definitions:
         description: Valid is true if Time is not NULL
         type: boolean
     type: object
+  handlers.ActivityStandardErrorResponse:
+    properties:
+      errors:
+        example:
+        - some error message
+        items:
+          type: string
+        type: array
+      stack:
+        example: activity-stack
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
   handlers.AuthStandardErrorResponse:
     properties:
       errors:
@@ -30,33 +45,6 @@ definitions:
         type: string
       refresh_token:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        type: string
-    type: object
-  handlers.CreateEventRequest:
-    properties:
-      description:
-        example: Learn Go programming
-        type: string
-      end_date:
-        example: "2025-05-01T17:00:00Z"
-        type: string
-      location:
-        example: Room 101
-        type: string
-      name:
-        example: Go Workshop
-        type: string
-      slug:
-        example: gws
-        type: string
-      start_date:
-        example: "2025-05-01T14:00:00Z"
-        type: string
-    type: object
-  handlers.DemoteUserRequest:
-    properties:
-      email:
-        example: user@example.com
         type: string
     type: object
   handlers.EventStandardErrorResponse:
@@ -93,61 +81,16 @@ definitions:
         example: true
         type: boolean
     type: object
-  handlers.PromoteUserRequest:
-    properties:
-      email:
-        example: user@example.com
-        type: string
-    type: object
   handlers.RevokeTokenRequest:
     properties:
       refresh_token:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
     type: object
-  handlers.UpdateEventByIDRequest:
+  handlers.UserAdminActionRequest:
     properties:
-      description:
-        example: Updated workshop description
-        type: string
-      end_date:
-        example: "2030-11-11T23:59:59Z"
-        type: string
-      id:
-        example: be7b5a6d-ae48-4bda-b01e-58a12eeb65f5
-        type: string
-      location:
-        example: Room 202
-        type: string
-      name:
-        example: Updated Workshop
-        type: string
-      slug:
-        example: uw
-        type: string
-      start_date:
-        example: "2030-11-11T00:00:00Z"
-        type: string
-    type: object
-  handlers.UpdateEventRequest:
-    properties:
-      description:
-        example: Updated workshop description
-        type: string
-      end_date:
-        example: "2030-11-11T23:59:59Z"
-        type: string
-      location:
-        example: Room 202
-        type: string
-      name:
-        example: Updated Workshop
-        type: string
-      slug:
-        example: uw
-        type: string
-      start_date:
-        example: "2030-11-11T00:00:00Z"
+      email:
+        example: user@example.com
         type: string
     type: object
   handlers.UserLoginRequest:
@@ -164,7 +107,7 @@ definitions:
       email:
         example: user@example.com
         type: string
-      lastName:
+      last_name:
         example: Doe
         type: string
       name:
@@ -180,15 +123,203 @@ definitions:
         example: "123456"
         type: string
     type: object
+  models.AccessTarget:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      is_event:
+        description: True if target is an event, false if activity
+        type: boolean
+      product_id:
+        type: string
+      target_id:
+        description: Event ID or Activity ID
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Activity:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      end_time:
+        type: string
+      event_id:
+        description: Event relationship - nullable for standalone activities
+        type: string
+      has_fee:
+        description: If a token is required for this activity
+        type: boolean
+      has_unlimited_capacity:
+        description: Changed from int to boolean flags for capacity management
+        type: boolean
+      id:
+        type: string
+      is_blocked:
+        description: Whether the activity is blocked from interactions
+        type: boolean
+      is_hidden:
+        description: Visibility and blocking
+        type: boolean
+      is_mandatory:
+        description: Access control
+        type: boolean
+      is_standalone:
+        description: Standalone properties
+        type: boolean
+      location:
+        type: string
+      max_capacity:
+        description: Max capacity when HasUnlimitedCapacity is false
+        type: integer
+      name:
+        type: string
+      speaker:
+        type: string
+      standalone_slug:
+        description: Used when standalone
+        type: string
+      start_time:
+        type: string
+      type:
+        $ref: '#/definitions/models.ActivityType'
+      updated_at:
+        type: string
+    type: object
+  models.ActivityDeleteRequest:
+    properties:
+      activity_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.ActivityRegistrationRequest:
+    properties:
+      activity_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      user_id:
+        description: Optional, used for admin actions on other users
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.ActivityType:
+    enum:
+    - palestra
+    - mini-curso
+    - visita-tecnica
+    type: string
+    x-enum-varnames:
+    - ActivityPalestra
+    - ActivityMiniCurso
+    - ActivityVisitaTecnica
+  models.ActivityUpdateRequest:
+    properties:
+      activity:
+        $ref: '#/definitions/models.CreateActivityRequest'
+      activity_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.CreateActivityRequest:
+    properties:
+      description:
+        example: Workshop introdutório sobre a linguagem Go
+        type: string
+      end_time:
+        example: "2024-10-15T16:00:00Z"
+        type: string
+      has_fee:
+        example: false
+        type: boolean
+      has_unlimited_capacity:
+        example: false
+        type: boolean
+      is_blocked:
+        example: false
+        type: boolean
+      is_hidden:
+        example: false
+        type: boolean
+      is_mandatory:
+        example: false
+        type: boolean
+      is_standalone:
+        example: false
+        type: boolean
+      location:
+        example: Sala 101
+        type: string
+      max_capacity:
+        example: 30
+        type: integer
+      name:
+        example: Workshop de Go
+        type: string
+      speaker:
+        example: John Doe
+        type: string
+      standalone_slug:
+        example: workshop-go-2024
+        type: string
+      start_time:
+        example: "2024-10-15T14:00:00Z"
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.ActivityType'
+        example: palestra
+    type: object
+  models.CreateEventRequest:
+    properties:
+      description:
+        example: Learn Go programming
+        type: string
+      end_date:
+        example: "2025-05-01T17:00:00Z"
+        type: string
+      is_blocked:
+        example: false
+        type: boolean
+      is_hidden:
+        example: true
+        type: boolean
+      location:
+        example: Room 101
+        type: string
+      name:
+        example: Go Workshop
+        type: string
+      slug:
+        example: gws
+        type: string
+      start_date:
+        example: "2025-05-01T14:00:00Z"
+        type: string
+    type: object
   models.Event:
     properties:
-      atendees:
+      activities:
+        description: Relationships
+        items:
+          $ref: '#/definitions/models.Activity'
+        type: array
+      attendees:
         items:
           $ref: '#/definitions/models.User'
         type: array
-      createdAt:
+      created_at:
         type: string
-      deletedAt:
+      created_by:
+        type: string
+      deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
       description:
         type: string
@@ -196,38 +327,85 @@ definitions:
         type: string
       id:
         type: string
+      is_blocked:
+        description: Whether the event is blocked from interactions
+        type: boolean
+      is_hidden:
+        description: Visibility and blocking
+        type: boolean
+      is_public:
+        description: Admission control
+        type: boolean
       location:
         type: string
       name:
         type: string
+      products:
+        items:
+          $ref: '#/definitions/models.Product'
+        type: array
       slug:
         type: string
       start_date:
         type: string
-      updatedAt:
+      updated_at:
         type: string
     type: object
-  models.EventUser:
+  models.Product:
     properties:
-      amount:
-        type: number
-      createdAt:
+      access_targets:
+        description: Relationships - combined into single table with type flag
+        items:
+          $ref: '#/definitions/models.AccessTarget'
+        type: array
+      bundled_products:
+        description: Bundling
+        items:
+          $ref: '#/definitions/models.Product'
+        type: array
+      created_at:
         type: string
-      deletedAt:
+      deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
-      event_id:
+      description:
         type: string
-      event_slug:
-        type: string
-      has_paid:
+      has_unlimited_quantity:
+        description: Stock management (for physical items)
         type: boolean
       id:
+        type: string
+      is_activity_access:
+        description: Grants activity access
+        type: boolean
+      is_activity_token:
+        description: Can be used as tokens for fee-based activities
+        type: boolean
+      is_blocked:
+        description: Whether the product is blocked from purchases
+        type: boolean
+      is_event_access:
+        description: Product type flags - a product can be multiple types
+        type: boolean
+      is_hidden:
+        description: Visibility and blocking
+        type: boolean
+      is_physical_item:
+        description: Is a physical merchandise item
+        type: boolean
+      is_ticket_type:
+        description: Is a ticket type (user can only have one)
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      quantity:
+        description: Available quantity
         type: integer
-      paid_at:
-        type: string
-      updatedAt:
-        type: string
-      user_id:
+      token_quantity:
+        description: Token properties
+        type: integer
+      updated_at:
         type: string
     type: object
   models.RefreshToken:
@@ -245,6 +423,33 @@ definitions:
       user_id:
         type: string
     type: object
+  models.UpdateEventRequest:
+    properties:
+      description:
+        example: Updated workshop description
+        type: string
+      end_date:
+        example: "2030-11-11T23:59:59Z"
+        type: string
+      is_blocked:
+        example: false
+        type: boolean
+      is_hidden:
+        example: true
+        type: boolean
+      location:
+        example: Room 202
+        type: string
+      name:
+        example: Updated Workshop
+        type: string
+      slug:
+        example: uws
+        type: string
+      start_date:
+        example: "2030-11-11T00:00:00Z"
+        type: string
+    type: object
   models.User:
     properties:
       created_at:
@@ -253,13 +458,11 @@ definitions:
         $ref: '#/definitions/gorm.DeletedAt'
       email:
         type: string
-      events:
-        items:
-          $ref: '#/definitions/models.Event'
-        type: array
       id:
         type: string
       is_master_user:
+        type: boolean
+      is_super_user:
         type: boolean
       is_verified:
         type: boolean
@@ -267,42 +470,8 @@ definitions:
         type: string
       name:
         type: string
-      tokens:
-        items:
-          $ref: '#/definitions/models.RefreshToken'
-        type: array
       updated_at:
         type: string
-      userPass:
-        $ref: '#/definitions/models.UserPass'
-      userVerification:
-        $ref: '#/definitions/models.UserVerification'
-    type: object
-  models.UserPass:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        $ref: '#/definitions/gorm.DeletedAt'
-      id:
-        type: string
-      password:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  models.UserVerification:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        $ref: '#/definitions/gorm.DeletedAt'
-      id:
-        type: string
-      updated_at:
-        type: string
-      verification_number:
-        type: integer
     type: object
 host: localhost:8080
 info:
@@ -335,57 +504,6 @@ paths:
       summary: Get all events
       tags:
       - events
-    patch:
-      consumes:
-      - application/json
-      description: Updates an existing event using its ID. Only master users can update
-        events
-      parameters:
-      - description: Bearer {access_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Bearer {refresh_token}
-        in: header
-        name: Refresh
-        required: true
-        type: string
-      - description: Event update info with ID
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.UpdateEventByIDRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.Event'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.EventStandardErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.EventStandardErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/handlers.EventStandardErrorResponse'
-      security:
-      - Bearer: []
-      summary: Update an event by ID
-      tags:
-      - events
     post:
       consumes:
       - application/json
@@ -406,7 +524,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.CreateEventRequest'
+          $ref: '#/definitions/models.CreateEventRequest'
       produces:
       - application/json
       responses:
@@ -533,7 +651,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.UpdateEventRequest'
+          $ref: '#/definitions/models.UpdateEventRequest'
       produces:
       - application/json
       responses:
@@ -563,59 +681,10 @@ paths:
       summary: Update an event by slug
       tags:
       - events
-  /events/{slug}/attend:
-    post:
-      description: Registers the authenticated user to an event by its slug
-      parameters:
-      - description: Bearer {access_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Bearer {refresh_token}
-        in: header
-        name: Refresh
-        required: true
-        type: string
-      - description: Event slug
-        in: path
-        name: slug
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.NoDataSuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.EventStandardErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.EventStandardErrorResponse'
-      security:
-      - Bearer: []
-      summary: Register to an event
-      tags:
-      - events
-  /events/{slug}/attendees:
+  /events/{slug}/activities:
     get:
-      description: Returns a list of all user IDs registered to an event by its slug
+      description: Returns all activities for the specified event
       parameters:
-      - description: Bearer {access_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Bearer {refresh_token}
-        in: header
-        name: Refresh
-        required: true
-        type: string
       - description: Event slug
         in: path
         name: slug
@@ -632,33 +701,482 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.EventUser'
+                    $ref: '#/definitions/models.Activity'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      summary: Get all activities for an event
+      tags:
+      - activities
+  /events/{slug}/activity:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an existing activity from the specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity deletion info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityDeleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
       security:
       - Bearer: []
-      summary: Get event attendees
+      summary: Delete an activity
       tags:
-      - events
+      - activities
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing activity for the specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity update info with ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Activity'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update an activity
+      tags:
+      - activities
+    post:
+      consumes:
+      - application/json
+      description: Creates a new activity for the specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity creation info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateActivityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Activity'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new activity for an event
+      tags:
+      - activities
+  /events/{slug}/activity/attend:
+    post:
+      consumes:
+      - application/json
+      description: Marks a user as having attended an activity (admin only)
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Attendance info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Mark attendance for an activity
+      tags:
+      - activities
+  /events/{slug}/activity/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers the authenticated user to an activity within an event
+        they are already registered for
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Register to an activity
+      tags:
+      - activities
+  /events/{slug}/activity/register-standalone:
+    post:
+      consumes:
+      - application/json
+      description: Registers the authenticated user to a standalone activity without
+        requiring event registration
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Register to a standalone activity
+      tags:
+      - activities
+  /events/{slug}/activity/unattend:
+    post:
+      consumes:
+      - application/json
+      description: Removes a user's attendance record for an activity (master admin
+        only)
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Attendance info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Remove attendance for an activity
+      tags:
+      - activities
+  /events/{slug}/activity/unregister:
+    post:
+      consumes:
+      - application/json
+      description: Unregisters the authenticated user from an activity within an event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Unregister from an activity
+      tags:
+      - activities
+  /events/{slug}/activity/unregister-standalone:
+    post:
+      consumes:
+      - application/json
+      description: Unregisters the authenticated user from a standalone activity
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActivityRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Unregister from a standalone activity
+      tags:
+      - activities
   /events/{slug}/demote:
     post:
       consumes:
       - application/json
       description: |-
         Demotes a user from their admin role in an event. The following rules apply:
-        - Only master users and master admins can demote others
-        - Master users can demote any admin (master or normal)
+        - Only super users, event creators and master admins can demote others
+        - Super users and event creators can demote any admin (master or normal)
         - Master admins can only demote normal admins
         - Users cannot demote themselves
-        - Master users cannot be demoted
+        - Super users and event creators cannot be demoted
+        - Super users and event creators cannot be promoted
         - Target must be an admin of the event
         - Targets can be demoted if they unregister from the event
       parameters:
@@ -682,7 +1200,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.DemoteUserRequest'
+          $ref: '#/definitions/handlers.UserAdminActionRequest'
       produces:
       - application/json
       responses:
@@ -740,7 +1258,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.PromoteUserRequest'
+          $ref: '#/definitions/handlers.UserAdminActionRequest'
       produces:
       - application/json
       responses:
@@ -765,7 +1283,46 @@ paths:
       summary: Promote user in event
       tags:
       - events
-  /events/{slug}/unattend:
+  /events/{slug}/register:
+    post:
+      description: Registers the authenticated user to an event by its slug
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Register to an event
+      tags:
+      - events
+  /events/{slug}/unregister:
     post:
       description: Unregisters the authenticated user from an event by its slug
       parameters:
@@ -802,6 +1359,30 @@ paths:
       security:
       - Bearer: []
       summary: Unregister from an event
+      tags:
+      - events
+  /events/public:
+    get:
+      description: Returns a list of all public events (where IsPublic=true)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Event'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      summary: Get all public events
       tags:
       - events
   /login:
