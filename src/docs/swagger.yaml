@@ -351,6 +351,12 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.GetAttendeesRequest:
+    properties:
+      id:
+        example: 18d03d08-267b-4b27-b5bc-e423e2489202
+        type: string
+    type: object
   models.Product:
     properties:
       access_targets:
@@ -921,6 +927,58 @@ paths:
       security:
       - Bearer: []
       summary: Mark attendance for an activity
+      tags:
+      - activities
+  /events/{slug}/activity/attendees:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all registrations of a specified
+        acitivity (all admins)
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: ActivityID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.GetAttendeesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of registrations of an activity
       tags:
       - activities
   /events/{slug}/activity/register:

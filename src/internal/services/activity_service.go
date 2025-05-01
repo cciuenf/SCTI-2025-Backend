@@ -443,3 +443,33 @@ func (s *ActivityService) UnattendActivity(admin models.User, eventSlug string, 
 
 	return nil
 }
+
+func (s *ActivityService) GetActivityAttendees(admin models.User, eventSlug string, activityID string) ([]models.ActivityRegistration, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return nil, errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return nil, errors.New("activity does not belong to this event")
+	}
+
+	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
+		adminStatus, err := s.ActivityRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return nil, errors.New("unauthorized: only admins can get activity attendees")
+		}
+	}
+
+  var attendees []models.ActivityRegistration
+	if attendees, err = s.ActivityRepo.GetActivityAttendees(activityID); err != nil {
+		return nil, errors.New("failed to retrieve activity attendees: " + err.Error())
+	}
+
+	return attendees, nil
+}

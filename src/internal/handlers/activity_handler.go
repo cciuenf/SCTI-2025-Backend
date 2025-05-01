@@ -469,3 +469,53 @@ func (h *ActivityHandler) UnattendActivity(w http.ResponseWriter, r *http.Reques
 
 	handleSuccess(w, nil, "attendance removed successfully", http.StatusOK)
 }
+
+
+// GetActivityAttendees godoc
+// @Summary      Retrieves a list of registrations of an activity
+// @Description  The end point returns a list of all registrations of a specified activity (all admins)
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Param        request body models.GetAttendeesRequest true "ActivityID"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.ActivityRegistration}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Failure      403  {object}  ActivityStandardErrorResponse
+// @Router       /events/{slug}/activity/attendees [get]
+func (h *ActivityHandler) GetActivityAttendees(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var reqBody models.GetAttendeesRequest 
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if reqBody.ID == "" {
+		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		return
+	}
+
+	admin, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+  var attendees []models.ActivityRegistration
+	if attendees, err = h.ActivityService.GetActivityAttendees(admin, slug, reqBody.ID); err != nil {
+		handleError(w, errors.New("error getting attendees: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, attendees, "", http.StatusOK)
+}
