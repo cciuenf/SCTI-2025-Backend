@@ -278,6 +278,24 @@ func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
 	return string(jsonBytes), nil
 }
 
+func (s *AuthService) GenerateTokenPair(user *models.User, r *http.Request) (string, string, error) {
+	accessToken, err := s.GenerateAcessToken(user)
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken, err := s.GenerateRefreshToken(user.ID, r)
+	if err != nil {
+		return "", "", err
+	}
+
+	if err := s.AuthRepo.CreateRefreshToken(user.ID, refreshToken); err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+}
+
 func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	adminMap, err := s.MakeJSONAdminMap(user.ID)
 	if err != nil && err.Error() != "user has no admin status" {

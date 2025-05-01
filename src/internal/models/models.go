@@ -42,25 +42,6 @@ type Product struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-// ActivityRegistration represents a user's registration for an activity
-type ActivityRegistration struct {
-	ActivityID string `gorm:"type:varchar(36);primaryKey" json:"activity_id"`
-	UserID     string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
-
-	// Is this from an event or standalone
-	IsStandaloneRegistration bool       `gorm:"default:false" json:"is_standalone_registration"`
-	RegisteredAt             time.Time  `gorm:"autoCreateTime" json:"registered_at"`
-	AttendedAt               *time.Time `json:"attended_at"` // Time of attendance, null if not attended yet
-
-	// Access method tracking
-	AccessMethod string  `gorm:"type:varchar(20)" json:"access_method"` // "event", "product", "token", or "direct"
-	TokenID      *string `gorm:"type:varchar(36)" json:"token_id"`      // Which token was used (if applicable)
-
-	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
-}
-
 // Purchase represents a transaction record
 type Purchase struct {
 	ID        string `gorm:"type:varchar(36);primaryKey" json:"id"`
