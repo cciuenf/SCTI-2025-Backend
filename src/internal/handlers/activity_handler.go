@@ -469,3 +469,55 @@ func (h *ActivityHandler) UnattendActivity(w http.ResponseWriter, r *http.Reques
 
 	handleSuccess(w, nil, "attendance removed successfully", http.StatusOK)
 }
+
+type GetAttendeesRequest struct {
+  ID string `json:"id" example:"18d03d08-267b-4b27-b5bc-e423e2489202"`
+}
+// UnattendActivity godoc
+// @Summary      Remove attendance for an activity
+// @Description  Removes a user's attendance record for an activity (master admin only)
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Param        request body models.ActivityRegistrationRequest true "Attendance info"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Failure      403  {object}  ActivityStandardErrorResponse
+// @Router       /events/{slug}/activity/unattend [post]
+func (h *ActivityHandler) GetActivityAttendees(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var reqBody GetAttendeesRequest 
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if reqBody.ID == "" {
+		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		return
+	}
+
+	admin, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+  var attendees []models.ActivityRegistration
+	if attendees, err = h.ActivityService.GetActivityAttendees(admin, slug, reqBody.ID); err != nil {
+		handleError(w, errors.New("error getting attendees: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, attendees, "", http.StatusOK)
+}
