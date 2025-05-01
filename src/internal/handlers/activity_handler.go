@@ -470,12 +470,10 @@ func (h *ActivityHandler) UnattendActivity(w http.ResponseWriter, r *http.Reques
 	handleSuccess(w, nil, "attendance removed successfully", http.StatusOK)
 }
 
-type GetAttendeesRequest struct {
-  ID string `json:"id" example:"18d03d08-267b-4b27-b5bc-e423e2489202"`
-}
-// UnattendActivity godoc
-// @Summary      Remove attendance for an activity
-// @Description  Removes a user's attendance record for an activity (master admin only)
+
+// GetActivityAttendees godoc
+// @Summary      Retrieves a list of registrations of an activity
+// @Description  The end point returns a list of all registrations of a specified activity (all admins)
 // @Tags         activities
 // @Accept       json
 // @Produce      json
@@ -483,12 +481,12 @@ type GetAttendeesRequest struct {
 // @Param        Authorization header string true "Bearer {access_token}"
 // @Param        Refresh header string true "Bearer {refresh_token}"
 // @Param        slug path string true "Event slug"
-// @Param        request body models.ActivityRegistrationRequest true "Attendance info"
-// @Success      200  {object}  NoDataSuccessResponse
+// @Param        request body models.GetAttendeesRequest true "ActivityID"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.ActivityRegistration}
 // @Failure      400  {object}  ActivityStandardErrorResponse
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse
-// @Router       /events/{slug}/activity/unattend [post]
+// @Router       /events/{slug}/activity/attendees [get]
 func (h *ActivityHandler) GetActivityAttendees(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
@@ -496,7 +494,7 @@ func (h *ActivityHandler) GetActivityAttendees(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var reqBody GetAttendeesRequest 
+	var reqBody models.GetAttendeesRequest 
 	if err := decodeRequestBody(r, &reqBody); err != nil {
 		handleError(w, err, http.StatusBadRequest)
 		return

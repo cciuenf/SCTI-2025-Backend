@@ -15,6 +15,7 @@
         buildInputs = with pkgs; [
           postman
           go
+          go-swag
           docker
           docker-compose
         ];
