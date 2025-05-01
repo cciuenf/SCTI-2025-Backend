@@ -470,7 +470,6 @@ func (h *ActivityHandler) UnattendActivity(w http.ResponseWriter, r *http.Reques
 	handleSuccess(w, nil, "attendance removed successfully", http.StatusOK)
 }
 
-
 // GetActivityAttendees godoc
 // @Summary      Retrieves a list of registrations of an activity
 // @Description  The end point returns a list of all registrations of a specified activity (all admins)
@@ -494,7 +493,7 @@ func (h *ActivityHandler) GetActivityAttendees(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var reqBody models.GetAttendeesRequest 
+	var reqBody models.GetAttendeesRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
 		handleError(w, err, http.StatusBadRequest)
 		return
@@ -511,7 +510,7 @@ func (h *ActivityHandler) GetActivityAttendees(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-  var attendees []models.ActivityRegistration
+	var attendees []models.ActivityRegistration
 	if attendees, err = h.ActivityService.GetActivityAttendees(admin, slug, reqBody.ID); err != nil {
 		handleError(w, errors.New("error getting attendees: "+err.Error()), http.StatusBadRequest)
 		return

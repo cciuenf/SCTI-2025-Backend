@@ -466,7 +466,7 @@ func (s *ActivityService) GetActivityAttendees(admin models.User, eventSlug stri
 		}
 	}
 
-  var attendees []models.ActivityRegistration
+	var attendees []models.ActivityRegistration
 	if attendees, err = s.ActivityRepo.GetActivityAttendees(activityID); err != nil {
 		return nil, errors.New("failed to retrieve activity attendees: " + err.Error())
 	}

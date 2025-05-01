@@ -97,5 +97,5 @@ type ActivityDeleteRequest struct {
 }
 
 type GetAttendeesRequest struct {
-  ID string `json:"id" example:"18d03d08-267b-4b27-b5bc-e423e2489202"`
+	ID string `json:"id" example:"18d03d08-267b-4b27-b5bc-e423e2489202"`
 }
