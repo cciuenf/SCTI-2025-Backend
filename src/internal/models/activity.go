@@ -29,7 +29,8 @@ type Activity struct {
 
 	// Access control
 	IsMandatory bool `gorm:"default:false" json:"is_mandatory"` // If users need to be registered automatically
-	HasFee      bool `gorm:"default:false" json:"has_fee"`      // If a token is required for this activity
+	HasFee      bool `gorm:"default:false" json:"has_fee"`      // If an event ticket or standalone ticket is required
+	NeedsToken  bool `gorm:"default:false" json:"needs_token"`  // If a token is required for this activity
 
 	// Visibility and blocking
 	IsHidden  bool `gorm:"default:false" json:"is_hidden"`  // Whether the activity is hidden from search/listings

@@ -22,7 +22,7 @@ func NewEventService(repo *repos.EventRepo) *EventService {
 }
 
 func (s *EventService) CreateEvent(user models.User, body models.CreateEventRequest) (*models.Event, error) {
-	if !user.IsMasterUser || !user.IsSuperUser {
+	if !user.IsEventCreator || !user.IsSuperUser {
 		return nil, errors.New("only master users can create events")
 	}
 
@@ -47,6 +47,7 @@ func (s *EventService) CreateEvent(user models.User, body models.CreateEventRequ
 	event.IsPublic = true
 	event.IsHidden = body.IsHidden
 	event.IsBlocked = body.IsBlocked
+	event.MaxTokensPerUser = body.MaxTokensPerUser
 
 	err := s.EventRepo.CreateEvent(&event)
 	return &event, err
@@ -88,6 +89,7 @@ func (s *EventService) UpdateEvent(user models.User, slug string, newData *model
 	event.EndDate = newData.EndDate
 	event.IsHidden = newData.IsHidden
 	event.IsBlocked = newData.IsBlocked
+	event.MaxTokensPerUser = newData.MaxTokensPerUser
 
 	err = s.EventRepo.UpdateEvent(event)
 	return event, err
@@ -292,21 +294,13 @@ func (s *EventService) DemoteUserOfEventBySlug(requester models.User, email stri
 }
 
 func (s *EventService) GetAllPublicEvents() ([]models.Event, error) {
-	events, err := s.EventRepo.GetAllEvents()
-	if err != nil {
-		return nil, err
-	}
-
-	publicEvents := make([]models.Event, 0)
-	for _, event := range events {
-		if event.IsPublic {
-			publicEvents = append(publicEvents, event)
-		}
-	}
-
-	return publicEvents, nil
+	return s.EventRepo.GetAllPublicEvents()
 }
 
 func (s *EventService) GetUserByID(userID string) (models.User, error) {
 	return s.EventRepo.GetUserByID(userID)
+}
+
+func (s *EventService) GetEventsCreatedByUser(user models.User) ([]models.Event, error) {
+	return s.EventRepo.GetEventsCreatedByUser(user.ID)
 }

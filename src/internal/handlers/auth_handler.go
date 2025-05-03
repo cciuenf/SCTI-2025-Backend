@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"scti/config"
 	"scti/internal/models"
@@ -46,24 +45,24 @@ type UserRegisterRequest struct {
 // @Router       /register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var user models.UserRegister
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		u.SendError(w, []string{"error reading json:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+	if err := decodeRequestBody(r, &user); err != nil {
+		BadRequestError(w, err, "auth")
 		return
 	}
 
 	err := h.AuthService.Register(user.Email, user.Password, user.Name, user.LastName)
 	if err != nil {
-		u.SendError(w, []string{"error registering user:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error registering user", err, w).Stack("auth").BadRequest()
 		return
 	}
 
 	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password, r)
 	if err != nil {
-		u.SendError(w, []string{"error trying to login:" + err.Error()}, "auth-stack", http.StatusUnauthorized)
+		HandleErrMsg("error trying to login", err, w).Stack("auth").Unauthorized()
 		return
 	}
 
-	u.SendSuccess(w, map[string]string{
+	handleSuccess(w, map[string]string{
 		"access_token":  acess_token,
 		"refresh_token": refresh,
 	}, "", http.StatusCreated)
@@ -89,18 +88,18 @@ type UserLoginRequest struct {
 // @Router       /login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var user models.UserLogin
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		u.SendError(w, []string{"error reading json:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+	if err := decodeRequestBody(r, &user); err != nil {
+		BadRequestError(w, err, "auth")
 		return
 	}
 
 	acess_token, refresh, err := h.AuthService.Login(user.Email, user.Password, r)
 	if err != nil {
-		u.SendError(w, []string{"error trying to login:" + err.Error()}, "auth-stack", http.StatusUnauthorized)
+		HandleErrMsg("error trying to login", err, w).Stack("auth").Unauthorized()
 		return
 	}
 
-	u.SendSuccess(w, map[string]string{
+	handleSuccess(w, map[string]string{
 		"access_token":  acess_token,
 		"refresh_token": refresh,
 	}, "", http.StatusOK)
@@ -126,11 +125,11 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	err := h.AuthService.Logout(user.ID, refreshTokenString)
 	if err != nil {
-		u.SendError(w, []string{"error trying to logout:" + err.Error()}, "auth-stack", http.StatusUnauthorized)
+		HandleErrMsg("error trying to logout", err, w).Stack("auth").Unauthorized()
 		return
 	}
 
-	u.SendSuccess(w, nil, "logged out successfully", http.StatusOK)
+	handleSuccess(w, nil, "logged out successfully", http.StatusOK)
 }
 
 // GetRefreshTokens godoc
@@ -149,11 +148,11 @@ func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
 
 	refreshTokens, err := h.AuthService.GetRefreshTokens(user.ID)
 	if err != nil {
-		u.SendError(w, []string{"error getting refresh tokens:" + err.Error()}, "auth-stack", http.StatusUnauthorized)
+		HandleErrMsg("error getting refresh tokens", err, w).Stack("auth").Unauthorized()
 		return
 	}
 
-	u.SendSuccess(w, refreshTokens, "", http.StatusOK)
+	handleSuccess(w, refreshTokens, "", http.StatusOK)
 }
 
 type RevokeTokenRequest struct {
@@ -179,23 +178,23 @@ func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request)
 	user := u.GetUserFromContext(r.Context())
 
 	var requestBody RevokeTokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		u.SendError(w, []string{"error reading json:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+	if err := decodeRequestBody(r, &requestBody); err != nil {
+		BadRequestError(w, err, "auth")
 		return
 	}
 
 	if requestBody.Token == "" {
-		u.SendError(w, []string{"refresh token to be revoked is required:"}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("refresh token to be revoked is required"), "auth")
 		return
 	}
 
 	err := h.AuthService.RevokeRefreshToken(user.ID, requestBody.Token)
 	if err != nil {
-		u.SendError(w, []string{"error revoking token: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error revoking token", err, w).Stack("auth").BadRequest()
 		return
 	}
 
-	u.SendSuccess(w, nil, "refresh token revoked successfully", http.StatusOK)
+	handleSuccess(w, nil, "refresh token revoked successfully", http.StatusOK)
 }
 
 type VerifyAccountRequest struct {
@@ -220,25 +219,25 @@ func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 	userClaims := u.GetUserFromContext(r.Context())
 
 	var requestBody VerifyAccountRequest
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		u.SendError(w, []string{"error reading json: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+	if err := decodeRequestBody(r, &requestBody); err != nil {
+		BadRequestError(w, err, "auth")
 		return
 	}
 
 	if requestBody.Token == "" {
-		u.SendError(w, []string{"verification token is required"}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("verification token is required"), "auth")
 		return
 	}
 
 	user, err := h.AuthService.AuthRepo.FindUserByID(userClaims.ID)
 	if err != nil {
-		u.SendError(w, []string{"error getting user: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error getting user", err, w).Stack("auth").BadRequest()
 		return
 	}
 
-	err = h.AuthService.VerifyUser(user, requestBody.Token)
+	err = h.AuthService.VerifyUser(&user, requestBody.Token)
 	if err != nil {
-		u.SendError(w, []string{"error verifying user: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error verifying user", err, w).Stack("auth").BadRequest()
 		return
 	}
 
@@ -246,20 +245,20 @@ func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 	refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
 	err = h.AuthService.Logout(user.ID, refreshTokenString)
 	if err != nil {
-		u.SendError(w, []string{"error logging out:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error logging out", err, w).Stack("auth").BadRequest()
 		return
 	}
 
 	access_token, refresh_token, err := h.AuthService.GenerateTokenPair(user, r)
 	if err != nil {
-		u.SendError(w, []string{"error generating token pair:" + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error generating token pair", err, w).Stack("auth").BadRequest()
 		return
 	}
 
 	w.Header().Set("X-New-Access-Token", access_token)
 	w.Header().Set("X-New-Refresh-Token", refresh_token)
 
-	u.SendSuccess(w, nil, "account verified", http.StatusOK)
+	handleSuccess(w, nil, "account verified", http.StatusOK)
 }
 
 // VerifyJWT godoc
@@ -283,33 +282,33 @@ func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if err != nil || !token.Valid || !claims.IsPasswordReset {
-			u.SendError(w, []string{"invalid reset token"}, "auth-stack", http.StatusUnauthorized)
+			HandleErrMsg("invalid reset token", err, w).Stack("auth").Unauthorized()
 			return
 		}
 
-		u.SendSuccess(w, claims, "valid reset token", http.StatusOK)
+		handleSuccess(w, claims, "valid reset token", http.StatusOK)
 		return
 	}
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		u.SendError(w, []string{"\"Authorization\" header is required"}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("\"Authorization\" header is required"), "auth")
 		return
 	}
 
 	refreshHeader := r.Header.Get("Refresh")
 	if refreshHeader == "" {
-		u.SendError(w, []string{"\"Refresh\" header is required"}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("\"Refresh\" header is required"), "auth")
 		return
 	}
 
 	if !strings.HasPrefix(authHeader, "Bearer ") {
-		u.SendError(w, []string{"authorization header format must be \"Bearer {token}\""}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("authorization header format must be \"Bearer {token}\""), "auth")
 		return
 	}
 
 	if !strings.HasPrefix(refreshHeader, "Bearer ") {
-		u.SendError(w, []string{"refresh header format must be \"Bearer {token}\""}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("refresh header format must be \"Bearer {token}\""), "auth")
 		return
 	}
 
@@ -324,7 +323,7 @@ func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		u.SendError(w, []string{"error parsing access token: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error parsing access token", err, w).Stack("auth").BadRequest()
 		return
 	}
 
@@ -336,16 +335,16 @@ func (h *AuthHandler) VerifyJWT(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		u.SendError(w, []string{"error parsing refresh token: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error parsing refresh token", err, w).Stack("auth").BadRequest()
 		return
 	}
 
 	if !refreshToken.Valid {
-		u.SendError(w, []string{"invalid refresh token"}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("invalid refresh token"), "auth")
 		return
 	}
 
-	u.SendSuccess(w, nil, "success", http.StatusOK)
+	handleSuccess(w, nil, "success", http.StatusOK)
 }
 
 type ForgotPasswordRequest struct {
@@ -354,34 +353,48 @@ type ForgotPasswordRequest struct {
 
 func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req ForgotPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		u.SendError(w, []string{"error reading json: " + err.Error()}, "auth-stack", http.StatusBadRequest)
+	if err := decodeRequestBody(r, &req); err != nil {
+		BadRequestError(w, err, "auth")
 		return
 	}
 
 	if err := h.AuthService.InitiatePasswordReset(req.Email); err != nil {
-		u.SendError(w, []string{err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error initiating password reset", err, w).Stack("auth").BadRequest()
 		return
 	}
 
-	u.SendSuccess(w, nil, "password reset email sent", http.StatusOK)
+	handleSuccess(w, nil, "password reset email sent", http.StatusOK)
 }
 
 type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password"`
 }
 
+// ChangePassword godoc
+// @Summary      Change user password
+// @Description  Changes the user's password using a reset token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body ChangePasswordRequest true "New password"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /change-password [post]
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	var secretKey string = config.GetJWTSecret()
 	resetToken := r.URL.Query().Get("token")
 	if resetToken == "" {
-		u.SendError(w, []string{"missing reset token"}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("missing reset token"), "auth")
 		return
 	}
 
 	var req ChangePasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		u.SendError(w, []string{"invalid request"}, "auth-stack", http.StatusBadRequest)
+	if err := decodeRequestBody(r, &req); err != nil {
+		BadRequestError(w, err, "auth")
 		return
 	}
 
@@ -391,14 +404,63 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil || !token.Valid || !claims.IsPasswordReset {
-		u.SendError(w, []string{"invalid or expired reset token"}, "auth-stack", http.StatusBadRequest)
+		BadRequestError(w, NewErr("invalid or expired reset token"), "auth")
 		return
 	}
 
 	if err := h.AuthService.ChangePassword(claims.UserID, req.NewPassword); err != nil {
-		u.SendError(w, []string{err.Error()}, "auth-stack", http.StatusBadRequest)
+		HandleErrMsg("error changing password", err, w).Stack("auth").BadRequest()
 		return
 	}
 
-	u.SendSuccess(w, nil, "password changed successfully", http.StatusOK)
+	handleSuccess(w, nil, "password changed successfully", http.StatusOK)
+}
+
+type SwitchEventCreatorStatusRequest struct {
+	Email string `json:"email" example:"user@example.com"`
+}
+
+// SwitchEventCreatorStatus godoc
+// @Summary      Toggle event creator status
+// @Description  Switches a user's event creator status (enables/disables ability to create events). Only available to super users.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body SwitchEventCreatorStatusRequest true "Target user email"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Failure      403  {object}  AuthStandardErrorResponse
+// @Router       /switch-event-creator-status [post]
+func (h *AuthHandler) SwitchEventCreatorStatus(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		HandleErrMsg("error getting user", err, w).Stack("auth").BadRequest()
+		return
+	}
+
+	var reqBody SwitchEventCreatorStatusRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "auth")
+		return
+	}
+
+	if reqBody.Email == "" {
+		BadRequestError(w, NewErr("email is required"), "auth")
+		return
+	}
+
+	if err := h.AuthService.SwitchEventCreatorStatus(user, reqBody.Email); err != nil {
+		if strings.Contains(err.Error(), "only superusers") {
+			ForbiddenError(w, err, "auth")
+			return
+		}
+		HandleErrMsg("error switching event creator status", err, w).Stack("auth").BadRequest()
+		return
+	}
+
+	handleSuccess(w, nil, "event creator status switched successfully", http.StatusOK)
 }

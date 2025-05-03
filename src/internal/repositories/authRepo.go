@@ -71,8 +71,8 @@ func (r *AuthRepo) CreateSuperUser() {
 			ID:       userID,
 			Password: string(hashedPassword),
 		},
-		IsMasterUser: true,
-		IsSuperUser:  true,
+		IsEventCreator: true,
+		IsSuperUser:    true,
 	}
 
 	err = r.DB.Create(MasterUser).Error
@@ -81,7 +81,19 @@ func (r *AuthRepo) CreateSuperUser() {
 	}
 }
 
-func (r *AuthRepo) FindUserByEmail(email string) (*models.User, error) {
+func (r *AuthRepo) UserExists(email string) (bool, error) {
+	var user models.User
+	err := r.DB.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *AuthRepo) FindUserByEmail(email string) (models.User, error) {
 	var user models.User
 	err := r.DB.
 		Preload("UserPass").
@@ -89,12 +101,12 @@ func (r *AuthRepo) FindUserByEmail(email string) (*models.User, error) {
 		First(&user).Error
 
 	if err != nil {
-		return nil, err
+		return models.User{}, err
 	}
-	return &user, nil
+	return user, nil
 }
 
-func (r *AuthRepo) FindUserByID(id string) (*models.User, error) {
+func (r *AuthRepo) FindUserByID(id string) (models.User, error) {
 	var user models.User
 	err := r.DB.
 		Preload("UserPass").
@@ -102,9 +114,9 @@ func (r *AuthRepo) FindUserByID(id string) (*models.User, error) {
 		First(&user).Error
 
 	if err != nil {
-		return nil, err
+		return models.User{}, err
 	}
-	return &user, nil
+	return user, nil
 }
 
 func (r *AuthRepo) UpdateUser(user *models.User) error {

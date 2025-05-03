@@ -48,8 +48,12 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 		return errors.New("invalid email format")
 	}
 
-	exists, _ := s.AuthRepo.FindUserByEmail(email)
-	if exists != nil {
+	exists, err := s.AuthRepo.UserExists(email)
+	if err != nil {
+		return err
+	}
+
+	if exists {
 		return errors.New("user already exists")
 	}
 
@@ -207,10 +211,6 @@ func (s *AuthService) Login(email, password string, r *http.Request) (string, st
 		return "", "", err
 	}
 
-	if user == nil {
-		return "", "", errors.New("user with specified email not found")
-	}
-
 	if err := bcrypt.CompareHashAndPassword([]byte(user.UserPass.Password), []byte(password)); err != nil {
 		return "", "", errors.New("invalid password")
 	}
@@ -278,7 +278,7 @@ func (s *AuthService) MakeJSONAdminMap(userID string) (string, error) {
 	return string(jsonBytes), nil
 }
 
-func (s *AuthService) GenerateTokenPair(user *models.User, r *http.Request) (string, string, error) {
+func (s *AuthService) GenerateTokenPair(user models.User, r *http.Request) (string, string, error) {
 	accessToken, err := s.GenerateAcessToken(user)
 	if err != nil {
 		return "", "", err
@@ -296,7 +296,7 @@ func (s *AuthService) GenerateTokenPair(user *models.User, r *http.Request) (str
 	return accessToken, refreshToken, nil
 }
 
-func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
+func (s *AuthService) GenerateAcessToken(user models.User) (string, error) {
 	adminMap, err := s.MakeJSONAdminMap(user.ID)
 	if err != nil && err.Error() != "user has no admin status" {
 		return "", err
@@ -307,33 +307,31 @@ func (s *AuthService) GenerateAcessToken(user *models.User) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":           user.ID,
-		"name":         user.Name,
-		"last_name":    user.LastName,
-		"email":        user.Email,
-		"admin_status": adminMap,
-		"is_verified":  user.IsVerified,
-		"is_master":    user.IsMasterUser,
-		"is_super":     user.IsSuperUser,
-		"exp":          time.Now().Add(5 * time.Minute).Unix(),
+		"id":               user.ID,
+		"name":             user.Name,
+		"last_name":        user.LastName,
+		"email":            user.Email,
+		"admin_status":     adminMap,
+		"is_verified":      user.IsVerified,
+		"is_event_creator": user.IsEventCreator,
+		"is_super":         user.IsSuperUser,
+		"exp":              time.Now().Add(5 * time.Minute).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }
 
 func (s *AuthService) GenerateRefreshToken(userID string, r *http.Request) (string, error) {
 	userAgent := r.UserAgent()
-	ipAddress := r.RemoteAddr
 	// Se o server estiver atrás de um proxy, use o seguinte:
 	// ipAddress = r.Header.Get("X-Forwarded-For")
-	deviceInfo := utilities.ParseUserAgent(userAgent)
+	ipAddress := r.RemoteAddr
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":          userID,
-		"user_agent":  userAgent,
-		"device_info": deviceInfo,
-		"ip_address":  ipAddress,
-		"last_used":   time.Now(),
-		"exp":         time.Now().Add(2 * 24 * time.Hour).Unix(),
+		"id":         userID,
+		"user_agent": userAgent,
+		"ip_address": ipAddress,
+		"last_used":  time.Now(),
+		"exp":        time.Now().Add(2 * 24 * time.Hour).Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }
@@ -421,7 +419,7 @@ func (s *AuthService) InitiatePasswordReset(email string) error {
 		return err
 	}
 
-	return s.SendPasswordResetEmail(user, resetToken)
+	return s.SendPasswordResetEmail(&user, resetToken)
 }
 
 func (s *AuthService) ChangePassword(userID string, newPassword string) error {
@@ -431,4 +429,26 @@ func (s *AuthService) ChangePassword(userID string, newPassword string) error {
 	}
 
 	return s.AuthRepo.UpdateUserPassword(userID, string(hashedPassword))
+}
+
+// SwitchEventCreatorStatus toggles the event creator status for a user
+// Only superusers can use this functionality
+func (s *AuthService) SwitchEventCreatorStatus(requester models.User, targetUserEmail string) error {
+	if !requester.IsSuperUser {
+		return errors.New("only superusers can change event creator status")
+	}
+
+	targetUser, err := s.AuthRepo.FindUserByEmail(targetUserEmail)
+	if err != nil {
+		return errors.New("target user not found: " + err.Error())
+	}
+
+	targetUser.IsEventCreator = !targetUser.IsEventCreator
+
+	err = s.AuthRepo.UpdateUser(&targetUser)
+	if err != nil {
+		return errors.New("failed to update user: " + err.Error())
+	}
+
+	return nil
 }

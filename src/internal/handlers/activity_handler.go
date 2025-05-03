@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"scti/internal/models"
 	"scti/internal/services"
+	"strings"
 )
 
 type ActivityHandler struct {
@@ -29,13 +30,13 @@ func NewActivityHandler(activityService *services.ActivityService) *ActivityHand
 func (h *ActivityHandler) GetAllActivitiesFromEvent(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	activities, err := h.ActivityService.GetAllActivitiesFromEvent(slug)
 	if err != nil {
-		handleError(w, errors.New("error getting activities: "+err.Error()), http.StatusBadRequest)
+		HandleErrMsg("error getting activities", err, w).Stack("activity").BadRequest()
 		return
 	}
 
@@ -61,25 +62,29 @@ func (h *ActivityHandler) GetAllActivitiesFromEvent(w http.ResponseWriter, r *ht
 func (h *ActivityHandler) CreateEventActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.CreateActivityRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		if strings.Contains(err.Error(), "claims") {
+			UnauthorizedError(w, err, "activity")
+		} else {
+			BadRequestError(w, err, "activity")
+		}
 		return
 	}
 
 	activity, err := h.ActivityService.CreateEventActivity(user, slug, reqBody)
 	if err != nil {
-		handleError(w, errors.New("error creating activity: "+err.Error()), http.StatusBadRequest)
+		HandleErrMsg("Error creating activity", err, w).Stack("activity").BadRequest()
 		return
 	}
 
@@ -105,30 +110,40 @@ func (h *ActivityHandler) CreateEventActivity(w http.ResponseWriter, r *http.Req
 func (h *ActivityHandler) UpdateEventActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityUpdateRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" {
-		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		BadRequestError(w, NewErr("activity ID is required"), "activity")
 		return
 	}
 
 	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		if strings.Contains(err.Error(), "claims") {
+			UnauthorizedError(w, err, "activity")
+		} else {
+			BadRequestError(w, err, "activity")
+		}
 		return
 	}
 
 	activity, err := h.ActivityService.UpdateEventActivity(user, slug, reqBody.ActivityID, reqBody.Activity)
 	if err != nil {
-		handleError(w, errors.New("error updating activity: "+err.Error()), http.StatusBadRequest)
+		if strings.Contains(err.Error(), "not found") {
+			NotFoundError(w, err, "Activity", "activity")
+		} else if strings.Contains(err.Error(), "permission") {
+			ForbiddenError(w, err, "activity")
+		} else {
+			HandleErrMsg("Error updating activity", err, w).Stack("activity").BadRequest()
+		}
 		return
 	}
 
@@ -155,29 +170,41 @@ func (h *ActivityHandler) UpdateEventActivity(w http.ResponseWriter, r *http.Req
 func (h *ActivityHandler) DeleteEventActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityDeleteRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" {
-		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		HandleErrMsg("activity ID is required", nil, w).Stack("activity").BadRequest()
 		return
 	}
 
 	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		if strings.Contains(err.Error(), "claims") {
+			UnauthorizedError(w, err, "activity")
+		} else {
+			BadRequestError(w, err, "activity")
+		}
 		return
 	}
 
 	if err := h.ActivityService.DeleteEventActivity(user, slug, reqBody.ActivityID); err != nil {
-		handleError(w, errors.New("error deleting activity: "+err.Error()), http.StatusBadRequest)
+		if strings.Contains(err.Error(), "not found") {
+			NotFoundError(w, err, "Activity", "activity")
+		} else if strings.Contains(err.Error(), "permission") {
+			ForbiddenError(w, err, "activity")
+		} else if strings.Contains(err.Error(), "attendees") {
+			ConflictError(w, err, "Activity with existing attendees", "activity")
+		} else {
+			HandleErr(err, w).Msg("Error deleting activity").Stack("activity").BadRequest()
+		}
 		return
 	}
 
@@ -202,29 +229,42 @@ func (h *ActivityHandler) DeleteEventActivity(w http.ResponseWriter, r *http.Req
 func (h *ActivityHandler) RegisterUserToActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityRegistrationRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" {
-		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		HandleErrMsg("activity ID is required", nil, w).Stack("activity").BadRequest()
 		return
 	}
 
 	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		if strings.Contains(err.Error(), "claims") {
+			UnauthorizedError(w, err, "activity")
+		} else {
+			BadRequestError(w, err, "activity")
+		}
 		return
 	}
 
 	if err := h.ActivityService.RegisterUserToActivity(user, slug, reqBody.ActivityID); err != nil {
-		handleError(w, errors.New("error registering to activity: "+err.Error()), http.StatusBadRequest)
+		if strings.Contains(err.Error(), "capacity") {
+			capacityErr := errors.New("maximum capacity reached")
+			HandleErrMsg("activity is at full capacity", capacityErr, w).Stack("activity").Conflict()
+		} else if strings.Contains(err.Error(), "already registered") {
+			ConflictError(w, err, "Registration", "activity")
+		} else if strings.Contains(err.Error(), "event not registered") {
+			ForbiddenError(w, errors.New("must register for event first"), "activity")
+		} else {
+			HandleErr(err, w).Msg("Error registering to activity").Stack("activity").BadRequest()
+		}
 		return
 	}
 
@@ -249,29 +289,29 @@ func (h *ActivityHandler) RegisterUserToActivity(w http.ResponseWriter, r *http.
 func (h *ActivityHandler) UnregisterUserFromActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityRegistrationRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" {
-		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		BadRequestError(w, NewErr("activity ID is required"), "activity")
 		return
 	}
 
 	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if err := h.ActivityService.UnregisterUserFromActivity(user, slug, reqBody.ActivityID); err != nil {
-		handleError(w, errors.New("error unregistering from activity: "+err.Error()), http.StatusBadRequest)
+		HandleErrMsg("error unregistering from activity", err, w).Stack("activity").BadRequest()
 		return
 	}
 
@@ -298,29 +338,29 @@ func (h *ActivityHandler) UnregisterUserFromActivity(w http.ResponseWriter, r *h
 func (h *ActivityHandler) RegisterUserToStandaloneActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityRegistrationRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" {
-		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		BadRequestError(w, NewErr("activity ID is required"), "activity")
 		return
 	}
 
 	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if err := h.ActivityService.RegisterUserToStandaloneActivity(user, slug, reqBody.ActivityID); err != nil {
-		handleError(w, errors.New("error registering to standalone activity: "+err.Error()), http.StatusBadRequest)
+		HandleErrMsg("error registering to standalone activity", err, w).Stack("activity").BadRequest()
 		return
 	}
 
@@ -345,29 +385,29 @@ func (h *ActivityHandler) RegisterUserToStandaloneActivity(w http.ResponseWriter
 func (h *ActivityHandler) UnregisterUserFromStandaloneActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityRegistrationRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" {
-		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		BadRequestError(w, NewErr("activity ID is required"), "activity")
 		return
 	}
 
 	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if err := h.ActivityService.UnregisterUserFromStandaloneActivity(user, slug, reqBody.ActivityID); err != nil {
-		handleError(w, errors.New("error unregistering from standalone activity: "+err.Error()), http.StatusBadRequest)
+		HandleErrMsg("error unregistering from standalone activity", err, w).Stack("activity").BadRequest()
 		return
 	}
 
@@ -393,29 +433,29 @@ func (h *ActivityHandler) UnregisterUserFromStandaloneActivity(w http.ResponseWr
 func (h *ActivityHandler) AttendActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityRegistrationRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" || reqBody.UserID == "" {
-		handleError(w, errors.New("activity ID and user ID are required"), http.StatusBadRequest)
+		BadRequestError(w, NewErr("activity ID and user ID are required"), "activity")
 		return
 	}
 
 	admin, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if err := h.ActivityService.AttendActivity(admin, slug, reqBody.ActivityID, reqBody.UserID); err != nil {
-		handleError(w, errors.New("error marking attendance: "+err.Error()), http.StatusBadRequest)
+		HandleErrMsg("error marking attendance", err, w).Stack("activity").BadRequest()
 		return
 	}
 
@@ -441,36 +481,36 @@ func (h *ActivityHandler) AttendActivity(w http.ResponseWriter, r *http.Request)
 func (h *ActivityHandler) UnattendActivity(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.ActivityRegistrationRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ActivityID == "" || reqBody.UserID == "" {
-		handleError(w, errors.New("activity ID and user ID are required"), http.StatusBadRequest)
+		BadRequestError(w, NewErr("activity ID and user ID are required"), "activity")
 		return
 	}
 
 	admin, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if err := h.ActivityService.UnattendActivity(admin, slug, reqBody.ActivityID, reqBody.UserID); err != nil {
-		handleError(w, errors.New("error removing attendance: "+err.Error()), http.StatusBadRequest)
+		HandleErrMsg("error removing attendance", err, w).Stack("activity").BadRequest()
 		return
 	}
 
 	handleSuccess(w, nil, "attendance removed successfully", http.StatusOK)
 }
 
-// GetActivityAttendees godoc
+// GetActivityRegistrations godoc
 // @Summary      Retrieves a list of registrations of an activity
 // @Description  The end point returns a list of all registrations of a specified activity (all admins)
 // @Tags         activities
@@ -486,35 +526,35 @@ func (h *ActivityHandler) UnattendActivity(w http.ResponseWriter, r *http.Reques
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse
 // @Router       /events/{slug}/activity/attendees [get]
-func (h *ActivityHandler) GetActivityAttendees(w http.ResponseWriter, r *http.Request) {
+func (h *ActivityHandler) GetActivityRegistrations(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	var reqBody models.GetAttendeesRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
 	if reqBody.ID == "" {
-		handleError(w, errors.New("activity ID is required"), http.StatusBadRequest)
+		BadRequestError(w, NewErr("activity ID is required"), "activity")
 		return
 	}
 
 	admin, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
-		handleError(w, err, http.StatusBadRequest)
+		BadRequestError(w, err, "activity")
 		return
 	}
 
-	var attendees []models.ActivityRegistration
-	if attendees, err = h.ActivityService.GetActivityAttendees(admin, slug, reqBody.ID); err != nil {
-		handleError(w, errors.New("error getting attendees: "+err.Error()), http.StatusBadRequest)
+	var registrations []models.ActivityRegistration
+	if registrations, err = h.ActivityService.GetActivityRegistrations(admin, slug, reqBody.ID); err != nil {
+		HandleErrMsg("error getting registrations", err, w).Stack("activity").BadRequest()
 		return
 	}
 
-	handleSuccess(w, attendees, "", http.StatusOK)
+	handleSuccess(w, registrations, "", http.StatusOK)
 }

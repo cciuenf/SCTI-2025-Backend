@@ -179,6 +179,7 @@ func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string
 	return nil
 }
 
+// TODO: User can't signup if they have another activity registered at the same time that is not palestra
 func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -444,7 +445,7 @@ func (s *ActivityService) UnattendActivity(admin models.User, eventSlug string, 
 	return nil
 }
 
-func (s *ActivityService) GetActivityAttendees(admin models.User, eventSlug string, activityID string) ([]models.ActivityRegistration, error) {
+func (s *ActivityService) GetActivityRegistrations(admin models.User, eventSlug string, activityID string) ([]models.ActivityRegistration, error) {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
 		return nil, errors.New("event not found: " + err.Error())
@@ -466,10 +467,10 @@ func (s *ActivityService) GetActivityAttendees(admin models.User, eventSlug stri
 		}
 	}
 
-	var attendees []models.ActivityRegistration
-	if attendees, err = s.ActivityRepo.GetActivityAttendees(activityID); err != nil {
-		return nil, errors.New("failed to retrieve activity attendees: " + err.Error())
+	var registrations []models.ActivityRegistration
+	if registrations, err = s.ActivityRepo.GetActivityRegistrations(activityID); err != nil {
+		return nil, errors.New("failed to retrieve activity registrations: " + err.Error())
 	}
 
-	return attendees, nil
+	return registrations, nil
 }

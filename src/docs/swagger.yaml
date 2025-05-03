@@ -47,6 +47,11 @@ definitions:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
     type: object
+  handlers.ChangePasswordRequest:
+    properties:
+      new_password:
+        type: string
+    type: object
   handlers.EventStandardErrorResponse:
     properties:
       errors:
@@ -81,10 +86,31 @@ definitions:
         example: true
         type: boolean
     type: object
+  handlers.ProductStandardErrorResponse:
+    properties:
+      errors:
+        example:
+        - some error message
+        items:
+          type: string
+        type: array
+      stack:
+        example: product-stack
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
   handlers.RevokeTokenRequest:
     properties:
       refresh_token:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  handlers.SwitchEventCreatorStatusRequest:
+    properties:
+      email:
+        example: user@example.com
         type: string
     type: object
   handlers.UserAdminActionRequest:
@@ -156,7 +182,7 @@ definitions:
         description: Event relationship - nullable for standalone activities
         type: string
       has_fee:
-        description: If a token is required for this activity
+        description: If an event ticket or standalone ticket is required
         type: boolean
       has_unlimited_capacity:
         description: Changed from int to boolean flags for capacity management
@@ -182,6 +208,9 @@ definitions:
         type: integer
       name:
         type: string
+      needs_token:
+        description: If a token is required for this activity
+        type: boolean
       speaker:
         type: string
       standalone_slug:
@@ -198,6 +227,33 @@ definitions:
     properties:
       activity_id:
         example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.ActivityRegistration:
+    properties:
+      access_method:
+        description: Access method tracking
+        type: string
+      activity_id:
+        type: string
+      attended_at:
+        description: Time of attendance, null if not attended yet
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      is_standalone_registration:
+        description: Is this from an event or standalone
+        type: boolean
+      registered_at:
+        type: string
+      token_id:
+        description: Which token was used (if applicable)
+        type: string
+      updated_at:
+        type: string
+      user_id:
         type: string
     type: object
   models.ActivityRegistrationRequest:
@@ -294,6 +350,9 @@ definitions:
       location:
         example: Room 101
         type: string
+      max_tokens_per_user:
+        example: 1
+        type: integer
       name:
         example: Go Workshop
         type: string
@@ -338,6 +397,9 @@ definitions:
         type: boolean
       location:
         type: string
+      max_tokens_per_user:
+        description: Maximum number of tokens a user can have for this event
+        type: integer
       name:
         type: string
       products:
@@ -375,6 +437,9 @@ definitions:
         $ref: '#/definitions/gorm.DeletedAt'
       description:
         type: string
+      event_id:
+        description: event the product is associated with
+        type: string
       has_unlimited_quantity:
         description: Stock management (for physical items)
         type: boolean
@@ -393,14 +458,19 @@ definitions:
         description: Product type flags - a product can be multiple types
         type: boolean
       is_hidden:
-        description: Visibility and blocking
+        description: Whether the product is hidden from search/listings
         type: boolean
       is_physical_item:
         description: Is a physical merchandise item
         type: boolean
+      is_public:
+        description: Visibility and blocking
+        type: boolean
       is_ticket_type:
         description: Is a ticket type (user can only have one)
         type: boolean
+      max_ownable_quantity:
+        type: integer
       name:
         type: string
       price:
@@ -413,6 +483,107 @@ definitions:
         type: integer
       updated_at:
         type: string
+    type: object
+  models.ProductDeleteRequest:
+    properties:
+      product_id:
+        type: string
+    type: object
+  models.ProductRequest:
+    properties:
+      access_targets:
+        description: Access targets
+        items:
+          $ref: '#/definitions/models.AccessTarget'
+        type: array
+      description:
+        type: string
+      event_id:
+        type: string
+      has_unlimited_quantity:
+        description: Stock management
+        type: boolean
+      is_activity_access:
+        type: boolean
+      is_activity_token:
+        type: boolean
+      is_blocked:
+        type: boolean
+      is_event_access:
+        description: Product type flags
+        type: boolean
+      is_hidden:
+        type: boolean
+      is_physical_item:
+        type: boolean
+      is_public:
+        description: Visibility and blocking
+        type: boolean
+      is_ticket_type:
+        type: boolean
+      max_ownable_quantity:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: integer
+      token_quantity:
+        description: Token properties
+        type: integer
+    type: object
+  models.ProductUpdateRequest:
+    properties:
+      product:
+        $ref: '#/definitions/models.ProductRequest'
+      product_id:
+        type: string
+    type: object
+  models.Purchase:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      delivered_at:
+        type: string
+      gifted_to_id:
+        description: User ID of gift recipient
+        type: string
+      id:
+        type: string
+      is_delivered:
+        description: For physical items
+        type: boolean
+      is_gift:
+        description: For gifting functionality
+        type: boolean
+      product_id:
+        type: string
+      purchased_at:
+        type: string
+      quantity:
+        description: How many of this product
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        description: User who made the purchase
+        type: string
+    type: object
+  models.PurchaseRequest:
+    properties:
+      gifted_to_id:
+        description: User ID of gift recipient
+        type: string
+      is_gift:
+        description: For gifting functionality
+        type: boolean
+      product_id:
+        type: string
+      quantity:
+        type: integer
     type: object
   models.RefreshToken:
     properties:
@@ -446,6 +617,9 @@ definitions:
       location:
         example: Room 202
         type: string
+      max_tokens_per_user:
+        example: 1
+        type: integer
       name:
         example: Updated Workshop
         type: string
@@ -466,7 +640,7 @@ definitions:
         type: string
       id:
         type: string
-      is_master_user:
+      is_event_creator:
         type: boolean
       is_super_user:
         type: boolean
@@ -486,6 +660,48 @@ info:
   title: SCTI 2025 API
   version: "1.0"
 paths:
+  /change-password:
+    post:
+      consumes:
+      - application/json
+      description: Changes the user's password using a reset token
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: New password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Change user password
+      tags:
+      - auth
   /events:
     get:
       description: Returns a list of all events
@@ -934,7 +1150,7 @@ paths:
       consumes:
       - application/json
       description: The end point returns a list of all registrations of a specified
-        acitivity (all admins)
+        activity (all admins)
       parameters:
       - description: Bearer {access_token}
         in: header
@@ -963,7 +1179,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ActivityRegistration'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1283,6 +1504,213 @@ paths:
       summary: Demote user in event
       tags:
       - events
+  /events/{slug}/product:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an existing product from the specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Product deletion info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProductDeleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a product
+      tags:
+      - products
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing product for the specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Product update info with ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProductUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Product'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update a product
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Creates a new product for the specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Product creation info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Product'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a product for an event
+      tags:
+      - products
+  /events/{slug}/products:
+    get:
+      description: Returns a list of all products for the specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Product'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all products from an event
+      tags:
+      - products
   /events/{slug}/promote:
     post:
       consumes:
@@ -1341,6 +1769,58 @@ paths:
       summary: Promote user in event
       tags:
       - events
+  /events/{slug}/purchase:
+    post:
+      consumes:
+      - application/json
+      description: Processes a purchase of products for the authenticated user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Purchase info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PurchaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Purchase'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Purchase products
+      tags:
+      - products
   /events/{slug}/register:
     post:
       description: Registers the authenticated user to an event by its slug
@@ -1380,6 +1860,60 @@ paths:
       summary: Register to an event
       tags:
       - events
+  /events/{slug}/try-purchase:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Tries to purchase products for the authenticated user without committing to the database
+        This is used to check if the purchase would be successful so the frontend can show the user the result
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Purchase info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PurchaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Purchase'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Try to purchase products
+      tags:
+      - products
   /events/{slug}/unregister:
     post:
       description: Unregisters the authenticated user from an event by its slug
@@ -1417,6 +1951,51 @@ paths:
       security:
       - Bearer: []
       summary: Unregister from an event
+      tags:
+      - events
+  /events/created:
+    get:
+      description: Returns a list of all events created by a user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Event'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get events created by a user
       tags:
       - events
   /events/public:
@@ -1630,6 +2209,53 @@ paths:
       security:
       - Bearer: []
       summary: Revoke a refresh token
+      tags:
+      - auth
+  /switch-event-creator-status:
+    post:
+      consumes:
+      - application/json
+      description: Switches a user's event creator status (enables/disables ability
+        to create events). Only available to super users.
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Target user email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwitchEventCreatorStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Toggle event creator status
       tags:
       - auth
   /verify-account:

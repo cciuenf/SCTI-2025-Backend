@@ -35,6 +35,14 @@ func (r *EventRepo) GetAllEvents() ([]models.Event, error) {
 	return events, nil
 }
 
+func (r *EventRepo) GetAllPublicEvents() ([]models.Event, error) {
+	var events []models.Event
+	if err := r.DB.Where("is_hidden = ? AND is_public = ?", false, true).Find(&events).Error; err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
 func (r *EventRepo) UpdateEvent(event *models.Event) error {
 	return r.DB.Save(event).Error
 }
@@ -204,4 +212,14 @@ func (r *EventRepo) GetUserByEmail(email string) (models.User, error) {
 		return models.User{}, err
 	}
 	return user, nil
+}
+
+func (r *EventRepo) GetEventsCreatedByUser(userID string) ([]models.Event, error) {
+	var events []models.Event
+	err := r.DB.Where("created_by = ?", userID).Find(&events).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
 }

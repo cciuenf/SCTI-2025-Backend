@@ -15,6 +15,71 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/change-password": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Changes the user's password using a reset token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Change user password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "New password",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/events": {
             "get": {
                 "description": "Returns a list of all events",
@@ -110,6 +175,80 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/models.Event"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/created": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns a list of all events created by a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Get events created by a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Event"
+                                            }
                                         }
                                     }
                                 }
@@ -766,7 +905,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "The end point returns a list of all registrations of a specified acitivity (all admins)",
+                "description": "The end point returns a list of all registrations of a specified activity (all admins)",
                 "consumes": [
                     "application/json"
                 ],
@@ -813,7 +952,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.ActivityRegistration"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1281,6 +1432,335 @@ const docTemplate = `{
                 }
             }
         },
+        "/events/{slug}/product": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Creates a new product for the specified event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Create a product for an event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Product creation info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ProductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Product"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes an existing product from the specified event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Delete a product",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Product deletion info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ProductDeleteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Updates an existing product for the specified event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Update a product",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Product update info with ID",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ProductUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Product"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/products": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns a list of all products for the specified event",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Get all products from an event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Product"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/events/{slug}/promote": {
             "post": {
                 "security": [
@@ -1359,6 +1839,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/events/{slug}/purchase": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Processes a purchase of products for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Purchase products",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Purchase info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PurchaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Purchase"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/events/{slug}/register": {
             "post": {
                 "security": [
@@ -1414,6 +1978,90 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/handlers.EventStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/try-purchase": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Tries to purchase products for the authenticated user without committing to the database\nThis is used to check if the purchase would be successful so the frontend can show the user the result",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Try to purchase products",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Purchase info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PurchaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Purchase"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ProductStandardErrorResponse"
                         }
                     }
                 }
@@ -1772,6 +2420,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/switch-event-creator-status": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Switches a user's event creator status (enables/disables ability to create events). Only available to super users.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Toggle event creator status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Target user email",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SwitchEventCreatorStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/verify-account": {
             "post": {
                 "security": [
@@ -1950,6 +2669,14 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ChangePasswordRequest": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.EventStandardErrorResponse": {
             "type": "object",
             "properties": {
@@ -1999,12 +2726,43 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ProductStandardErrorResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "some error message"
+                    ]
+                },
+                "stack": {
+                    "type": "string",
+                    "example": "product-stack"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
         "handlers.RevokeTokenRequest": {
             "type": "object",
             "properties": {
                 "refresh_token": {
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            }
+        },
+        "handlers.SwitchEventCreatorStatusRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
                 }
             }
         },
@@ -2108,7 +2866,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "has_fee": {
-                    "description": "If a token is required for this activity",
+                    "description": "If an event ticket or standalone ticket is required",
                     "type": "boolean"
                 },
                 "has_unlimited_capacity": {
@@ -2144,6 +2902,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "needs_token": {
+                    "description": "If a token is required for this activity",
+                    "type": "boolean"
+                },
                 "speaker": {
                     "type": "string"
                 },
@@ -2168,6 +2930,45 @@ const docTemplate = `{
                 "activity_id": {
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "models.ActivityRegistration": {
+            "type": "object",
+            "properties": {
+                "access_method": {
+                    "description": "Access method tracking",
+                    "type": "string"
+                },
+                "activity_id": {
+                    "type": "string"
+                },
+                "attended_at": {
+                    "description": "Time of attendance, null if not attended yet",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "is_standalone_registration": {
+                    "description": "Is this from an event or standalone",
+                    "type": "boolean"
+                },
+                "registered_at": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "description": "Which token was used (if applicable)",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -2302,6 +3103,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Room 101"
                 },
+                "max_tokens_per_user": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "name": {
                     "type": "string",
                     "example": "Go Workshop"
@@ -2365,6 +3170,10 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
+                "max_tokens_per_user": {
+                    "description": "Maximum number of tokens a user can have for this event",
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -2420,6 +3229,10 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "event_id": {
+                    "description": "event the product is associated with",
+                    "type": "string"
+                },
                 "has_unlimited_quantity": {
                     "description": "Stock management (for physical items)",
                     "type": "boolean"
@@ -2444,16 +3257,23 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "is_hidden": {
-                    "description": "Visibility and blocking",
+                    "description": "Whether the product is hidden from search/listings",
                     "type": "boolean"
                 },
                 "is_physical_item": {
                     "description": "Is a physical merchandise item",
                     "type": "boolean"
                 },
+                "is_public": {
+                    "description": "Visibility and blocking",
+                    "type": "boolean"
+                },
                 "is_ticket_type": {
                     "description": "Is a ticket type (user can only have one)",
                     "type": "boolean"
+                },
+                "max_ownable_quantity": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -2471,6 +3291,154 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "models.ProductDeleteRequest": {
+            "type": "object",
+            "properties": {
+                "product_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ProductRequest": {
+            "type": "object",
+            "properties": {
+                "access_targets": {
+                    "description": "Access targets",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AccessTarget"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "event_id": {
+                    "type": "string"
+                },
+                "has_unlimited_quantity": {
+                    "description": "Stock management",
+                    "type": "boolean"
+                },
+                "is_activity_access": {
+                    "type": "boolean"
+                },
+                "is_activity_token": {
+                    "type": "boolean"
+                },
+                "is_blocked": {
+                    "type": "boolean"
+                },
+                "is_event_access": {
+                    "description": "Product type flags",
+                    "type": "boolean"
+                },
+                "is_hidden": {
+                    "type": "boolean"
+                },
+                "is_physical_item": {
+                    "type": "boolean"
+                },
+                "is_public": {
+                    "description": "Visibility and blocking",
+                    "type": "boolean"
+                },
+                "is_ticket_type": {
+                    "type": "boolean"
+                },
+                "max_ownable_quantity": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "token_quantity": {
+                    "description": "Token properties",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ProductUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "product": {
+                    "$ref": "#/definitions/models.ProductRequest"
+                },
+                "product_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Purchase": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "delivered_at": {
+                    "type": "string"
+                },
+                "gifted_to_id": {
+                    "description": "User ID of gift recipient",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_delivered": {
+                    "description": "For physical items",
+                    "type": "boolean"
+                },
+                "is_gift": {
+                    "description": "For gifting functionality",
+                    "type": "boolean"
+                },
+                "product_id": {
+                    "type": "string"
+                },
+                "purchased_at": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "description": "How many of this product",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "User who made the purchase",
+                    "type": "string"
+                }
+            }
+        },
+        "models.PurchaseRequest": {
+            "type": "object",
+            "properties": {
+                "gifted_to_id": {
+                    "description": "User ID of gift recipient",
+                    "type": "string"
+                },
+                "is_gift": {
+                    "description": "For gifting functionality",
+                    "type": "boolean"
+                },
+                "product_id": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "integer"
                 }
             }
         },
@@ -2520,6 +3488,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Room 202"
                 },
+                "max_tokens_per_user": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "name": {
                     "type": "string",
                     "example": "Updated Workshop"
@@ -2549,7 +3521,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "is_master_user": {
+                "is_event_creator": {
                     "type": "boolean"
                 },
                 "is_super_user": {
