@@ -22,6 +22,8 @@ type Event struct {
 	IsHidden  bool `gorm:"default:false" json:"is_hidden"`  // Whether the event is hidden from search/listings
 	IsBlocked bool `gorm:"default:false" json:"is_blocked"` // Whether the event is blocked from interactions
 
+	MaxTokensPerUser int `gorm:"default:0" json:"max_tokens_per_user"` // Maximum number of tokens a user can have for this event
+
 	// Relationships
 	Activities []Activity `gorm:"foreignKey:EventID;references:ID;constraint:OnDelete:CASCADE" json:"activities"`
 	Products   []Product  `gorm:"many2many:event_products;constraint:OnDelete:CASCADE" json:"products"`
@@ -66,6 +68,8 @@ type CreateEventRequest struct {
 	EndDate     time.Time `json:"end_date" example:"2025-05-01T17:00:00Z"`
 	Location    string    `json:"location" example:"Room 101"`
 
+	MaxTokensPerUser int `json:"max_tokens_per_user" example:"1"`
+
 	IsHidden  bool `json:"is_hidden" example:"true"`
 	IsBlocked bool `json:"is_blocked" example:"false"`
 }
@@ -77,6 +81,8 @@ type UpdateEventRequest struct {
 	Location    string    `json:"location" example:"Room 202"`
 	StartDate   time.Time `json:"start_date" example:"2030-11-11T00:00:00Z"`
 	EndDate     time.Time `json:"end_date" example:"2030-11-11T23:59:59Z"`
+
+	MaxTokensPerUser int `json:"max_tokens_per_user" example:"1"`
 
 	IsHidden  bool `json:"is_hidden" example:"true"`
 	IsBlocked bool `json:"is_blocked" example:"false"`

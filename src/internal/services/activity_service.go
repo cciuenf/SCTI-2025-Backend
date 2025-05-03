@@ -179,6 +179,7 @@ func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string
 	return nil
 }
 
+// TODO: User can't signup if they have another activity registered at the same time that is not palestra
 func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {

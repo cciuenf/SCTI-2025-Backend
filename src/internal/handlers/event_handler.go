@@ -95,6 +95,35 @@ func (h *EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	handleSuccess(w, events, "", http.StatusOK)
 }
 
+// GetEventsCreatedByUser godoc
+// @Summary      Get events created by a user
+// @Description  Returns a list of all events created by a user
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Event}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Failure      403  {object}  EventStandardErrorResponse
+// @Router       /events/created [get]
+func (h *EventHandler) GetEventsCreatedByUser(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	events, err := h.EventService.GetEventsCreatedByUser(user)
+	if err != nil {
+		handleError(w, errors.New("error getting events created by user: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, events, "", http.StatusOK)
+}
+
 // GetAllPublicEvents godoc
 // @Summary      Get all public events
 // @Description  Returns a list of all public events (where IsPublic=true)

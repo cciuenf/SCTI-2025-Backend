@@ -19,13 +19,16 @@ type User struct {
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"autoDeleteTime" json:"deleted_at,omitempty"`
 
-	IsMasterUser bool `gorm:"default:false" json:"is_master_user"`
-	IsSuperUser  bool `gorm:"default:false" json:"is_super_user"`
+	IsEventCreator bool `gorm:"default:false" json:"is_event_creator"`
+	IsSuperUser    bool `gorm:"default:false" json:"is_super_user"`
 
 	// Maybe do these
 	// IsUenf  bool   `json:"is_uenf"`
 	// Curso   string `json:"curso"`
 	// Periodo string `json:"periodo"`
+
+	Purchases    []Purchase    `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	UserProducts []UserProduct `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 
 	UserVerification UserVerification `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 	Events           []Event          `gorm:"many2many:event_users;constraint:OnDelete:CASCADE" json:"-"`

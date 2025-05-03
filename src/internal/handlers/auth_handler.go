@@ -235,7 +235,7 @@ func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.AuthService.VerifyUser(user, requestBody.Token)
+	err = h.AuthService.VerifyUser(&user, requestBody.Token)
 	if err != nil {
 		HandleErrMsg("error verifying user", err, w).Stack("auth").BadRequest()
 		return
@@ -370,6 +370,20 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password"`
 }
 
+// ChangePassword godoc
+// @Summary      Change user password
+// @Description  Changes the user's password using a reset token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body ChangePasswordRequest true "New password"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /change-password [post]
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	var secretKey string = config.GetJWTSecret()
 	resetToken := r.URL.Query().Get("token")
@@ -400,4 +414,53 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleSuccess(w, nil, "password changed successfully", http.StatusOK)
+}
+
+type SwitchEventCreatorStatusRequest struct {
+	Email string `json:"email" example:"user@example.com"`
+}
+
+// SwitchEventCreatorStatus godoc
+// @Summary      Toggle event creator status
+// @Description  Switches a user's event creator status (enables/disables ability to create events). Only available to super users.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body SwitchEventCreatorStatusRequest true "Target user email"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Failure      403  {object}  AuthStandardErrorResponse
+// @Router       /switch-event-creator-status [post]
+func (h *AuthHandler) SwitchEventCreatorStatus(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		HandleErrMsg("error getting user", err, w).Stack("auth").BadRequest()
+		return
+	}
+
+	var reqBody SwitchEventCreatorStatusRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "auth")
+		return
+	}
+
+	if reqBody.Email == "" {
+		BadRequestError(w, NewErr("email is required"), "auth")
+		return
+	}
+
+	if err := h.AuthService.SwitchEventCreatorStatus(user, reqBody.Email); err != nil {
+		if strings.Contains(err.Error(), "only superusers") {
+			ForbiddenError(w, err, "auth")
+			return
+		}
+		HandleErrMsg("error switching event creator status", err, w).Stack("auth").BadRequest()
+		return
+	}
+
+	handleSuccess(w, nil, "event creator status switched successfully", http.StatusOK)
 }

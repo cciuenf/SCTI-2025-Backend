@@ -35,3 +35,9 @@ type ActivityStandardErrorResponse struct {
 	Stack   string   `json:"stack,omitempty" example:"activity-stack"`
 	Errors  []string `json:"errors" example:"some error message"`
 }
+
+type ProductStandardErrorResponse struct {
+	Success bool     `json:"success" example:"false"`
+	Stack   string   `json:"stack,omitempty" example:"product-stack"`
+	Errors  []string `json:"errors" example:"some error message"`
+}
