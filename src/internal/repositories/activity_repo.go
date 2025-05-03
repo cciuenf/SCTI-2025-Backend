@@ -219,13 +219,13 @@ func (r *ActivityRepo) IsUserRegisteredToEvent(userID string, slug string) (bool
 	return count > 0, nil
 }
 
-func (r *ActivityRepo) GetActivityAttendees(activityID string) ([]models.ActivityRegistration, error) {
-	var attendees []models.ActivityRegistration
+func (r *ActivityRepo) GetActivityRegistrations(activityID string) ([]models.ActivityRegistration, error) {
+	var registrations []models.ActivityRegistration
 
-	err := r.DB.Where("activity_id = ?", activityID).Find(&attendees).Error
+	err := r.DB.Where("activity_id = ?", activityID).Find(&registrations).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return attendees, nil
+	return registrations, nil
 }

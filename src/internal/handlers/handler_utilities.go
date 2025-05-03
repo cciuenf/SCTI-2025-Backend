@@ -39,7 +39,8 @@ func decodeRequestBody(r *http.Request, target interface{}) error {
 	return nil
 }
 
-// handleError sends a standardized error response
+// DEPRECATED: Use HandleErr instead
+// handleError sends a standardized error response using the fluent API
 func handleError(w http.ResponseWriter, err error, statusCode int) {
 	u.SendError(w, []string{err.Error()}, "event-stack", statusCode)
 }

@@ -107,7 +107,7 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.Handle("DELETE /events/{slug}/activity", authMiddleware(http.HandlerFunc(activityHandler.DeleteEventActivity)))
 	mux.Handle("POST /events/{slug}/activity/register", authMiddleware(http.HandlerFunc(activityHandler.RegisterUserToActivity)))
 	mux.Handle("POST /events/{slug}/activity/unregister", authMiddleware(http.HandlerFunc(activityHandler.UnregisterUserFromActivity)))
-	mux.Handle("GET /events/{slug}/activity/attendees", authMiddleware(http.HandlerFunc(activityHandler.GetActivityAttendees)))
+	mux.Handle("GET /events/{slug}/activity/registrations", authMiddleware(http.HandlerFunc(activityHandler.GetActivityRegistrations)))
 	mux.Handle("POST /events/{slug}/activity/attend", authMiddleware(http.HandlerFunc(activityHandler.AttendActivity)))                                      // Only for admins to mark attendance
 	mux.Handle("POST /events/{slug}/activity/unattend", authMiddleware(http.HandlerFunc(activityHandler.UnattendActivity)))                                  // Only for master admins and above to mark unattendance
 	mux.Handle("POST /events/{slug}/activity/register-standalone", authMiddleware(http.HandlerFunc(activityHandler.RegisterUserToStandaloneActivity)))       // Only if the user is not registered to the event that contains the activity
