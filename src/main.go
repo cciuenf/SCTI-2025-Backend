@@ -124,6 +124,5 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.Handle("DELETE /events/{slug}/product", authMiddleware(http.HandlerFunc(productHandler.DeleteEventProduct)))
 	mux.Handle("GET /events/{slug}/products", authMiddleware(http.HandlerFunc(productHandler.GetAllProductsFromEvent)))
 	mux.Handle("POST /events/{slug}/purchase", authMiddleware(http.HandlerFunc(productHandler.PurchaseProducts)))
-	mux.Handle("POST /events/{slug}/try-purchase", authMiddleware(http.HandlerFunc(productHandler.TryPurchaseProducts)))
 	return mux
 }
