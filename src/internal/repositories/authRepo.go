@@ -152,17 +152,17 @@ func (r *AuthRepo) UpdateRefreshToken(userID, oldToken, newToken string) error {
 		Update("token_str", newToken).Error
 }
 
-func (r *AuthRepo) FindRefreshToken(userID, tokenStr string) *models.RefreshToken {
+func (r *AuthRepo) FindRefreshToken(userID, tokenStr string) (*models.RefreshToken, error) {
 	var token models.RefreshToken
 	err := r.DB.
 		Where("user_id = ? AND token_str = ?", userID, tokenStr).
 		First(&token).Error
 
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	return &token
+	return &token, nil
 }
 
 func (r *AuthRepo) DeleteRefreshToken(userID, tokenStr string) error {

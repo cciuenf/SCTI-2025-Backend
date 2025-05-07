@@ -337,11 +337,7 @@ func (s *AuthService) GenerateRefreshToken(userID string, r *http.Request) (stri
 }
 
 func (s *AuthService) FindRefreshToken(userID, tokenStr string) (*models.RefreshToken, error) {
-	token := s.AuthRepo.FindRefreshToken(userID, tokenStr)
-	if token == nil {
-		return nil, errors.New("refresh token not found")
-	}
-	return token, nil
+	return s.AuthRepo.FindRefreshToken(userID, tokenStr)
 }
 
 func (s *AuthService) GeneratePasswordResetToken(userID string) (string, error) {
