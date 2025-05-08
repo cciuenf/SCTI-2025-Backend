@@ -96,7 +96,10 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.HandleFunc("GET /events/{slug}", eventHandler.GetEvent)
 	mux.HandleFunc("GET /events", eventHandler.GetAllEvents)
 	mux.HandleFunc("GET /events/public", eventHandler.GetAllPublicEvents)
+	mux.Handle("GET /user-events", authMiddleware(http.HandlerFunc(eventHandler.GetUserEvents)))
 	mux.Handle("GET /events/created", authMiddleware(http.HandlerFunc(eventHandler.GetEventsCreatedByUser)))
+	mux.Handle("GET /user-accesses", authMiddleware(http.HandlerFunc(activityHandler.GetUserAccesses)))
+	mux.Handle("GET /events/{slug}/accesses", authMiddleware(http.HandlerFunc(activityHandler.GetUserAccessesFromEvent)))
 	mux.Handle("POST /events", authMiddleware(http.HandlerFunc(eventHandler.CreateEvent)))
 	mux.Handle("PATCH /events/{slug}", authMiddleware(http.HandlerFunc(eventHandler.UpdateEvent)))
 	mux.Handle("DELETE /events/{slug}", authMiddleware(http.HandlerFunc(eventHandler.DeleteEvent)))
@@ -107,6 +110,8 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 
 	// Event Activity routes accessed by event slug
 	mux.HandleFunc("GET /events/{slug}/activities", activityHandler.GetAllActivitiesFromEvent)
+	mux.Handle("GET /user-activities", authMiddleware(http.HandlerFunc(activityHandler.GetUserActivities)))
+	mux.Handle("GET /events/{slug}/user-activities", authMiddleware(http.HandlerFunc(activityHandler.GetUserActivitiesFromEvent)))
 	mux.Handle("POST /events/{slug}/activity", authMiddleware(http.HandlerFunc(activityHandler.CreateEventActivity)))
 	mux.Handle("PATCH /events/{slug}/activity", authMiddleware(http.HandlerFunc(activityHandler.UpdateEventActivity)))
 	mux.Handle("DELETE /events/{slug}/activity", authMiddleware(http.HandlerFunc(activityHandler.DeleteEventActivity)))
@@ -124,6 +129,9 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.Handle("DELETE /events/{slug}/product", authMiddleware(http.HandlerFunc(productHandler.DeleteEventProduct)))
 	mux.Handle("GET /events/{slug}/products", authMiddleware(http.HandlerFunc(productHandler.GetAllProductsFromEvent)))
 	mux.Handle("POST /events/{slug}/purchase", authMiddleware(http.HandlerFunc(productHandler.PurchaseProducts)))
-	mux.Handle("POST /events/{slug}/try-purchase", authMiddleware(http.HandlerFunc(productHandler.TryPurchaseProducts)))
+	mux.Handle("GET /user-products-relation", authMiddleware(http.HandlerFunc(productHandler.GetUserProductsRelation)))
+	mux.Handle("GET /user-products", authMiddleware(http.HandlerFunc(productHandler.GetUserProducts)))
+	mux.Handle("GET /user-tokens", authMiddleware(http.HandlerFunc(productHandler.GetUserTokens)))
+	mux.Handle("GET /user-purchases", authMiddleware(http.HandlerFunc(productHandler.GetUserPurchases)))
 	return mux
 }

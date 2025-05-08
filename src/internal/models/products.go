@@ -8,11 +8,11 @@ import (
 
 // Product represents any purchasable item that grants access or includes physical items
 type Product struct {
-	ID          string  `gorm:"type:varchar(36);primaryKey"`
-	EventID     string  `gorm:"type:varchar(36);index" json:"event_id"` // event the product is associated with
-	Name        string  `gorm:"type:varchar(100);not null" json:"name"`
-	Description string  `json:"description"`
-	Price       float64 `gorm:"not null" json:"price"`
+	ID          string `gorm:"type:varchar(36);primaryKey"`
+	EventID     string `gorm:"type:varchar(36);index" json:"event_id"` // event the product is associated with
+	Name        string `gorm:"type:varchar(100);not null" json:"name"`
+	Description string `json:"description"`
+	PriceInt    int    `gorm:"not null" json:"price_int"`
 
 	MaxOwnableQuantity int `json:"max_ownable_quantity"`
 
@@ -38,8 +38,13 @@ type Product struct {
 	HasUnlimitedQuantity bool `gorm:"default:false" json:"has_unlimited_quantity"` // If true, ignore Quantity
 	Quantity             int  `gorm:"default:0" json:"quantity"`                   // Available quantity
 
+	// TODO: Implement expiration logic to impede purchasing after a certain date
+	ExpiresAt *time.Time `json:"expires_at"`
+
 	// Relationships - combined into single table with type flag
 	AccessTargets []AccessTarget `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE" json:"access_targets"`
+
+	Users []User `gorm:"many2many:user_products;foreignKey:ID;joinForeignKey:ProductID;References:ID;joinReferences:UserID" json:"users,omitempty"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
@@ -47,10 +52,10 @@ type Product struct {
 }
 
 type ProductRequest struct {
-	Name        string  `json:"name"`
-	EventID     string  `json:"event_id"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price"`
+	Name        string `json:"name"`
+	EventID     string `json:"event_id"`
+	Description string `json:"description"`
+	PriceInt    int    `json:"price_int"`
 
 	MaxOwnableQuantity int `json:"max_ownable_quantity"`
 
@@ -77,7 +82,7 @@ type ProductRequest struct {
 	Quantity             int  `json:"quantity"`
 
 	// Access targets
-	AccessTargets []AccessTarget `json:"access_targets"`
+	AccessTargets []AccessTargetRequest `json:"access_targets"`
 }
 
 type ProductUpdateRequest struct {
@@ -156,12 +161,21 @@ type UserProduct struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+type AccessTargetRequest struct {
+	ProductID string `json:"product_id"`
+	TargetID  string `json:"target_id"`
+	IsEvent   bool   `json:"is_event"`
+}
+
+// TODO: Simplify access targets not use target ID, but use EventID and ActivityID and IsEvent flag
 // AccessTarget represents what a product grants access to (event or activity)
 type AccessTarget struct {
 	ID        string `gorm:"type:varchar(36);primaryKey" json:"id"`
 	ProductID string `gorm:"type:varchar(36);index" json:"product_id"`
 	TargetID  string `gorm:"type:varchar(36);index" json:"target_id"` // Event ID or Activity ID
 	IsEvent   bool   `gorm:"default:true" json:"is_event"`            // True if target is an event, false if activity
+
+	EventID *string `gorm:"type:varchar(36)" json:"event_id"` // For searching purposes
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

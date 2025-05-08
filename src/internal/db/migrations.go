@@ -18,6 +18,12 @@ func Migrate() {
 		&models.UserVerification{},
 		&models.Activity{},
 		&models.ActivityRegistration{},
+		&models.Product{},
+		&models.Purchase{},
+		&models.UserProduct{},
+		&models.UserToken{},
+		&models.ProductBundle{},
+		&models.AccessTarget{},
 	)
 	if err != nil {
 		log.Fatalf("migrations failed: %v", err)

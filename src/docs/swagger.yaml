@@ -155,6 +155,9 @@ definitions:
         type: string
       deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
+      event_id:
+        description: For searching purposes
+        type: string
       id:
         type: string
       is_event:
@@ -166,6 +169,15 @@ definitions:
         description: Event ID or Activity ID
         type: string
       updated_at:
+        type: string
+    type: object
+  models.AccessTargetRequest:
+    properties:
+      is_event:
+        type: boolean
+      product_id:
+        type: string
+      target_id:
         type: string
     type: object
   models.Activity:
@@ -246,6 +258,9 @@ definitions:
       is_standalone_registration:
         description: Is this from an event or standalone
         type: boolean
+      product_id:
+        description: Which product was used (if applicable)
+        type: string
       registered_at:
         type: string
       token_id:
@@ -440,6 +455,10 @@ definitions:
       event_id:
         description: event the product is associated with
         type: string
+      expires_at:
+        description: 'TODO: Implement expiration logic to impede purchasing after
+          a certain date'
+        type: string
       has_unlimited_quantity:
         description: Stock management (for physical items)
         type: boolean
@@ -473,8 +492,8 @@ definitions:
         type: integer
       name:
         type: string
-      price:
-        type: number
+      price_int:
+        type: integer
       quantity:
         description: Available quantity
         type: integer
@@ -483,6 +502,10 @@ definitions:
         type: integer
       updated_at:
         type: string
+      users:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
     type: object
   models.ProductDeleteRequest:
     properties:
@@ -494,7 +517,7 @@ definitions:
       access_targets:
         description: Access targets
         items:
-          $ref: '#/definitions/models.AccessTarget'
+          $ref: '#/definitions/models.AccessTargetRequest'
         type: array
       description:
         type: string
@@ -525,8 +548,8 @@ definitions:
         type: integer
       name:
         type: string
-      price:
-        type: number
+      price_int:
+        type: integer
       quantity:
         type: integer
       token_quantity:
@@ -650,7 +673,39 @@ definitions:
         type: string
       name:
         type: string
+      products:
+        items:
+          $ref: '#/definitions/models.Product'
+        type: array
       updated_at:
+        type: string
+    type: object
+  models.UserToken:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      event_id:
+        type: string
+      id:
+        type: string
+      is_used:
+        type: boolean
+      product_id:
+        description: Original product that created this token
+        type: string
+      updated_at:
+        type: string
+      used_at:
+        type: string
+      used_for_id:
+        description: Activity ID if used
+        type: string
+      user_id:
+        type: string
+      user_product_id:
+        description: Which user product this token belongs to
         type: string
     type: object
 host: localhost:8080
@@ -903,6 +958,57 @@ paths:
       summary: Update an event by slug
       tags:
       - events
+  /events/{slug}/accesses:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all accesses for a specified user
+        from a specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.AccessTarget'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of accesses for a user from an event
+      tags:
+      - activities
   /events/{slug}/activities:
     get:
       description: Returns all activities for the specified event
@@ -1860,60 +1966,6 @@ paths:
       summary: Register to an event
       tags:
       - events
-  /events/{slug}/try-purchase:
-    post:
-      consumes:
-      - application/json
-      description: |-
-        Tries to purchase products for the authenticated user without committing to the database
-        This is used to check if the purchase would be successful so the frontend can show the user the result
-      parameters:
-      - description: Bearer {access_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Bearer {refresh_token}
-        in: header
-        name: Refresh
-        required: true
-        type: string
-      - description: Event slug
-        in: path
-        name: slug
-        required: true
-        type: string
-      - description: Purchase info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.PurchaseRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.Purchase'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
-      security:
-      - Bearer: []
-      summary: Try to purchase products
-      tags:
-      - products
   /events/{slug}/unregister:
     post:
       description: Unregisters the authenticated user from an event by its slug
@@ -1953,6 +2005,57 @@ paths:
       summary: Unregister from an event
       tags:
       - events
+  /events/{slug}/user-activities:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all activities for a specified
+        user from a specified event
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Activity'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of activities for a user from an event
+      tags:
+      - activities
   /events/created:
     get:
       description: Returns a list of all events created by a user
@@ -2258,6 +2361,302 @@ paths:
       summary: Toggle event creator status
       tags:
       - auth
+  /user-accesses:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all accesses for a specified user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.AccessTarget'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of accesses for a user
+      tags:
+      - activities
+  /user-activities:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all activities for a specified
+        user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Activity'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of activities for a user
+      tags:
+      - activities
+  /user-events:
+    get:
+      description: Returns a list of all events for the authenticated user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Event'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.EventStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user events
+      tags:
+      - events
+  /user-products:
+    get:
+      description: Returns a list of all products for the authenticated user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Product'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user products
+      tags:
+      - products
+  /user-products-relation:
+    get:
+      description: Returns a list of all products for the authenticated user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Product'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user products
+      tags:
+      - products
+  /user-purchases:
+    get:
+      description: Returns a list of all purchases for the authenticated user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Purchase'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user purchases
+      tags:
+      - products
+  /user-tokens:
+    get:
+      description: Returns a list of all tokens for the authenticated user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.UserToken'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ProductStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user tokens
+      tags:
+      - products
   /verify-account:
     post:
       consumes:

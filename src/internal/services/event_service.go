@@ -22,8 +22,8 @@ func NewEventService(repo *repos.EventRepo) *EventService {
 }
 
 func (s *EventService) CreateEvent(user models.User, body models.CreateEventRequest) (*models.Event, error) {
-	if !user.IsEventCreator || !user.IsSuperUser {
-		return nil, errors.New("only master users can create events")
+	if !user.IsEventCreator && !user.IsSuperUser {
+		return nil, errors.New("only super users or event creators can create events")
 	}
 
 	var event models.Event
@@ -303,4 +303,8 @@ func (s *EventService) GetUserByID(userID string) (models.User, error) {
 
 func (s *EventService) GetEventsCreatedByUser(user models.User) ([]models.Event, error) {
 	return s.EventRepo.GetEventsCreatedByUser(user.ID)
+}
+
+func (s *EventService) GetUserEvents(user models.User) ([]models.Event, error) {
+	return s.EventRepo.GetUserEvents(user.ID)
 }

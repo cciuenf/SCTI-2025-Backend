@@ -75,17 +75,15 @@ func (r *ActivityRepo) UnregisterUserFromActivity(activityID, userID string) err
 		Delete(&models.ActivityRegistration{}).Error
 }
 
-func (r *ActivityRepo) IsUserRegisteredToActivity(activityID, userID string) (bool, error) {
-	var count int64
-	err := r.DB.Model(&models.ActivityRegistration{}).
-		Where("activity_id = ? AND user_id = ?", activityID, userID).
-		Count(&count).Error
+func (r *ActivityRepo) IsUserRegisteredToActivity(activityID, userID string) (bool, models.ActivityRegistration, error) {
+	var registration models.ActivityRegistration
+	err := r.DB.Where("activity_id = ? AND user_id = ?", activityID, userID).First(&registration).Error
 
 	if err != nil {
-		return false, err
+		return false, models.ActivityRegistration{}, err
 	}
 
-	return count > 0, nil
+	return true, registration, nil
 }
 
 func (r *ActivityRepo) SetUserAttendance(activityID, userID string, attended bool) error {
@@ -228,4 +226,93 @@ func (r *ActivityRepo) GetActivityRegistrations(activityID string) ([]models.Act
 	}
 
 	return registrations, nil
+}
+
+func (r *ActivityRepo) GetUserProductsRelation(userID string) ([]models.UserProduct, error) {
+	var userProducts []models.UserProduct
+	if err := r.DB.Where("user_id = ?", userID).Find(&userProducts).Error; err != nil {
+		return nil, err
+	}
+	return userProducts, nil
+}
+
+func (r *ActivityRepo) GetUserAccesses(userID string) ([]models.AccessTarget, error) {
+	userProducts, err := r.GetUserProductsRelation(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var productIDs []string
+	for _, product := range userProducts {
+		productIDs = append(productIDs, product.ProductID)
+	}
+
+	var products []models.Product
+	err = r.DB.Preload("AccessTargets").Where("id IN ?", productIDs).Find(&products).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var accessTargets []models.AccessTarget
+	for _, product := range products {
+		accessTargets = append(accessTargets, product.AccessTargets...)
+	}
+
+	return accessTargets, nil
+}
+
+func (r *ActivityRepo) GetUserAccessesFromEvent(userID string, event models.Event) ([]models.AccessTarget, error) {
+	accessTargets, err := r.GetUserAccesses(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var eventAccesses []models.AccessTarget
+	for _, accessTarget := range accessTargets {
+		if accessTarget.EventID != nil {
+			if *accessTarget.EventID == event.ID {
+				eventAccesses = append(eventAccesses, accessTarget)
+			}
+		}
+	}
+
+	return eventAccesses, nil
+}
+
+func (r *ActivityRepo) GetUserTokens(userID string) ([]models.UserToken, error) {
+	var userTokens []models.UserToken
+	if err := r.DB.Where("user_id = ?", userID).Find(&userTokens).Error; err != nil {
+		return nil, err
+	}
+	return userTokens, nil
+}
+
+func (r *ActivityRepo) UpdateUserToken(userToken models.UserToken) error {
+	return r.DB.Save(&userToken).Error
+}
+
+func (r *ActivityRepo) GetUserActivities(userID string) ([]models.Activity, error) {
+	var activitiesRegistrations []models.ActivityRegistration
+	if err := r.DB.Where("user_id = ?", userID).Find(&activitiesRegistrations).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return []models.Activity{}, nil
+		}
+		return nil, err
+	}
+
+	if len(activitiesRegistrations) == 0 {
+		return []models.Activity{}, nil
+	}
+
+	var activityIDs []string
+	for _, activityRegistration := range activitiesRegistrations {
+		activityIDs = append(activityIDs, activityRegistration.ActivityID)
+	}
+
+	var activities []models.Activity
+	if err := r.DB.Where("id IN ?", activityIDs).Find(&activities).Error; err != nil {
+		return nil, err
+	}
+
+	return activities, nil
 }

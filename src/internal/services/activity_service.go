@@ -5,6 +5,7 @@ import (
 	"scti/internal/models"
 	repos "scti/internal/repositories"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -191,11 +192,20 @@ func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug str
 		return errors.New("activity not found: " + err.Error())
 	}
 
+	if activity.IsBlocked {
+		return errors.New("activity is currently blocked")
+	}
+
 	if activity.EventID == nil || *activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
 
-	isRegistered, err := s.ActivityRepo.IsUserRegisteredToEvent(user.ID, eventSlug)
+	now := time.Now()
+	if activity.EndTime.Before(now) {
+		return errors.New("activity has already ended")
+	}
+
+	isRegistered, err := s.ActivityRepo.IsUserRegisteredToEvent(user.ID, event.Slug)
 	if err != nil {
 		return errors.New("error checking event registration: " + err.Error())
 	}
@@ -215,13 +225,50 @@ func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug str
 		}
 	}
 
-	if activity.IsBlocked {
-		return errors.New("activity is currently blocked")
+	userAccesses, err := s.ActivityRepo.GetUserAccesses(user.ID)
+	if err != nil {
+		return errors.New("error checking user accesses: " + err.Error())
 	}
 
-	// TODO: Implement token logic for only allowing user with tokens to register to an activity with a fee
-	if activity.HasFee {
-		return errors.New("this activity requires a token or payment")
+	var hasAccess bool
+	for _, access := range userAccesses {
+		if access.TargetID == activityID {
+			hasAccess = true
+			break
+		}
+	}
+
+	if !hasAccess && activity.HasFee {
+		userTokens, err := s.ActivityRepo.GetUserTokens(user.ID)
+		if err != nil {
+			return errors.New("error checking user tokens: " + err.Error())
+		}
+
+		if len(userTokens) == 0 {
+			return errors.New("this activity requires a token or payment")
+		}
+
+		var useToken models.UserToken
+		var foundToken bool
+		for _, token := range userTokens {
+			if !token.IsUsed && token.EventID == event.ID {
+				useToken = token
+				foundToken = true
+				break
+			}
+		}
+
+		if !foundToken {
+			return errors.New("user does not have any available tokens")
+		}
+
+		useToken.IsUsed = true
+		now := time.Now()
+		useToken.UsedAt = &now
+		useToken.UsedForID = &activityID
+		if err := s.ActivityRepo.UpdateUserToken(useToken); err != nil {
+			return errors.New("error updating user token: " + err.Error())
+		}
 	}
 
 	registration := &models.ActivityRegistration{
@@ -248,11 +295,15 @@ func (s *ActivityService) UnregisterUserFromActivity(user models.User, eventSlug
 		return errors.New("activity not found: " + err.Error())
 	}
 
+	if activity.IsBlocked {
+		return errors.New("activity is currently blocked")
+	}
+
 	if activity.EventID == nil || *activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
 
-	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)
+	isRegistered, registration, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)
 	if err != nil {
 		return errors.New("error checking activity registration: " + err.Error())
 	}
@@ -261,12 +312,59 @@ func (s *ActivityService) UnregisterUserFromActivity(user models.User, eventSlug
 		return errors.New("user is not registered to this activity")
 	}
 
-	// TODO: Prohibit unregistering from activities that they have already attended
+	if registration.AttendedAt != nil {
+		return errors.New("user has already attended this activity")
+	}
 
-	// TODO: Prohibit unregistering from activities that they have already paid for
+	userAccesses, err := s.ActivityRepo.GetUserAccesses(user.ID)
+	if err != nil {
+		return errors.New("error checking user accesses: " + err.Error())
+	}
 
-	if activity.IsBlocked {
-		return errors.New("activity is currently blocked")
+	var hasAccess bool
+	for _, access := range userAccesses {
+		if access.TargetID == activityID {
+			hasAccess = true
+			break
+		}
+	}
+
+	if hasAccess {
+		return errors.New("user has direct paid access to this activity")
+	}
+
+	if activity.HasFee {
+		userTokens, err := s.ActivityRepo.GetUserTokens(user.ID)
+		if err != nil {
+			return errors.New("error checking user tokens: " + err.Error())
+		}
+
+		if len(userTokens) == 0 {
+			return errors.New("this activity requires a token or payment")
+		}
+
+		var cleanToken models.UserToken
+		var foundToken bool
+		for _, token := range userTokens {
+			if token.IsUsed {
+				if *token.UsedForID == activityID {
+					cleanToken = token
+					foundToken = true
+					break
+				}
+			}
+		}
+
+		if !foundToken {
+			return errors.New("user does not have any available tokens")
+		}
+
+		cleanToken.IsUsed = false
+		cleanToken.UsedAt = nil
+		cleanToken.UsedForID = nil
+		if err := s.ActivityRepo.UpdateUserToken(cleanToken); err != nil {
+			return errors.New("error updating user token: " + err.Error())
+		}
 	}
 
 	if err := s.ActivityRepo.UnregisterUserFromActivity(activityID, user.ID); err != nil {
@@ -345,7 +443,7 @@ func (s *ActivityService) UnregisterUserFromStandaloneActivity(user models.User,
 		return errors.New("this activity does not support standalone registration")
 	}
 
-	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)
+	isRegistered, registration, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)
 	if err != nil {
 		return errors.New("error checking activity registration: " + err.Error())
 	}
@@ -354,9 +452,26 @@ func (s *ActivityService) UnregisterUserFromStandaloneActivity(user models.User,
 		return errors.New("user is not registered to this activity")
 	}
 
-	// TODO: Prohibit unregistering from activities that they have already attended
+	if registration.AttendedAt != nil {
+		return errors.New("user has already attended this activity")
+	}
 
-	// TODO: Prohibit unregistering from activities that they have already paid for
+	userAccesses, err := s.ActivityRepo.GetUserAccesses(user.ID)
+	if err != nil {
+		return errors.New("error checking user accesses: " + err.Error())
+	}
+
+	var hasAccess bool
+	for _, access := range userAccesses {
+		if access.TargetID == activityID {
+			hasAccess = true
+			break
+		}
+	}
+
+	if hasAccess {
+		return errors.New("user has direct paid access to this activity")
+	}
 
 	if activity.IsBlocked {
 		return errors.New("activity is currently blocked")
@@ -391,13 +506,17 @@ func (s *ActivityService) AttendActivity(admin models.User, eventSlug string, ac
 		}
 	}
 
-	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, userID)
+	isRegistered, registration, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, userID)
 	if err != nil {
 		return errors.New("error checking activity registration: " + err.Error())
 	}
 
 	if !isRegistered {
 		return errors.New("user is not registered to this activity")
+	}
+
+	if registration.AttendedAt != nil {
+		return errors.New("user has already attended this activity")
 	}
 
 	if err := s.ActivityRepo.SetUserAttendance(activityID, userID, true); err != nil {
@@ -429,13 +548,17 @@ func (s *ActivityService) UnattendActivity(admin models.User, eventSlug string, 
 		}
 	}
 
-	isRegistered, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, userID)
+	isRegistered, registration, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, userID)
 	if err != nil {
 		return errors.New("error checking activity registration: " + err.Error())
 	}
 
 	if !isRegistered {
 		return errors.New("user is not registered to this activity")
+	}
+
+	if registration.AttendedAt == nil {
+		return errors.New("user has not attended this activity")
 	}
 
 	if err := s.ActivityRepo.SetUserAttendance(activityID, userID, false); err != nil {
@@ -473,4 +596,47 @@ func (s *ActivityService) GetActivityRegistrations(admin models.User, eventSlug 
 	}
 
 	return registrations, nil
+}
+
+func (s *ActivityService) GetUserAccesses(userID string) ([]models.AccessTarget, error) {
+	return s.ActivityRepo.GetUserAccesses(userID)
+}
+
+func (s *ActivityService) GetUserAccessesFromEvent(userID string, eventSlug string) ([]models.AccessTarget, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	return s.ActivityRepo.GetUserAccessesFromEvent(userID, *event)
+}
+
+func (s *ActivityService) GetUserActivities(user models.User) ([]models.Activity, error) {
+	userActivities, err := s.ActivityRepo.GetUserActivities(user.ID)
+	if err != nil {
+		return nil, errors.New("error checking user activities: " + err.Error())
+	}
+
+	return userActivities, nil
+}
+
+func (s *ActivityService) GetUserActivitiesFromEvent(user models.User, eventSlug string) ([]models.Activity, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	userActivities, err := s.ActivityRepo.GetUserActivities(user.ID)
+	if err != nil {
+		return nil, errors.New("error checking user activities: " + err.Error())
+	}
+
+	var activities []models.Activity
+	for _, activity := range userActivities {
+		if activity.EventID == &event.ID {
+			activities = append(activities, activity)
+		}
+	}
+
+	return activities, nil
 }

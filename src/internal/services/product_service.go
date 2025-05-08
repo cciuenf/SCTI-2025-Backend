@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
@@ -20,6 +19,8 @@ func NewProductService(repo *repos.ProductRepo) *ProductService {
 	}
 }
 
+// TODO: Integrate bundled products
+// TODO: Verify if the access targets are valid
 func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -40,25 +41,6 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 		}
 	}
 
-	accessTargets := make([]models.AccessTarget, len(req.AccessTargets))
-	for i, target := range req.AccessTargets {
-		if target.IsEvent && req.IsEventAccess {
-			accessTargets[i] = models.AccessTarget{
-				ID:        uuid.New().String(),
-				ProductID: target.ProductID,
-				TargetID:  target.TargetID,
-				IsEvent:   target.IsEvent,
-			}
-		} else if !target.IsEvent && req.IsActivityAccess {
-			accessTargets[i] = models.AccessTarget{
-				ID:        uuid.New().String(),
-				ProductID: target.ProductID,
-				TargetID:  target.TargetID,
-				IsEvent:   target.IsEvent,
-			}
-		}
-	}
-
 	if req.IsActivityToken && req.TokenQuantity <= 0 {
 		return nil, errors.New("token quantity must be greater than 0")
 	}
@@ -69,12 +51,35 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 		req.IsTicketType = false
 	}
 
+	productID := uuid.New().String()
+
+	accessTargets := make([]models.AccessTarget, len(req.AccessTargets))
+	for i, target := range req.AccessTargets {
+		if target.IsEvent && req.IsEventAccess {
+			accessTargets[i] = models.AccessTarget{
+				ID:        uuid.New().String(),
+				ProductID: productID,
+				TargetID:  target.TargetID,
+				EventID:   &event.ID,
+				IsEvent:   target.IsEvent,
+			}
+		} else if !target.IsEvent && req.IsActivityAccess {
+			accessTargets[i] = models.AccessTarget{
+				ID:        uuid.New().String(),
+				ProductID: productID,
+				TargetID:  target.TargetID,
+				EventID:   &event.ID,
+				IsEvent:   target.IsEvent,
+			}
+		}
+	}
+
 	product := models.Product{
-		ID:                   uuid.New().String(),
+		ID:                   productID,
 		EventID:              event.ID,
 		Name:                 req.Name,
 		Description:          req.Description,
-		Price:                req.Price,
+		PriceInt:             req.PriceInt,
 		MaxOwnableQuantity:   req.MaxOwnableQuantity,
 		IsEventAccess:        req.IsEventAccess,
 		IsActivityAccess:     req.IsActivityAccess,
@@ -98,6 +103,8 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 	return &product, nil
 }
 
+// TODO: Verify if the access targets are valid
+// TODO: Integrate bundled products
 func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, productID string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -128,7 +135,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 
 	product.Name = req.Name
 	product.Description = req.Description
-	product.Price = req.Price
+	product.PriceInt = req.PriceInt
 	product.MaxOwnableQuantity = req.MaxOwnableQuantity
 	product.IsEventAccess = req.IsEventAccess
 	product.IsActivityAccess = req.IsActivityAccess
@@ -141,7 +148,17 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 	product.TokenQuantity = req.TokenQuantity
 	product.HasUnlimitedQuantity = req.HasUnlimitedQuantity
 	product.Quantity = req.Quantity
-	product.AccessTargets = req.AccessTargets
+
+	var accessTargets []models.AccessTarget
+	for _, target := range req.AccessTargets {
+		accessTargets = append(accessTargets, models.AccessTarget{
+			ID:        uuid.New().String(),
+			ProductID: target.ProductID,
+			TargetID:  target.TargetID,
+		})
+	}
+
+	product.AccessTargets = accessTargets
 
 	err = s.ProductRepo.UpdateProduct(product)
 	if err != nil {
@@ -206,250 +223,43 @@ func (s *ProductService) GetAllProductsFromEvent(eventSlug string) ([]models.Pro
 
 // TODO: Think very carefully about this but for now, just create a purchase record
 // TODO: Implement a try buy so the frontend can show the user if anything will go wrong before they purchase
+// TODO: Integrate bundled products
 func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
-	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
-	if err != nil {
-		return nil, errors.New("event not found: " + err.Error())
-	}
-
-	product, err := s.ProductRepo.GetProductByID(req.ProductID)
-	if err != nil {
-		return nil, errors.New("product not found: " + err.Error())
-	}
-
-	if product.EventID != event.ID {
-		return nil, errors.New("product does not belong to this event")
-	}
-
-	if product.IsBlocked {
-		return nil, errors.New("product is blocked from purchases")
-	}
-
-	if !product.HasUnlimitedQuantity {
-		if product.Quantity < req.Quantity {
-			return nil, errors.New("not enough quantity available")
-		}
-	}
-
-	if req.Quantity > product.MaxOwnableQuantity {
-		return nil, errors.New("quantity exceeds max ownable quantity")
-	}
-
-	// Query for existing user product
-	ownedUserProducts, err := s.ProductRepo.GetUserProductByUserIDAndProductID(user.ID, product.ID)
-	if err != nil {
-		return nil, errors.New("failed to get user product: " + err.Error())
-	}
-
-	// check if the user product is already purchased and how many they have
-	// if trying to buy more than allowed, I.E has 3 max allowed 4 but trying to buy 2
-	// send a response to the server to let the user know they can't buy more than 1
-	var ownedQuantity int
-	if len(ownedUserProducts) > 0 {
-		for _, userProduct := range ownedUserProducts {
-			ownedQuantity += userProduct.Quantity
-		}
-	}
-
-	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
-		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
-		return nil, errors.New(text)
-	}
-
-	purchaseID := uuid.New().String()
-	purchase := &models.Purchase{
-		ID:         purchaseID,
-		UserID:     user.ID,
-		ProductID:  product.ID,
-		Quantity:   req.Quantity,
-		IsGift:     req.IsGift,
-		GiftedToID: req.GiftedToID,
-	}
-
-	err = s.ProductRepo.CreatePurchase(purchase)
-	if err != nil {
-		return nil, errors.New("failed to create purchase: " + err.Error())
-	}
-
-	if !product.HasUnlimitedQuantity {
-		product.Quantity -= req.Quantity
-		err = s.ProductRepo.UpdateProduct(product)
-		if err != nil {
-			return nil, errors.New("failed to update product quantity: " + err.Error())
-		}
-	}
-
-	// Create a user product record
-	userProduct := &models.UserProduct{
-		ID:         uuid.New().String(),
-		PurchaseID: purchaseID,
-		ProductID:  product.ID,
-		Quantity:   req.Quantity,
-	}
-
-	if req.IsGift {
-		userProduct.ReceivedAsGift = true
-		userProduct.GiftedFromID = &user.ID
-		userProduct.UserID = *req.GiftedToID
-	} else {
-		userProduct.UserID = user.ID
-	}
-
-	err = s.ProductRepo.CreateUserProduct(userProduct)
-	if err != nil {
-		return nil, errors.New("failed to create user product: " + err.Error())
-	}
-
-	// create tokens if any
-	userTokens := make([]models.UserToken, product.TokenQuantity)
-	if product.IsActivityToken {
-		for i := 0; i < product.TokenQuantity; i++ {
-			token := &models.UserToken{
-				ID:            uuid.New().String(),
-				UserID:        user.ID,
-				UserProductID: userProduct.ID,
-				ProductID:     product.ID,
-				IsUsed:        false,
-				UsedAt:        nil,
-				UsedForID:     nil,
-			}
-
-			err = s.ProductRepo.CreateUserToken(token)
-			if err != nil {
-				return nil, errors.New("failed to create user token: " + err.Error())
-			}
-			userTokens[i] = *token
-		}
-	}
-
-	return &models.PurchaseResponse{
-		Purchase:    *purchase,
-		UserProduct: *userProduct,
-		UserTokens:  userTokens,
-	}, nil
+	return s.ProductRepo.PurchaseProduct(user, eventSlug, req)
 }
 
-func (s *ProductService) TryPurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest) (*models.PurchaseResponse, error) {
-	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
+func (s *ProductService) GetUserProductsRelation(user models.User) ([]models.UserProduct, error) {
+	products, err := s.ProductRepo.GetUserProductsRelation(user.ID)
 	if err != nil {
-		return nil, errors.New("event not found: " + err.Error())
+		return nil, errors.New("failed to get products: " + err.Error())
 	}
 
-	product, err := s.ProductRepo.GetProductByID(req.ProductID)
+	return products, nil
+}
+
+func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, error) {
+	userProducts, err := s.ProductRepo.GetUserProductsRelation(user.ID)
 	if err != nil {
-		return nil, errors.New("product not found: " + err.Error())
+		return nil, errors.New("failed to get products: " + err.Error())
 	}
 
-	if product.EventID != event.ID {
-		return nil, errors.New("product does not belong to this event")
+	productIDs := make([]string, len(userProducts))
+	for i, product := range userProducts {
+		productIDs[i] = product.ProductID
 	}
 
-	if product.IsBlocked {
-		return nil, errors.New("product is blocked from purchases")
-	}
-
-	if !product.HasUnlimitedQuantity {
-		if product.Quantity < req.Quantity {
-			return nil, errors.New("not enough quantity available")
-		}
-	}
-
-	if req.Quantity > product.MaxOwnableQuantity {
-		return nil, errors.New("quantity exceeds max ownable quantity")
-	}
-
-	// Query for existing user product
-	ownedUserProducts, err := s.ProductRepo.GetUserProductByUserIDAndProductID(user.ID, product.ID)
+	products, err := s.ProductRepo.GetProductsByIDs(productIDs)
 	if err != nil {
-		return nil, errors.New("failed to get user product: " + err.Error())
+		return nil, errors.New("failed to get products: " + err.Error())
 	}
 
-	// check if the user product is already purchased and how many they have
-	// if trying to buy more than allowed, I.E has 3 max allowed 4 but trying to buy 2
-	// send a response to the server to let the user know they can't buy more than 1
-	var ownedQuantity int
-	if len(ownedUserProducts) > 0 {
-		for _, userProduct := range ownedUserProducts {
-			ownedQuantity += userProduct.Quantity
-		}
-	}
+	return products, nil
+}
 
-	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
-		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
-		return nil, errors.New(text)
-	}
+func (s *ProductService) GetUserTokens(user models.User) ([]models.UserToken, error) {
+	return s.ProductRepo.GetUserTokens(user.ID)
+}
 
-	purchaseID := uuid.New().String()
-	purchase := &models.Purchase{
-		ID:         purchaseID,
-		UserID:     user.ID,
-		ProductID:  product.ID,
-		Quantity:   req.Quantity,
-		IsGift:     req.IsGift,
-		GiftedToID: req.GiftedToID,
-	}
-
-	// Simulate a purchase record with a special db function that doesn't actually create a record
-	err = s.ProductRepo.SimulatePurchase(purchase)
-	if err != nil {
-		return nil, errors.New("failed to simulate purchase: " + err.Error())
-	}
-
-	// simulate updating product quantity
-	product.Quantity -= req.Quantity
-	err = s.ProductRepo.SimulateUpdateProduct(product)
-	if err != nil {
-		return nil, errors.New("failed to simulate update product quantity: " + err.Error())
-	}
-
-	// Create a user product record
-	userProduct := &models.UserProduct{
-		ID:         uuid.New().String(),
-		PurchaseID: purchaseID,
-		ProductID:  product.ID,
-		Quantity:   req.Quantity,
-	}
-
-	if req.IsGift {
-		userProduct.ReceivedAsGift = true
-		userProduct.GiftedFromID = &user.ID
-		userProduct.UserID = *req.GiftedToID
-	} else {
-		userProduct.UserID = user.ID
-	}
-
-	// simulate creating a user product record
-	err = s.ProductRepo.SimulateUserProduct(userProduct)
-	if err != nil {
-		return nil, errors.New("failed to simulate user product: " + err.Error())
-	}
-
-	// create tokens if any
-	userTokens := make([]models.UserToken, product.TokenQuantity)
-	if product.IsActivityToken {
-		for i := 0; i < product.TokenQuantity; i++ {
-			token := &models.UserToken{
-				ID:            uuid.New().String(),
-				UserID:        user.ID,
-				UserProductID: userProduct.ID,
-				ProductID:     product.ID,
-				IsUsed:        false,
-				UsedAt:        nil,
-				UsedForID:     nil,
-			}
-
-			// simulate creating a user token record
-			err = s.ProductRepo.SimulateUserToken(token)
-			if err != nil {
-				return nil, errors.New("failed to simulate user token: " + err.Error())
-			}
-			userTokens[i] = *token
-		}
-	}
-
-	return &models.PurchaseResponse{
-		Purchase:    *purchase,
-		UserProduct: *userProduct,
-		UserTokens:  userTokens,
-	}, nil
+func (s *ProductService) GetUserPurchases(user models.User) ([]models.Purchase, error) {
+	return s.ProductRepo.GetUserPurchases(user.ID)
 }

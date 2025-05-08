@@ -223,3 +223,24 @@ func (r *EventRepo) GetEventsCreatedByUser(userID string) ([]models.Event, error
 
 	return events, nil
 }
+
+func (r *EventRepo) GetUserEvents(userID string) ([]models.Event, error) {
+	var registrations []models.EventRegistration
+	err := r.DB.Where("user_id = ?", userID).Find(&registrations).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var eventIDs []string
+	for _, registration := range registrations {
+		eventIDs = append(eventIDs, registration.EventID)
+	}
+
+	var events []models.Event
+	err = r.DB.Where("id IN ?", eventIDs).Find(&events).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
