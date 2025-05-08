@@ -59,6 +59,7 @@ type ActivityRegistration struct {
 
 	// Access method tracking
 	AccessMethod string  `gorm:"type:varchar(20)" json:"access_method"` // "event", "product", "token", or "direct"
+	ProductID    *string `gorm:"type:varchar(36)" json:"product_id"`    // Which product was used (if applicable)
 	TokenID      *string `gorm:"type:varchar(36)" json:"token_id"`      // Which token was used (if applicable)
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
@@ -77,8 +78,10 @@ const (
 type AccessMethod string
 
 const (
-	AccessMethodDirect AccessMethod = "direct"
-	AccessMethodEvent  AccessMethod = "event"
+	AccessMethodDirect  AccessMethod = "direct"
+	AccessMethodEvent   AccessMethod = "event"
+	AccessMethodProduct AccessMethod = "product"
+	AccessMethodToken   AccessMethod = "token"
 )
 
 // ----------------- Request and Response Models ----------------- //

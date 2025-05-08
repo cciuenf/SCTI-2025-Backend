@@ -558,3 +558,137 @@ func (h *ActivityHandler) GetActivityRegistrations(w http.ResponseWriter, r *htt
 
 	handleSuccess(w, registrations, "", http.StatusOK)
 }
+
+// GetUserAccesses godoc
+// @Summary      Retrieves a list of accesses for a user
+// @Description  The end point returns a list of all accesses for a specified user
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.AccessTarget}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Failure      403  {object}  ActivityStandardErrorResponse
+// @Router       /user-accesses [get]
+func (h *ActivityHandler) GetUserAccesses(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	var accesses []models.AccessTarget
+	if accesses, err = h.ActivityService.GetUserAccesses(user.ID); err != nil {
+		HandleErrMsg("error getting accesses", err, w).Stack("activity").BadRequest()
+		return
+	}
+
+	handleSuccess(w, accesses, "", http.StatusOK)
+}
+
+// GetUserAccessesFromEvent godoc
+// @Summary      Retrieves a list of accesses for a user from an event
+// @Description  The end point returns a list of all accesses for a specified user from a specified event
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.AccessTarget}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Failure      403  {object}  ActivityStandardErrorResponse
+// @Router       /events/{slug}/accesses [get]
+func (h *ActivityHandler) GetUserAccessesFromEvent(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	var accesses []models.AccessTarget
+	if accesses, err = h.ActivityService.GetUserAccessesFromEvent(user.ID, slug); err != nil {
+		HandleErrMsg("error getting accesses", err, w).Stack("activity").BadRequest()
+		return
+	}
+
+	handleSuccess(w, accesses, "", http.StatusOK)
+}
+
+// GetUserActivities godoc
+// @Summary      Retrieves a list of activities for a user
+// @Description  The end point returns a list of all activities for a specified user
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.Activity}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Failure      403  {object}  ActivityStandardErrorResponse
+// @Router       /user-activities [get]
+func (h *ActivityHandler) GetUserActivities(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	var activities []models.Activity
+	if activities, err = h.ActivityService.GetUserActivities(user); err != nil {
+		HandleErrMsg("error getting activities", err, w).Stack("activity").BadRequest()
+		return
+	}
+
+	handleSuccess(w, activities, "", http.StatusOK)
+}
+
+// GetUserActivitiesFromEvent godoc
+// @Summary      Retrieves a list of activities for a user from an event
+// @Description  The end point returns a list of all activities for a specified user from a specified event
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.Activity}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Failure      403  {object}  ActivityStandardErrorResponse
+// @Router       /events/{slug}/user-activities [get]
+func (h *ActivityHandler) GetUserActivitiesFromEvent(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	var activities []models.Activity
+	if activities, err = h.ActivityService.GetUserActivitiesFromEvent(user, slug); err != nil {
+		HandleErrMsg("error getting activities", err, w).Stack("activity").BadRequest()
+		return
+	}
+
+	handleSuccess(w, activities, "", http.StatusOK)
+}

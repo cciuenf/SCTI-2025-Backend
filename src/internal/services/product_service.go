@@ -19,6 +19,8 @@ func NewProductService(repo *repos.ProductRepo) *ProductService {
 	}
 }
 
+// TODO: Integrate bundled products
+// TODO: Verify if the access targets are valid
 func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -39,25 +41,6 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 		}
 	}
 
-	accessTargets := make([]models.AccessTarget, len(req.AccessTargets))
-	for i, target := range req.AccessTargets {
-		if target.IsEvent && req.IsEventAccess {
-			accessTargets[i] = models.AccessTarget{
-				ID:        uuid.New().String(),
-				ProductID: target.ProductID,
-				TargetID:  target.TargetID,
-				IsEvent:   target.IsEvent,
-			}
-		} else if !target.IsEvent && req.IsActivityAccess {
-			accessTargets[i] = models.AccessTarget{
-				ID:        uuid.New().String(),
-				ProductID: target.ProductID,
-				TargetID:  target.TargetID,
-				IsEvent:   target.IsEvent,
-			}
-		}
-	}
-
 	if req.IsActivityToken && req.TokenQuantity <= 0 {
 		return nil, errors.New("token quantity must be greater than 0")
 	}
@@ -68,12 +51,35 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 		req.IsTicketType = false
 	}
 
+	productID := uuid.New().String()
+
+	accessTargets := make([]models.AccessTarget, len(req.AccessTargets))
+	for i, target := range req.AccessTargets {
+		if target.IsEvent && req.IsEventAccess {
+			accessTargets[i] = models.AccessTarget{
+				ID:        uuid.New().String(),
+				ProductID: productID,
+				TargetID:  target.TargetID,
+				EventID:   &event.ID,
+				IsEvent:   target.IsEvent,
+			}
+		} else if !target.IsEvent && req.IsActivityAccess {
+			accessTargets[i] = models.AccessTarget{
+				ID:        uuid.New().String(),
+				ProductID: productID,
+				TargetID:  target.TargetID,
+				EventID:   &event.ID,
+				IsEvent:   target.IsEvent,
+			}
+		}
+	}
+
 	product := models.Product{
-		ID:                   uuid.New().String(),
+		ID:                   productID,
 		EventID:              event.ID,
 		Name:                 req.Name,
 		Description:          req.Description,
-		Price:                req.Price,
+		PriceInt:             req.PriceInt,
 		MaxOwnableQuantity:   req.MaxOwnableQuantity,
 		IsEventAccess:        req.IsEventAccess,
 		IsActivityAccess:     req.IsActivityAccess,
@@ -97,6 +103,8 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 	return &product, nil
 }
 
+// TODO: Verify if the access targets are valid
+// TODO: Integrate bundled products
 func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, productID string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -127,7 +135,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 
 	product.Name = req.Name
 	product.Description = req.Description
-	product.Price = req.Price
+	product.PriceInt = req.PriceInt
 	product.MaxOwnableQuantity = req.MaxOwnableQuantity
 	product.IsEventAccess = req.IsEventAccess
 	product.IsActivityAccess = req.IsActivityAccess
@@ -140,7 +148,17 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 	product.TokenQuantity = req.TokenQuantity
 	product.HasUnlimitedQuantity = req.HasUnlimitedQuantity
 	product.Quantity = req.Quantity
-	product.AccessTargets = req.AccessTargets
+
+	var accessTargets []models.AccessTarget
+	for _, target := range req.AccessTargets {
+		accessTargets = append(accessTargets, models.AccessTarget{
+			ID:        uuid.New().String(),
+			ProductID: target.ProductID,
+			TargetID:  target.TargetID,
+		})
+	}
+
+	product.AccessTargets = accessTargets
 
 	err = s.ProductRepo.UpdateProduct(product)
 	if err != nil {
@@ -205,6 +223,43 @@ func (s *ProductService) GetAllProductsFromEvent(eventSlug string) ([]models.Pro
 
 // TODO: Think very carefully about this but for now, just create a purchase record
 // TODO: Implement a try buy so the frontend can show the user if anything will go wrong before they purchase
+// TODO: Integrate bundled products
 func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
 	return s.ProductRepo.PurchaseProduct(user, eventSlug, req)
+}
+
+func (s *ProductService) GetUserProductsRelation(user models.User) ([]models.UserProduct, error) {
+	products, err := s.ProductRepo.GetUserProductsRelation(user.ID)
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	return products, nil
+}
+
+func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, error) {
+	userProducts, err := s.ProductRepo.GetUserProductsRelation(user.ID)
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	productIDs := make([]string, len(userProducts))
+	for i, product := range userProducts {
+		productIDs[i] = product.ProductID
+	}
+
+	products, err := s.ProductRepo.GetProductsByIDs(productIDs)
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	return products, nil
+}
+
+func (s *ProductService) GetUserTokens(user models.User) ([]models.UserToken, error) {
+	return s.ProductRepo.GetUserTokens(user.ID)
+}
+
+func (s *ProductService) GetUserPurchases(user models.User) ([]models.Purchase, error) {
+	return s.ProductRepo.GetUserPurchases(user.ID)
 }

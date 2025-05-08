@@ -395,3 +395,31 @@ func (h *EventHandler) DemoteUserOfEventBySlug(w http.ResponseWriter, r *http.Re
 
 	handleSuccess(w, nil, "demoted user", http.StatusOK)
 }
+
+// GetUserEvents godoc
+// @Summary      Get user events
+// @Description  Returns a list of all events for the authenticated user
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Event}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Router       /user-events [get]
+func (h *EventHandler) GetUserEvents(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	events, err := h.EventService.GetUserEvents(user)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, events, "", http.StatusOK)
+}

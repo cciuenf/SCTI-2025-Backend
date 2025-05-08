@@ -29,6 +29,7 @@ type User struct {
 
 	Purchases    []Purchase    `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	UserProducts []UserProduct `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	Products     []Product     `gorm:"many2many:user_products;foreignKey:ID;joinForeignKey:UserID;References:ID;joinReferences:ProductID" json:"products,omitempty"`
 
 	UserVerification UserVerification `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 	Events           []Event          `gorm:"many2many:event_users;constraint:OnDelete:CASCADE" json:"-"`

@@ -23,15 +23,23 @@ func (r *ProductRepo) CreateProduct(product *models.Product) error {
 
 func (r *ProductRepo) GetProductByID(id string) (*models.Product, error) {
 	var product models.Product
-	if err := r.DB.Where("id = ?", id).First(&product).Error; err != nil {
+	if err := r.DB.Preload("AccessTargets").Where("id = ?", id).First(&product).Error; err != nil {
 		return nil, err
 	}
 	return &product, nil
 }
 
+func (r *ProductRepo) GetProductsByIDs(ids []string) ([]models.Product, error) {
+	var products []models.Product
+	if err := r.DB.Preload("AccessTargets").Where("id IN ?", ids).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
 func (r *ProductRepo) GetProductsByEventID(eventID string) ([]models.Product, error) {
 	var products []models.Product
-	if err := r.DB.Where("event_id = ?", eventID).Find(&products).Error; err != nil {
+	if err := r.DB.Preload("AccessTargets").Where("event_id = ?", eventID).Find(&products).Error; err != nil {
 		return nil, err
 	}
 	return products, nil
@@ -118,7 +126,7 @@ func (r *ProductRepo) GetUserProductByUserIDAndProductID(userID string, productI
 	return userProducts, nil
 }
 
-func (r *ProductRepo) GetUserProducts(userID string) ([]models.UserProduct, error) {
+func (r *ProductRepo) GetUserProductsRelation(userID string) ([]models.UserProduct, error) {
 	var userProducts []models.UserProduct
 	if err := r.DB.Where("user_id = ?", userID).Find(&userProducts).Error; err != nil {
 		return nil, err
@@ -151,6 +159,17 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		return nil, errors.New("event not found: " + err.Error())
 	}
 
+	isUserRegistered, err := r.IsUserRegisteredToEvent(user.ID, event.ID)
+	if err != nil {
+		tx.Rollback()
+		return nil, errors.New("error checking user registration: " + err.Error())
+	}
+
+	if !isUserRegistered {
+		tx.Rollback()
+		return nil, errors.New("user is not registered to this event")
+	}
+
 	product, err := r.GetProductByID(req.ProductID)
 	if err != nil {
 		tx.Rollback()
@@ -170,13 +189,13 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 	if !product.HasUnlimitedQuantity {
 		if product.Quantity < req.Quantity {
 			tx.Rollback()
-			return nil, errors.New("not enough quantity available")
+			return nil, fmt.Errorf("not enough quantity available, want %v have %v", req.Quantity, product.Quantity)
 		}
 	}
 
 	if req.Quantity > product.MaxOwnableQuantity {
 		tx.Rollback()
-		return nil, errors.New("quantity exceeds max ownable quantity")
+		return nil, fmt.Errorf("requested quantity exceeds max ownable quantity by: %d", req.Quantity-product.MaxOwnableQuantity)
 	}
 
 	// Query for existing user product
@@ -250,6 +269,7 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		for i := 0; i < product.TokenQuantity; i++ {
 			token := &models.UserToken{
 				ID:            uuid.New().String(),
+				EventID:       event.ID,
 				UserID:        user.ID,
 				UserProductID: userProduct.ID,
 				ProductID:     product.ID,
@@ -264,6 +284,34 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 				return nil, errors.New("failed to create user token: " + err.Error())
 			}
 			userTokens[i] = *token
+		}
+	}
+
+	for _, access := range product.AccessTargets {
+		registration := &models.ActivityRegistration{
+			ActivityID:   access.TargetID,
+			ProductID:    &product.ID,
+			AccessMethod: string(models.AccessMethodProduct),
+			UserID:       user.ID,
+		}
+		var count int64
+		err = tx.Model(&models.ActivityRegistration{}).
+			Where("activity_id = ? AND user_id = ?", registration.ActivityID, registration.UserID).
+			Count(&count).Error
+
+		if err != nil && err != gorm.ErrRecordNotFound {
+			tx.Rollback()
+			return nil, errors.New("failed to get activity registration: " + err.Error())
+		}
+
+		if count > 0 {
+			continue
+		}
+
+		err = tx.Create(registration).Error
+		if err != nil {
+			tx.Rollback()
+			return nil, errors.New("failed to create activity registration: " + err.Error())
 		}
 	}
 
