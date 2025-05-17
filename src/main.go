@@ -27,5 +27,5 @@ func main() {
 	mux := router.InitializeMux(database, cfg)
 
 	log.Println("Started server on port: " + cfg.PORT)
-	log.Fatal(http.ListenAndServe(":"+cfg.PORT, *mux))
+	log.Fatal(http.ListenAndServe(":"+cfg.PORT, mux))
 }
