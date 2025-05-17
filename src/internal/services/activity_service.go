@@ -224,13 +224,12 @@ func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug str
 		}
 	}
 
-	// TODO: Check this code snippet
-	user_activities, err := s.GetUserActivities(user)
+	userActivities, err := s.GetUserActivities(user)
 	if err != nil {
 		return errors.New("couldn't get user activities")
 	}
-	for _, u_act := range user_activities {
-		if !(u_act.EndTime.Before(activity.StartTime) || u_act.StartTime.After(activity.EndTime)) && u_act.Type != models.ActivityPalestra {
+	for _, uAct := range userActivities {
+		if !(uAct.EndTime.Before(activity.StartTime) || uAct.StartTime.After(activity.EndTime)) && uAct.Type != models.ActivityPalestra {
 			return errors.New("user has another activity registered at the same time that is not palestra")
 		}
 	}
