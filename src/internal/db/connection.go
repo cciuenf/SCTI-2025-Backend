@@ -2,6 +2,7 @@ package db
 
 import (
 	"log"
+	"os"
 	"scti/config"
 
 	"gorm.io/driver/postgres"
@@ -16,9 +17,16 @@ func Connect(cfg config.Config) *gorm.DB {
 	if cfg.DSN == "" {
 		log.Fatalf("dsn was empty")
 	}
-	DB, err = gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+
+	testMode := os.Getenv("TEST_MODE") == "true"
+	gormCfg := &gorm.Config{}
+	if testMode {
+		gormCfg.Logger = logger.Default.LogMode(logger.Silent)
+	} else {
+		gormCfg.Logger = logger.Default.LogMode(logger.Info)
+	}
+
+	DB, err = gorm.Open(postgres.Open(cfg.DSN), gormCfg)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

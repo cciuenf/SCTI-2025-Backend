@@ -3,5 +3,5 @@ src/.env
 src/tmp
 src/app.log
 node_modules/
-src/logs/
+logs/
 .vscode/
