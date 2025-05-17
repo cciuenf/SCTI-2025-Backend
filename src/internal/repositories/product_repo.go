@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"scti/internal/models"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -68,6 +69,14 @@ func (r *ProductRepo) GetUserPurchases(userID string) ([]models.Purchase, error)
 func (r *ProductRepo) GetUserByID(userID string) (models.User, error) {
 	var user models.User
 	if err := r.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
+
+func (r *ProductRepo) GetUserByEmail(userEmail string) (models.User, error) {
+	var user models.User
+	if err := r.DB.Where("email = ?", userEmail).First(&user).Error; err != nil {
 		return models.User{}, err
 	}
 	return user, nil
@@ -187,6 +196,11 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		return nil, errors.New("product is blocked from purchases")
 	}
 
+	if product.ExpiresAt.Before(time.Now()) {
+		tx.Rollback()
+		return nil, errors.New("product has expired")
+	}
+
 	if !product.HasUnlimitedQuantity {
 		if product.Quantity < req.Quantity {
 			tx.Rollback()
@@ -221,12 +235,12 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 
 	purchaseID := uuid.New().String()
 	purchase := &models.Purchase{
-		ID:         purchaseID,
-		UserID:     user.ID,
-		ProductID:  product.ID,
-		Quantity:   req.Quantity,
-		IsGift:     req.IsGift,
-		GiftedToID: req.GiftedToID,
+		ID:            purchaseID,
+		UserID:        user.ID,
+		ProductID:     product.ID,
+		Quantity:      req.Quantity,
+		IsGift:        req.IsGift,
+		GiftedToEmail: req.GiftedToEmail,
 	}
 
 	err = tx.Create(purchase).Error
@@ -252,10 +266,17 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 	}
 
 	if req.IsGift {
+		giftedUser, err := r.GetUserByEmail(*req.GiftedToEmail)
+		if err != nil {
+			tx.Rollback()
+			return nil, errors.New("failed to retrieve user for gifting")
+		}
 		userProduct.ReceivedAsGift = true
 		userProduct.GiftedFromID = &user.ID
-		userProduct.UserID = *req.GiftedToID
+		userProduct.UserID = giftedUser.ID
 	} else {
+		userProduct.ReceivedAsGift = false
+		userProduct.GiftedFromID = nil
 		userProduct.UserID = user.ID
 	}
 
@@ -271,7 +292,7 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 			token := &models.UserToken{
 				ID:            uuid.New().String(),
 				EventID:       event.ID,
-				UserID:        user.ID,
+				UserID:        userProduct.UserID,
 				UserProductID: userProduct.ID,
 				ProductID:     product.ID,
 				IsUsed:        false,
@@ -293,7 +314,7 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 			ActivityID:   access.TargetID,
 			ProductID:    &product.ID,
 			AccessMethod: string(models.AccessMethodProduct),
-			UserID:       user.ID,
+			UserID:       userProduct.UserID,
 		}
 		var count int64
 		err = tx.Model(&models.ActivityRegistration{}).

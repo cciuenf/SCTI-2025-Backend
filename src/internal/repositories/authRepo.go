@@ -5,6 +5,7 @@ import (
 	"log"
 	"scti/config"
 	"scti/internal/models"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -31,6 +32,7 @@ func (r *AuthRepo) CreateUserVerification(userID string, verificationNumber int)
 	v := &models.UserVerification{
 		ID:                 userID,
 		VerificationNumber: verificationNumber,
+		ExpiresAt:          time.Now().Add(time.Minute * 15),
 	}
 	if err := r.DB.Create(v).Error; err != nil {
 		return errors.New("could not create verification number: " + err.Error())
@@ -38,10 +40,10 @@ func (r *AuthRepo) CreateUserVerification(userID string, verificationNumber int)
 	return nil
 }
 
-func (r *AuthRepo) GetUserVerification(userID string) (int, error) {
+func (r *AuthRepo) GetUserVerification(userID string) (models.UserVerification, error) {
 	var verification models.UserVerification
 	err := r.DB.Where("id = ?", userID).First(&verification).Error
-	return verification.VerificationNumber, err
+	return verification, err
 }
 
 func (r *AuthRepo) DeleteUserVerification(userID string) error {

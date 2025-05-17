@@ -164,7 +164,6 @@ func (s *AuthService) SendVerificationEmail(user *models.User, verificationNumbe
 	return nil
 }
 
-// TODO: Implement token expiration
 func (s *AuthService) VerifyUser(user *models.User, token string) error {
 	if user.IsVerified {
 		return errors.New("user is already verified")
@@ -173,9 +172,16 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 	storedToken, err := s.AuthRepo.GetUserVerification(user.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+
 			return errors.New("no verification token found")
 		}
 		return err
+	}
+
+	if storedToken.ExpiresAt.Before(time.Now()) {
+		s.AuthRepo.DeleteUserVerification(user.ID)
+		// TODO: Implement sending a new token if token has expired
+		return errors.New("token has expired")
 	}
 
 	tokenInt, err := strconv.Atoi(token)
@@ -183,7 +189,7 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 		return err
 	}
 
-	if storedToken != tokenInt {
+	if storedToken.VerificationNumber != tokenInt {
 		return errors.New("invalid verification token")
 	}
 
