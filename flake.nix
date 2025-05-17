@@ -18,6 +18,7 @@
           go-swag
           docker
           docker-compose
+          k6
         ];
         shellHook = ''
           echo "Welcome to the development environment!"

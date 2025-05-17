@@ -202,4 +202,3 @@ func (r *AuthRepo) ChangeUserName(userID string, name, lastName string) error {
 		Update("name", name).
 		Update("last_name", lastName).Error
 }
-
