@@ -179,7 +179,9 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 	}
 
 	if storedToken.ExpiresAt.Before(time.Now()) {
-		s.AuthRepo.DeleteUserVerification(user.ID)
+		if err := s.AuthRepo.DeleteUserVerification(user.ID); err != nil {
+			return errors.New("failed deleting expired verification token: " + err.Error())
+		}
 		// TODO: Implement sending a new token if token has expired
 		return errors.New("token has expired")
 	}

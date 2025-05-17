@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"scti/internal/models"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -75,8 +76,9 @@ func (r *ProductRepo) GetUserByID(userID string) (models.User, error) {
 }
 
 func (r *ProductRepo) GetUserByEmail(userEmail string) (models.User, error) {
+	lemail := strings.TrimSpace(strings.ToLower(userEmail))
 	var user models.User
-	if err := r.DB.Where("email = ?", userEmail).First(&user).Error; err != nil {
+	if err := r.DB.Where("email = ?", lemail).First(&user).Error; err != nil {
 		return models.User{}, err
 	}
 	return user, nil
@@ -266,6 +268,10 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 	}
 
 	if req.IsGift {
+		if req.GiftedToEmail == nil {
+			tx.Rollback()
+			return nil, errors.New("can't gift to nil email")
+		}
 		giftedUser, err := r.GetUserByEmail(*req.GiftedToEmail)
 		if err != nil {
 			tx.Rollback()
