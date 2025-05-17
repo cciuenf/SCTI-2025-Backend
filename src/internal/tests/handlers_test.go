@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func (s *APISuite) testRegisterAndLogin() (string, string) {
+func (s *APISuite) RegisterAndLogin() (string, string) {
 	// Unique ID for test traceability
 	uid := uuid.NewString()[:8]
 	email := fmt.Sprintf("user_%s@example.com", uid)
@@ -57,7 +57,7 @@ func (s *APISuite) testRegisterAndLogin() (string, string) {
 	return userAccessToken, userRefreshToken
 }
 
-func (s *APISuite) testVerifyTokens(userAccessToken, userRefreshToken string) {
+func (s *APISuite) VerifyTokens(userAccessToken, userRefreshToken string) {
 	s.Run("Verify user's tokens", func() {
 		req := httptest.NewRequest(http.MethodPost, "/verify-tokens", nil)
 		req.Header.Set("Authorization", "Bearer "+userAccessToken)
@@ -74,7 +74,7 @@ func (s *APISuite) testVerifyTokens(userAccessToken, userRefreshToken string) {
 	})
 }
 
-func (s *APISuite) testLogout(userAccessToken, userRefreshToken string) {
+func (s *APISuite) Logout(userAccessToken, userRefreshToken string) {
 	s.Run("Logout user", func() {
 		req := httptest.NewRequest(http.MethodPost, "/logout", nil)
 		req.Header.Set("Authorization", "Bearer "+userAccessToken)

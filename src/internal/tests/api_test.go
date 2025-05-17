@@ -37,13 +37,13 @@ func TestAPISuite(t *testing.T) {
 func (s *APISuite) TestUserFlow() {
 	var access_token, refresh_token string
 	s.Run("1_RegisterAndLogin", func() {
-		access_token, refresh_token = s.testRegisterAndLogin()
+		access_token, refresh_token = s.RegisterAndLogin()
 	})
 	s.Run("2_VerifyTokens", func() {
-		s.testVerifyTokens(access_token, refresh_token)
+		s.VerifyTokens(access_token, refresh_token)
 	})
 	s.Run("3_Logout", func() {
-		s.testLogout(access_token, refresh_token)
+		s.Logout(access_token, refresh_token)
 	})
 }
 

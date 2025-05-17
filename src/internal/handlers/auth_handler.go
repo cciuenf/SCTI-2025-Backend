@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"scti/config"
 	"scti/internal/models"
 	"scti/internal/services"
-	u "scti/internal/utilities"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -118,12 +118,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  AuthStandardErrorResponse
 // @Router       /logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	user := u.GetUserFromContext(r.Context())
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		BadRequestError(w, errors.New("coudln't find user in context"), "auth")
+		return
+	}
 
 	refreshHeader := r.Header.Get("Refresh")
 	refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
 
-	err := h.AuthService.Logout(user.ID, refreshTokenString)
+	err = h.AuthService.Logout(user.ID, refreshTokenString)
 	if err != nil {
 		HandleErrMsg("error trying to logout", err, w).Stack("auth").Unauthorized()
 		return
@@ -144,7 +148,11 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  AuthStandardErrorResponse
 // @Router       /refresh-tokens [get]
 func (h *AuthHandler) GetRefreshTokens(w http.ResponseWriter, r *http.Request) {
-	user := u.GetUserFromContext(r.Context())
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		BadRequestError(w, errors.New("coudln't find user in context"), "auth")
+		return
+	}
 
 	refreshTokens, err := h.AuthService.GetRefreshTokens(user.ID)
 	if err != nil {
@@ -175,7 +183,11 @@ type RevokeTokenRequest struct {
 // @Failure      401  {object}  AuthStandardErrorResponse
 // @Router       /revoke-refresh-token [post]
 func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request) {
-	user := u.GetUserFromContext(r.Context())
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		BadRequestError(w, errors.New("coudln't find user in context"), "auth")
+		return
+	}
 
 	var requestBody RevokeTokenRequest
 	if err := decodeRequestBody(r, &requestBody); err != nil {
@@ -188,7 +200,7 @@ func (h *AuthHandler) RevokeRefreshToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err := h.AuthService.RevokeRefreshToken(user.ID, requestBody.Token)
+	err = h.AuthService.RevokeRefreshToken(user.ID, requestBody.Token)
 	if err != nil {
 		HandleErrMsg("error revoking token", err, w).Stack("auth").BadRequest()
 		return
@@ -216,7 +228,11 @@ type VerifyAccountRequest struct {
 // @Failure      401  {object}  AuthStandardErrorResponse
 // @Router       /verify-account [post]
 func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
-	userClaims := u.GetUserFromContext(r.Context())
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		BadRequestError(w, errors.New("coudln't find user in context"), "auth")
+		return
+	}
 
 	var requestBody VerifyAccountRequest
 	if err := decodeRequestBody(r, &requestBody); err != nil {
@@ -226,12 +242,6 @@ func (h *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 
 	if requestBody.Token == "" {
 		BadRequestError(w, NewErr("verification token is required"), "auth")
-		return
-	}
-
-	user, err := h.AuthService.AuthRepo.FindUserByID(userClaims.ID)
-	if err != nil {
-		HandleErrMsg("error getting user", err, w).Stack("auth").BadRequest()
 		return
 	}
 
