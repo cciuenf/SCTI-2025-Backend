@@ -455,9 +455,15 @@ func (s *AuthService) SwitchEventCreatorStatus(requester models.User, targetUser
 }
 
 func (s *AuthService) ChangeUserName(user models.User, name, lastName string) error {
+	if name == "" {
+		return errors.New("name can't be empty")
+	}
+	if lastName == "" {
+		return errors.New("last name can't be empty")
+	}
+
 	user.Name = name
 	user.LastName = lastName
+
 	return s.AuthRepo.UpdateUser(&user)
 }
-
-

@@ -142,6 +142,7 @@ func (r *ProductRepo) GetUserTokens(userID string) ([]models.UserToken, error) {
 	return userTokens, nil
 }
 
+// TODO: Think very carefully about this but for now, just do the basic proccess as I think it should be done
 func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req models.PurchaseRequest) (*models.PurchaseResponse, error) {
 	tx := r.DB.Begin()
 	if tx.Error != nil {

@@ -180,7 +180,6 @@ func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string
 	return nil
 }
 
-// TODO: User can't signup if they have another activity registered at the same time that is not palestra
 func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -222,6 +221,17 @@ func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug str
 
 		if currentRegistrations >= maxCapacity {
 			return errors.New("activity has reached maximum capacity")
+		}
+	}
+
+	// TODO: Check this code snippet
+	user_activities, err := s.GetUserActivities(user)
+	if err != nil {
+		return errors.New("couldn't get user activities")
+	}
+	for _, u_act := range user_activities {
+		if !(u_act.EndTime.Before(activity.StartTime) || u_act.StartTime.After(activity.EndTime)) && u_act.Type != models.ActivityPalestra {
+			return errors.New("user has another activity registered at the same time that is not palestra")
 		}
 	}
 
