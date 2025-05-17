@@ -88,7 +88,7 @@ func (s *ActivityService) GetAllActivitiesFromEvent(eventSlug string) ([]models.
 	return activities, nil
 }
 
-func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string, activityID string, req models.CreateActivityRequest) (*models.Activity, error) {
+func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string, activityID string, req models.ActivityUpdateRequest) (*models.Activity, error) {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
 		return nil, errors.New("event not found: " + err.Error())
@@ -387,6 +387,10 @@ func (s *ActivityService) RegisterUserToStandaloneActivity(user models.User, eve
 		return errors.New("activity not found: " + err.Error())
 	}
 
+	if activity.IsBlocked {
+		return errors.New("activity is currently blocked")
+	}
+
 	if activity.EventID == nil || *activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
@@ -406,8 +410,9 @@ func (s *ActivityService) RegisterUserToStandaloneActivity(user models.User, eve
 		}
 	}
 
-	if activity.IsBlocked {
-		return errors.New("activity is currently blocked")
+	now := time.Now()
+	if activity.EndTime.Before(now) {
+		return errors.New("activity has already ended")
 	}
 
 	registration := &models.ActivityRegistration{

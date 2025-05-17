@@ -464,3 +464,39 @@ func (h *AuthHandler) SwitchEventCreatorStatus(w http.ResponseWriter, r *http.Re
 
 	handleSuccess(w, nil, "event creator status switched successfully", http.StatusOK)
 }
+
+type ChangeUserNameRequest struct {
+	Name     string `json:"name"`
+	LastName string `json:"last_name"`
+}
+
+func (h *AuthHandler) ChangeUserName(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		HandleErrMsg("error getting user", err, w).Stack("auth").BadRequest()
+		return
+	}
+
+	var reqBody ChangeUserNameRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "auth")
+		return
+	}
+
+	if reqBody.Name == "" {
+		BadRequestError(w, NewErr("name is required"), "auth")
+		return
+	}
+
+	if reqBody.LastName == "" {
+		BadRequestError(w, NewErr("last name is required"), "auth")
+		return
+	}
+
+	if err := h.AuthService.ChangeUserName(user, reqBody.Name, reqBody.LastName); err != nil {
+		HandleErrMsg("error changing user name", err, w).Stack("auth").BadRequest()
+		return
+	}
+
+	handleSuccess(w, nil, "user name changed successfully", http.StatusOK)
+}
