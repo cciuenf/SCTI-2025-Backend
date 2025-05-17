@@ -470,6 +470,20 @@ type ChangeUserNameRequest struct {
 	LastName string `json:"last_name"`
 }
 
+// ChangeUserName godoc
+// @Summary      Change user name
+// @Description  Updates the authenticated user's first and last name
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body ChangeUserNameRequest true "New name information"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /change-name [post]
 func (h *AuthHandler) ChangeUserName(w http.ResponseWriter, r *http.Request) {
 	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
 	if err != nil {

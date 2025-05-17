@@ -74,6 +74,15 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 		}
 	}
 
+	if req.ExpiresAt.IsZero() {
+		req.ExpiresAt = event.EndDate
+	}
+
+	expiresAfterEvent := req.ExpiresAt.After(event.EndDate)
+	if expiresAfterEvent {
+		return nil, errors.New("product needs to expire before the event end date")
+	}
+
 	product := models.Product{
 		ID:                   productID,
 		EventID:              event.ID,
@@ -92,6 +101,7 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 		TokenQuantity:        req.TokenQuantity,
 		HasUnlimitedQuantity: req.HasUnlimitedQuantity,
 		Quantity:             req.Quantity,
+		ExpiresAt:            req.ExpiresAt,
 		AccessTargets:        accessTargets,
 	}
 
@@ -133,6 +143,14 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 		}
 	}
 
+	if req.ExpiresAt.IsZero() {
+		req.ExpiresAt = event.EndDate
+	}
+
+	if req.ExpiresAt.After(event.EndDate) {
+		return nil, errors.New("product can't expire after event end date")
+	}
+
 	product.Name = req.Name
 	product.Description = req.Description
 	product.PriceInt = req.PriceInt
@@ -148,6 +166,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 	product.TokenQuantity = req.TokenQuantity
 	product.HasUnlimitedQuantity = req.HasUnlimitedQuantity
 	product.Quantity = req.Quantity
+	product.ExpiresAt = req.ExpiresAt
 
 	var accessTargets []models.AccessTarget
 	for _, target := range req.AccessTargets {
@@ -221,11 +240,11 @@ func (s *ProductService) GetAllProductsFromEvent(eventSlug string) ([]models.Pro
 	return products, nil
 }
 
-// TODO: Think very carefully about this but for now, just create a purchase record
-// TODO: Implement a try buy so the frontend can show the user if anything will go wrong before they purchase
 // TODO: Integrate bundled products
-// TODO: Block user from gifting to themselves
 func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
+	if req.IsGift && *req.GiftedToEmail == user.Email {
+		return nil, errors.New("invalid operation: cannot gift to yourself")
+	}
 	return s.ProductRepo.PurchaseProduct(user, eventSlug, req)
 }
 

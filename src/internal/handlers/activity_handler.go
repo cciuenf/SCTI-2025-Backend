@@ -318,7 +318,6 @@ func (h *ActivityHandler) UnregisterUserFromActivity(w http.ResponseWriter, r *h
 	handleSuccess(w, nil, "unregistered from activity successfully", http.StatusOK)
 }
 
-// TODO: Implement not permitting to register to acitivity if the user has another activity registered at the same time
 // RegisterUserToStandaloneActivity godoc
 // @Summary      Register to a standalone activity
 // @Description  Registers the authenticated user to a standalone activity without requiring event registration

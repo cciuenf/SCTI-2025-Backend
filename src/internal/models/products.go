@@ -38,8 +38,7 @@ type Product struct {
 	HasUnlimitedQuantity bool `gorm:"default:false" json:"has_unlimited_quantity"` // If true, ignore Quantity
 	Quantity             int  `gorm:"default:0" json:"quantity"`                   // Available quantity
 
-	// TODO: Implement expiration logic to impede purchasing after a certain date
-	ExpiresAt *time.Time `json:"expires_at"`
+	ExpiresAt time.Time `json:"expires_at"`
 
 	// Relationships - combined into single table with type flag
 	AccessTargets []AccessTarget `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE" json:"access_targets"`
@@ -85,6 +84,8 @@ type ProductRequest struct {
 	HasUnlimitedQuantity bool `json:"has_unlimited_quantity"`
 	Quantity             int  `json:"quantity"`
 
+	ExpiresAt time.Time `json:"expires_at"`
+
 	// Access targets
 	AccessTargets []AccessTargetRequest `json:"access_targets"`
 }
@@ -108,8 +109,8 @@ type Purchase struct {
 	Quantity    int       `gorm:"default:1" json:"quantity"` // How many of this product
 
 	// For gifting functionality
-	IsGift     bool    `gorm:"default:false" json:"is_gift"`         // Whether this purchase was a gift
-	GiftedToID *string `gorm:"type:varchar(36)" json:"gifted_to_id"` // User ID of gift recipient
+	IsGift        bool    `gorm:"default:false" json:"is_gift"` // Whether this purchase was a gift
+	GiftedToEmail *string `json:"gifted_to_email"`              // User ID of gift recipient
 
 	// For physical items
 	IsDelivered bool       `gorm:"default:false" json:"is_delivered"` // If physical item has been delivered
@@ -124,14 +125,13 @@ func (Purchase) TableName() string {
 	return "purchases"
 }
 
-// TODO: Change ID to email for gifiting logic
 type PurchaseRequest struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
 
 	// For gifting functionality
-	IsGift     bool    `json:"is_gift"`      // Whether this purchase was a gift
-	GiftedToID *string `json:"gifted_to_id"` // User ID of gift recipient
+	IsGift        bool    `json:"is_gift"`         // Whether this purchase was a gift
+	GiftedToEmail *string `json:"gifted_to_email"` // User email of gift recipient
 }
 
 type PurchaseResponse struct {

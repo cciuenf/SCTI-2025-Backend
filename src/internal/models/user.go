@@ -55,8 +55,9 @@ func (UserPass) TableName() string {
 }
 
 type UserVerification struct {
-	ID                 string `gorm:"type:varchar(36);primaryKey" json:"id"`
-	VerificationNumber int    `gorm:"not null" json:"verification_number"`
+	ID                 string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	VerificationNumber int       `gorm:"not null" json:"verification_number"`
+	ExpiresAt          time.Time `json:"expires_at"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

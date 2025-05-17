@@ -85,6 +85,7 @@ func initializeMux(database *gorm.DB, cfg *config.Config) *http.ServeMux {
 	mux.HandleFunc("POST /verify-tokens", authHandler.VerifyJWT)
 	mux.HandleFunc("POST /forgot-password", authHandler.ForgotPassword)
 	mux.HandleFunc("POST /change-password", authHandler.ChangePassword)
+	mux.Handle("POST /change-name", authMiddleware(http.HandlerFunc(authHandler.ChangeUserName)))
 	mux.Handle("POST /logout", authMiddleware(http.HandlerFunc(authHandler.Logout)))
 	mux.Handle("GET /refresh-tokens", authMiddleware(http.HandlerFunc(authHandler.GetRefreshTokens)))
 	mux.Handle("POST /revoke-refresh-token", authMiddleware(http.HandlerFunc(authHandler.RevokeRefreshToken)))

@@ -164,7 +164,6 @@ func (s *AuthService) SendVerificationEmail(user *models.User, verificationNumbe
 	return nil
 }
 
-// TODO: Implement token expiration
 func (s *AuthService) VerifyUser(user *models.User, token string) error {
 	if user.IsVerified {
 		return errors.New("user is already verified")
@@ -173,9 +172,18 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 	storedToken, err := s.AuthRepo.GetUserVerification(user.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+
 			return errors.New("no verification token found")
 		}
 		return err
+	}
+
+	if storedToken.ExpiresAt.Before(time.Now()) {
+		if err := s.AuthRepo.DeleteUserVerification(user.ID); err != nil {
+			return errors.New("failed deleting expired verification token: " + err.Error())
+		}
+		// TODO: Implement sending a new token if token has expired
+		return errors.New("token has expired")
 	}
 
 	tokenInt, err := strconv.Atoi(token)
@@ -183,7 +191,7 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 		return err
 	}
 
-	if storedToken != tokenInt {
+	if storedToken.VerificationNumber != tokenInt {
 		return errors.New("invalid verification token")
 	}
 
@@ -455,7 +463,15 @@ func (s *AuthService) SwitchEventCreatorStatus(requester models.User, targetUser
 }
 
 func (s *AuthService) ChangeUserName(user models.User, name, lastName string) error {
+	if name == "" {
+		return errors.New("name can't be empty")
+	}
+	if lastName == "" {
+		return errors.New("last name can't be empty")
+	}
+
 	user.Name = name
 	user.LastName = lastName
+
 	return s.AuthRepo.UpdateUser(&user)
 }
