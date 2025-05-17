@@ -27,7 +27,7 @@ func (s *APISuite) SetupSuite() {
 	os.Setenv("TEST_MODE", "true")
 	cfg := config.LoadConfig("../../.env")
 	database := db.Connect(*cfg)
-	s.router = *router.InitializeMux(database, cfg)
+	s.router = router.InitializeMux(database, cfg)
 }
 
 func TestAPISuite(t *testing.T) {
@@ -35,9 +35,16 @@ func TestAPISuite(t *testing.T) {
 }
 
 func (s *APISuite) TestUserFlow() {
-	s.Run("1_RegisterAndLogin", s.testRegisterAndLogin)
-	s.Run("2_VerifyTokens", s.testVerifyTokens)
-	s.Run("3_Logout", s.testLogout)
+	var access_token, refresh_token string
+	s.Run("1_RegisterAndLogin", func() {
+		access_token, refresh_token = s.testRegisterAndLogin()
+	})
+	s.Run("2_VerifyTokens", func() {
+		s.testVerifyTokens(access_token, refresh_token)
+	})
+	s.Run("3_Logout", func() {
+		s.testLogout(access_token, refresh_token)
+	})
 }
 
 func (s *APISuite) request(method, path string, body any) (int, utilities.Response) {

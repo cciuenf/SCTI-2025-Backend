@@ -19,13 +19,14 @@ func Connect(cfg config.Config) *gorm.DB {
 	}
 
 	testMode := os.Getenv("TEST_MODE") == "true"
-
-	config := &gorm.Config{}
-	if !testMode {
-		config.Logger = logger.Default.LogMode(logger.Info)
+	gormCfg := &gorm.Config{}
+	if testMode {
+		gormCfg.Logger = logger.Default.LogMode(logger.Silent)
+	} else {
+		gormCfg.Logger = logger.Default.LogMode(logger.Info)
 	}
 
-	DB, err = gorm.Open(postgres.Open(cfg.DSN), config)
+	DB, err = gorm.Open(postgres.Open(cfg.DSN), gormCfg)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

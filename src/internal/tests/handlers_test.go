@@ -12,14 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	UserAccessToken   string
-	UserRefreshToken  string
-	SuperAccessToken  string
-	SuperRefreshToken string
-)
-
-func (s *APISuite) testRegisterAndLogin() {
+func (s *APISuite) testRegisterAndLogin() (string, string) {
 	// Unique ID for test traceability
 	uid := uuid.NewString()[:8]
 	email := fmt.Sprintf("user_%s@example.com", uid)
@@ -45,6 +38,7 @@ func (s *APISuite) testRegisterAndLogin() {
 		assert.NotEmpty(s.T(), data["refresh_token"])
 	})
 
+	var userAccessToken, userRefreshToken string
 	s.Run("Login with same user", func() {
 		loginReq := models.UserLogin{
 			Email:    email,
@@ -56,17 +50,18 @@ func (s *APISuite) testRegisterAndLogin() {
 
 		data := resp.Data.(map[string]interface{})
 		assert.NotEmpty(s.T(), data["access_token"])
-		UserAccessToken = data["access_token"].(string)
+		userAccessToken = data["access_token"].(string)
 		assert.NotEmpty(s.T(), data["refresh_token"])
-		UserRefreshToken = data["refresh_token"].(string)
+		userRefreshToken = data["refresh_token"].(string)
 	})
+	return userAccessToken, userRefreshToken
 }
 
-func (s *APISuite) testVerifyTokens() {
+func (s *APISuite) testVerifyTokens(userAccessToken, userRefreshToken string) {
 	s.Run("Verify user's tokens", func() {
 		req := httptest.NewRequest(http.MethodPost, "/verify-tokens", nil)
-		req.Header.Set("Authorization", "Bearer "+UserAccessToken)
-		req.Header.Set("Refresh", "Bearer "+UserRefreshToken)
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
 
 		w := httptest.NewRecorder()
 		s.router.ServeHTTP(w, req)
@@ -79,11 +74,11 @@ func (s *APISuite) testVerifyTokens() {
 	})
 }
 
-func (s *APISuite) testLogout() {
+func (s *APISuite) testLogout(userAccessToken, userRefreshToken string) {
 	s.Run("Logout user", func() {
 		req := httptest.NewRequest(http.MethodPost, "/logout", nil)
-		req.Header.Set("Authorization", "Bearer "+UserAccessToken)
-		req.Header.Set("Refresh", "Bearer "+UserRefreshToken)
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
 
 		w := httptest.NewRecorder()
 		s.router.ServeHTTP(w, req)

@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitializeMux(database *gorm.DB, cfg *config.Config) *http.Handler {
+func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	logsDir := "logs"
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		log.Fatalf("Error creating logs directory: %v\n", err)
@@ -27,6 +27,8 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) *http.Handler {
 	activityRepo := repos.NewActivityRepo(database)
 	productRepo := repos.NewProductRepo(database)
 
+	// FATAL if fails, system can't exist without super user
+	// fatals located in DB func
 	authRepo.CreateSuperUser()
 
 	authService := services.NewAuthService(authRepo, cfg.JWT_SECRET)
@@ -106,9 +108,9 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) *http.Handler {
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // change to localhost:PORT of frontend
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization", "Refresh"},
 		AllowCredentials: true,
 	}).Handler(loggingMux)
 
-	return &corsHandler
+	return corsHandler
 }
