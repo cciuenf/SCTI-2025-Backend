@@ -459,5 +459,3 @@ func (s *AuthService) ChangeUserName(user models.User, name, lastName string) er
 	user.LastName = lastName
 	return s.AuthRepo.UpdateUser(&user)
 }
-
-
