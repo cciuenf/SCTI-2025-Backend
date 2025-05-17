@@ -224,6 +224,7 @@ func (s *ProductService) GetAllProductsFromEvent(eventSlug string) ([]models.Pro
 // TODO: Think very carefully about this but for now, just create a purchase record
 // TODO: Implement a try buy so the frontend can show the user if anything will go wrong before they purchase
 // TODO: Integrate bundled products
+// TODO: Block user from gifting to themselves
 func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
 	return s.ProductRepo.PurchaseProduct(user, eventSlug, req)
 }

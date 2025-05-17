@@ -183,56 +183,77 @@ definitions:
   models.Activity:
     properties:
       created_at:
+        example: "2024-10-15T14:00:00Z"
         type: string
       deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
       description:
+        example: Workshop introdutório sobre a linguagem Go
         type: string
       end_time:
+        example: "2024-10-15T16:00:00Z"
         type: string
       event_id:
         description: Event relationship - nullable for standalone activities
+        example: 550e8400-e29b-41d4-a716-446655440001
         type: string
       has_fee:
         description: If an event ticket or standalone ticket is required
+        example: true
         type: boolean
       has_unlimited_capacity:
         description: Changed from int to boolean flags for capacity management
+        example: true
         type: boolean
       id:
+        example: 550e8400-e29b-41d4-a716-446655440000
         type: string
       is_blocked:
         description: Whether the activity is blocked from interactions
+        example: false
         type: boolean
       is_hidden:
         description: Visibility and blocking
+        example: false
         type: boolean
       is_mandatory:
         description: Access control
+        example: true
         type: boolean
       is_standalone:
         description: Standalone properties
+        example: false
         type: boolean
       location:
+        example: Sala 101
         type: string
       max_capacity:
         description: Max capacity when HasUnlimitedCapacity is false
+        example: 30
         type: integer
       name:
+        example: Workshop de Go
         type: string
       needs_token:
         description: If a token is required for this activity
+        example: true
         type: boolean
       speaker:
+        example: John Doe
         type: string
       standalone_slug:
         description: Used when standalone
+        example: scti-wkg
         type: string
       start_time:
+        example: "2024-10-15T14:00:00Z"
         type: string
       type:
-        $ref: '#/definitions/models.ActivityType'
+        allOf:
+        - $ref: '#/definitions/models.ActivityType'
+        example: palestra
       updated_at:
+        example: "2024-10-15T14:00:00Z"
         type: string
     type: object
   models.ActivityDeleteRequest:
@@ -293,11 +314,55 @@ definitions:
     - ActivityVisitaTecnica
   models.ActivityUpdateRequest:
     properties:
-      activity:
-        $ref: '#/definitions/models.CreateActivityRequest'
       activity_id:
         example: 550e8400-e29b-41d4-a716-446655440000
         type: string
+      description:
+        example: Workshop introdutório sobre a linguagem Go
+        type: string
+      end_time:
+        example: "2024-10-15T16:00:00Z"
+        type: string
+      has_fee:
+        example: false
+        type: boolean
+      has_unlimited_capacity:
+        example: false
+        type: boolean
+      is_blocked:
+        example: false
+        type: boolean
+      is_hidden:
+        example: false
+        type: boolean
+      is_mandatory:
+        example: false
+        type: boolean
+      is_standalone:
+        example: false
+        type: boolean
+      location:
+        example: Sala 101
+        type: string
+      max_capacity:
+        example: 30
+        type: integer
+      name:
+        example: Workshop de Go
+        type: string
+      speaker:
+        example: John Doe
+        type: string
+      standalone_slug:
+        example: workshop-go-2024
+        type: string
+      start_time:
+        example: "2024-10-15T14:00:00Z"
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.ActivityType'
+        example: palestra
     type: object
   models.CreateActivityRequest:
     properties:
@@ -990,7 +1055,9 @@ paths:
             - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.AccessTarget'
+                  items:
+                    $ref: '#/definitions/models.AccessTarget'
+                  type: array
               type: object
         "400":
           description: Bad Request
@@ -2037,7 +2104,9 @@ paths:
             - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.Activity'
+                  items:
+                    $ref: '#/definitions/models.Activity'
+                  type: array
               type: object
         "400":
           description: Bad Request
@@ -2387,7 +2456,9 @@ paths:
             - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.AccessTarget'
+                  items:
+                    $ref: '#/definitions/models.AccessTarget'
+                  type: array
               type: object
         "400":
           description: Bad Request
@@ -2433,7 +2504,9 @@ paths:
             - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.Activity'
+                  items:
+                    $ref: '#/definitions/models.Activity'
+                  type: array
               type: object
         "400":
           description: Bad Request

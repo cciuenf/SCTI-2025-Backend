@@ -51,6 +51,10 @@ type Product struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+func (Product) TableName() string {
+	return "products"
+}
+
 type ProductRequest struct {
 	Name        string `json:"name"`
 	EventID     string `json:"event_id"`
@@ -116,6 +120,11 @@ type Purchase struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+func (Purchase) TableName() string {
+	return "purchases"
+}
+
+// TODO: Change ID to email for gifiting logic
 type PurchaseRequest struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
@@ -143,6 +152,10 @@ type ProductBundle struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+func (ProductBundle) TableName() string {
+	return "product_bundles"
+}
+
 // UserProduct represents products owned by users
 type UserProduct struct {
 	ID         string `gorm:"type:varchar(36);primaryKey" json:"id"`
@@ -159,6 +172,10 @@ type UserProduct struct {
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+}
+
+func (UserProduct) TableName() string {
+	return "user_products"
 }
 
 type AccessTargetRequest struct {
@@ -182,6 +199,10 @@ type AccessTarget struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+func (AccessTarget) TableName() string {
+	return "access_targets"
+}
+
 // UserToken represents tokens a user has for accessing fee-based activities
 type UserToken struct {
 	ID            string `gorm:"type:varchar(36);primaryKey" json:"id"`
@@ -197,4 +218,8 @@ type UserToken struct {
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+}
+
+func (UserToken) TableName() string {
+	return "user_tokens"
 }

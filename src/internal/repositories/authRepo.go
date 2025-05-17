@@ -195,3 +195,11 @@ func (r *AuthRepo) UpdateUserPassword(userID string, hashedPassword string) erro
 
 	return nil
 }
+
+func (r *AuthRepo) ChangeUserName(userID string, name, lastName string) error {
+	return r.DB.Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("name", name).
+		Update("last_name", lastName).Error
+}
+

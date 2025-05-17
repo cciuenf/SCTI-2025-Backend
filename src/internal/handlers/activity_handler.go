@@ -18,31 +18,6 @@ func NewActivityHandler(activityService *services.ActivityService) *ActivityHand
 	}
 }
 
-// GetAllActivitiesFromEvent godoc
-// @Summary      Get all activities for an event
-// @Description  Returns all activities for the specified event
-// @Tags         activities
-// @Produce      json
-// @Param        slug path string true "Event slug"
-// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Activity}
-// @Failure      400  {object}  ActivityStandardErrorResponse
-// @Router       /events/{slug}/activities [get]
-func (h *ActivityHandler) GetAllActivitiesFromEvent(w http.ResponseWriter, r *http.Request) {
-	slug, err := extractSlugAndValidate(r)
-	if err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
-
-	activities, err := h.ActivityService.GetAllActivitiesFromEvent(slug)
-	if err != nil {
-		HandleErrMsg("error getting activities", err, w).Stack("activity").BadRequest()
-		return
-	}
-
-	handleSuccess(w, activities, "", http.StatusOK)
-}
-
 // CreateEventActivity godoc
 // @Summary      Create a new activity for an event
 // @Description  Creates a new activity for the specified event
@@ -91,6 +66,31 @@ func (h *ActivityHandler) CreateEventActivity(w http.ResponseWriter, r *http.Req
 	handleSuccess(w, activity, "", http.StatusOK)
 }
 
+// GetAllActivitiesFromEvent godoc
+// @Summary      Get all activities for an event
+// @Description  Returns all activities for the specified event
+// @Tags         activities
+// @Produce      json
+// @Param        slug path string true "Event slug"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Activity}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Router       /events/{slug}/activities [get]
+func (h *ActivityHandler) GetAllActivitiesFromEvent(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	activities, err := h.ActivityService.GetAllActivitiesFromEvent(slug)
+	if err != nil {
+		HandleErrMsg("error getting activities", err, w).Stack("activity").BadRequest()
+		return
+	}
+
+	handleSuccess(w, activities, "", http.StatusOK)
+}
+
 // UpdateEventActivity godoc
 // @Summary      Update an activity
 // @Description  Updates an existing activity for the specified event
@@ -135,7 +135,7 @@ func (h *ActivityHandler) UpdateEventActivity(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	activity, err := h.ActivityService.UpdateEventActivity(user, slug, reqBody.ActivityID, reqBody.Activity)
+	activity, err := h.ActivityService.UpdateEventActivity(user, slug, reqBody.ActivityID, reqBody)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			NotFoundError(w, err, "Activity", "activity")
@@ -319,7 +319,6 @@ func (h *ActivityHandler) UnregisterUserFromActivity(w http.ResponseWriter, r *h
 }
 
 // TODO: Implement not permitting to register to acitivity if the user has another activity registered at the same time
-// TODO: Implement not permitting to register to acitivity if the activity has already concluded
 // RegisterUserToStandaloneActivity godoc
 // @Summary      Register to a standalone activity
 // @Description  Registers the authenticated user to a standalone activity without requiring event registration
@@ -568,7 +567,7 @@ func (h *ActivityHandler) GetActivityRegistrations(w http.ResponseWriter, r *htt
 // @Security     Bearer
 // @Param        Authorization header string true "Bearer {access_token}"
 // @Param        Refresh header string true "Bearer {refresh_token}"
-// @Success      200  {object}  NoMessageSuccessResponse{data=models.AccessTarget}
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.AccessTarget}
 // @Failure      400  {object}  ActivityStandardErrorResponse
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse
@@ -599,7 +598,7 @@ func (h *ActivityHandler) GetUserAccesses(w http.ResponseWriter, r *http.Request
 // @Param        Authorization header string true "Bearer {access_token}"
 // @Param        Refresh header string true "Bearer {refresh_token}"
 // @Param        slug path string true "Event slug"
-// @Success      200  {object}  NoMessageSuccessResponse{data=models.AccessTarget}
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.AccessTarget}
 // @Failure      400  {object}  ActivityStandardErrorResponse
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse
@@ -635,7 +634,7 @@ func (h *ActivityHandler) GetUserAccessesFromEvent(w http.ResponseWriter, r *htt
 // @Security     Bearer
 // @Param        Authorization header string true "Bearer {access_token}"
 // @Param        Refresh header string true "Bearer {refresh_token}"
-// @Success      200  {object}  NoMessageSuccessResponse{data=models.Activity}
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Activity}
 // @Failure      400  {object}  ActivityStandardErrorResponse
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse
@@ -666,7 +665,7 @@ func (h *ActivityHandler) GetUserActivities(w http.ResponseWriter, r *http.Reque
 // @Param        Authorization header string true "Bearer {access_token}"
 // @Param        Refresh header string true "Bearer {refresh_token}"
 // @Param        slug path string true "Event slug"
-// @Success      200  {object}  NoMessageSuccessResponse{data=models.Activity}
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Activity}
 // @Failure      400  {object}  ActivityStandardErrorResponse
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse

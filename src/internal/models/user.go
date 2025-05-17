@@ -100,3 +100,34 @@ type PasswordResetClaims struct {
 	UserID          string `json:"user_id"`
 	IsPasswordReset bool   `json:"is_password_reset"`
 }
+
+type QRCode struct {
+	UserID string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
+
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+}
+
+func (QRCode) TableName() string {
+	return "qr_codes"
+}
+
+type AdminType string
+
+const (
+	AdminTypeMaster AdminType = "master_admin"
+	AdminTypeNormal AdminType = "admin"
+)
+
+// AdminStatus represents user admin status for events
+type AdminStatus struct {
+	gorm.Model
+	UserID    string    `gorm:"type:varchar(36)"`
+	EventID   string    `gorm:"type:varchar(36)"`
+	AdminType AdminType `gorm:"type:varchar(20)"`
+}
+
+func (AdminStatus) TableName() string {
+	return "admin_statuses"
+}

@@ -569,7 +569,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.AccessTarget"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AccessTarget"
+                                            }
                                         }
                                     }
                                 }
@@ -2177,7 +2180,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.Activity"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Activity"
+                                            }
                                         }
                                     }
                                 }
@@ -2615,7 +2621,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.AccessTarget"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AccessTarget"
+                                            }
                                         }
                                     }
                                 }
@@ -2689,7 +2698,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.Activity"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Activity"
+                                            }
                                         }
                                     }
                                 }
@@ -3434,77 +3446,101 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2024-10-15T14:00:00Z"
                 },
                 "deleted_at": {
                     "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Workshop introdutório sobre a linguagem Go"
                 },
                 "end_time": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2024-10-15T16:00:00Z"
                 },
                 "event_id": {
                     "description": "Event relationship - nullable for standalone activities",
-                    "type": "string"
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440001"
                 },
                 "has_fee": {
                     "description": "If an event ticket or standalone ticket is required",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "has_unlimited_capacity": {
                     "description": "Changed from int to boolean flags for capacity management",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
                 },
                 "is_blocked": {
                     "description": "Whether the activity is blocked from interactions",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_hidden": {
                     "description": "Visibility and blocking",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_mandatory": {
                     "description": "Access control",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "is_standalone": {
                     "description": "Standalone properties",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "location": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Sala 101"
                 },
                 "max_capacity": {
                     "description": "Max capacity when HasUnlimitedCapacity is false",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 30
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Workshop de Go"
                 },
                 "needs_token": {
                     "description": "If a token is required for this activity",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "speaker": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "John Doe"
                 },
                 "standalone_slug": {
                     "description": "Used when standalone",
-                    "type": "string"
+                    "type": "string",
+                    "example": "scti-wkg"
                 },
                 "start_time": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2024-10-15T14:00:00Z"
                 },
                 "type": {
-                    "$ref": "#/definitions/models.ActivityType"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ActivityType"
+                        }
+                    ],
+                    "example": "palestra"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2024-10-15T14:00:00Z"
                 }
             }
         },
@@ -3590,12 +3626,73 @@ const docTemplate = `{
         "models.ActivityUpdateRequest": {
             "type": "object",
             "properties": {
-                "activity": {
-                    "$ref": "#/definitions/models.CreateActivityRequest"
-                },
                 "activity_id": {
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Workshop introdutório sobre a linguagem Go"
+                },
+                "end_time": {
+                    "type": "string",
+                    "example": "2024-10-15T16:00:00Z"
+                },
+                "has_fee": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "has_unlimited_capacity": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_blocked": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_hidden": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_mandatory": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "is_standalone": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Sala 101"
+                },
+                "max_capacity": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Workshop de Go"
+                },
+                "speaker": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "standalone_slug": {
+                    "type": "string",
+                    "example": "workshop-go-2024"
+                },
+                "start_time": {
+                    "type": "string",
+                    "example": "2024-10-15T14:00:00Z"
+                },
+                "type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ActivityType"
+                        }
+                    ],
+                    "example": "palestra"
                 }
             }
         },

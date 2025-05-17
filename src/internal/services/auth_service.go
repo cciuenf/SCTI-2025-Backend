@@ -164,6 +164,7 @@ func (s *AuthService) SendVerificationEmail(user *models.User, verificationNumbe
 	return nil
 }
 
+// TODO: Implement token expiration
 func (s *AuthService) VerifyUser(user *models.User, token string) error {
 	if user.IsVerified {
 		return errors.New("user is already verified")
@@ -419,6 +420,10 @@ func (s *AuthService) InitiatePasswordReset(email string) error {
 }
 
 func (s *AuthService) ChangePassword(userID string, newPassword string) error {
+	if newPassword == "" {
+		return errors.New("new password cannot be empty")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -448,3 +453,11 @@ func (s *AuthService) SwitchEventCreatorStatus(requester models.User, targetUser
 
 	return nil
 }
+
+func (s *AuthService) ChangeUserName(user models.User, name, lastName string) error {
+	user.Name = name
+	user.LastName = lastName
+	return s.AuthRepo.UpdateUser(&user)
+}
+
+
