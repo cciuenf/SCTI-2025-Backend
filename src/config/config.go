@@ -35,8 +35,8 @@ var (
 	siteURL        string
 )
 
-func LoadConfig() *Config {
-	err := godotenv.Load(".env")
+func LoadConfig(path string) *Config {
+	err := godotenv.Load(path)
 	if err != nil {
 		log.Fatalf("Failed to load config")
 	}

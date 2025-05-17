@@ -112,6 +112,11 @@ var templateFuncs = template.FuncMap{
 }
 
 func (s *AuthService) SendVerificationEmail(user *models.User, verificationNumber int) error {
+	// Skip email sending in test mode
+	if os.Getenv("TEST_MODE") == "true" {
+		return nil
+	}
+
 	from := config.GetSystemEmail()
 	password := config.GetSystemEmailPass()
 

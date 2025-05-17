@@ -5,20 +5,16 @@ import (
 	"net/http"
 )
 
-type SuccessResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Data    any    `json:"data"`
-}
-
-type ErrorResponse struct {
+type Response struct {
 	Success bool     `json:"success"`
+	Message string   `json:"message"`
 	Module  string   `json:"module"`
 	Errors  []string `json:"errors"`
+	Data    any      `json:"data"`
 }
 
 func SendSuccess(w http.ResponseWriter, data any, message string, code int) {
-	response := SuccessResponse{
+	response := Response{
 		Success: true,
 		Data:    data,
 		Message: message,
@@ -27,7 +23,7 @@ func SendSuccess(w http.ResponseWriter, data any, message string, code int) {
 }
 
 func SendError(w http.ResponseWriter, errors []string, module string, code int) {
-	response := ErrorResponse{
+	response := Response{
 		Success: false,
 		Module:  module,
 		Errors:  errors,
