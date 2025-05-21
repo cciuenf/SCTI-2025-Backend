@@ -52,6 +52,18 @@ definitions:
       new_password:
         type: string
     type: object
+  handlers.ChangeUserNameRequest:
+    properties:
+      last_name:
+        type: string
+      name:
+        type: string
+    type: object
+  handlers.CreateEventCreatorRequest:
+    properties:
+      email:
+        type: string
+    type: object
   handlers.EventStandardErrorResponse:
     properties:
       errors:
@@ -521,8 +533,6 @@ definitions:
         description: event the product is associated with
         type: string
       expires_at:
-        description: 'TODO: Implement expiration logic to impede purchasing after
-          a certain date'
         type: string
       has_unlimited_quantity:
         description: Stock management (for physical items)
@@ -588,6 +598,8 @@ definitions:
         type: string
       event_id:
         type: string
+      expires_at:
+        type: string
       has_unlimited_quantity:
         description: Stock management
         type: boolean
@@ -636,7 +648,7 @@ definitions:
         $ref: '#/definitions/gorm.DeletedAt'
       delivered_at:
         type: string
-      gifted_to_id:
+      gifted_to_email:
         description: User ID of gift recipient
         type: string
       id:
@@ -662,8 +674,8 @@ definitions:
     type: object
   models.PurchaseRequest:
     properties:
-      gifted_to_id:
-        description: User ID of gift recipient
+      gifted_to_email:
+        description: User email of gift recipient
         type: string
       is_gift:
         description: For gifting functionality
@@ -780,6 +792,48 @@ info:
   title: SCTI 2025 API
   version: "1.0"
 paths:
+  /change-name:
+    post:
+      consumes:
+      - application/json
+      description: Updates the authenticated user's first and last name
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: New name information
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ChangeUserNameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Change user name
+      tags:
+      - auth
   /change-password:
     post:
       consumes:
@@ -1316,6 +1370,65 @@ paths:
       security:
       - Bearer: []
       summary: Mark attendance for an activity
+      tags:
+      - activities
+  /events/{slug}/activity/attendants:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all attendants for a specified
+        activity
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: ActivityID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.GetAttendeesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ActivityRegistration'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of attendants for an activity
       tags:
       - activities
   /events/{slug}/activity/attendees:
@@ -2730,6 +2843,47 @@ paths:
       summary: Get user tokens
       tags:
       - products
+  /users/create-event-creator:
+    post:
+      consumes:
+      - application/json
+      description: Create an event creator
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Create event creator request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateEventCreatorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create an event creator
+      tags:
+      - users
   /verify-account:
     post:
       consumes:
