@@ -9,13 +9,10 @@ import (
 	"scti/internal/models"
 	"scti/internal/utilities"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-func (s *APISuite) RegisterAndLogin() (string, string) {
-	// Unique ID for test traceability
-	uid := uuid.NewString()[:8]
+func (s *APISuite) RegisterAndLogin(uid string) (string, string) {
 	email := fmt.Sprintf("user_%s@example.com", uid)
 	password := "testpassword123"
 	name := fmt.Sprintf("TestName_%s", uid)
@@ -91,8 +88,11 @@ func (s *APISuite) Logout(userAccessToken, userRefreshToken string) {
 	})
 }
 
-func (s *APISuite) Login(email, password string) (string, string) {
+func (s *APISuite) Login(uid string) (string, string) {
 	var userAccessToken, userRefreshToken string
+	email := fmt.Sprintf("user_%s@example.com", uid)
+	password := "testpassword123"
+
 	s.Run("Login", func() {
 		loginReq := models.UserLogin{
 			Email:    email,
@@ -113,20 +113,20 @@ func (s *APISuite) Login(email, password string) (string, string) {
 
 func (s *APISuite) RevokeRefreshToken(userAccessToken, userRefreshToken string) {
 	s.Run("Revoke refresh user's token", func() {
-
 		var revokeTokenReq struct {
-			RefreshToken string
+			RefreshToken string `json:"refresh_token"`
 		}
 
 		revokeTokenReq.RefreshToken = userRefreshToken
 
-    body, err := json.Marshal(revokeTokenReq)
+		body, err := json.Marshal(revokeTokenReq)
 		if err != nil {
 			assert.True(s.T(), false)
 			return
 		}
 
 		req := httptest.NewRequest(http.MethodPost, "/revoke-refresh-token", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
 		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
 
 		w := httptest.NewRecorder()
@@ -137,5 +137,26 @@ func (s *APISuite) RevokeRefreshToken(userAccessToken, userRefreshToken string) 
 		_ = json.NewDecoder(w.Body).Decode(&resp)
 		assert.True(s.T(), resp.Success)
 		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) GetEvents() {
+	s.Run("Get Events", func() {
+		req := httptest.NewRequest(http.MethodGet, "/events", nil)
+		req.Header.Set("accept", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+
+		var resp utilities.Response
+		err := json.NewDecoder(w.Body).Decode(&resp)
+		assert.NoError(s.T(), err)
+
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+
+		assert.NotNil(s.T(), resp.Data)
 	})
 }

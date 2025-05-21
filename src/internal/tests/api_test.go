@@ -16,6 +16,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/google/uuid"
 )
 
 type APISuite struct {
@@ -35,9 +36,12 @@ func TestAPISuite(t *testing.T) {
 }
 
 func (s *APISuite) TestUserFlow() {
+		// Unique ID for test traceability
+	uid := uuid.NewString()[:8]
+
 	var access_token, refresh_token string
 	s.Run("1_RegisterAndLogin", func() {
-		access_token, refresh_token = s.RegisterAndLogin()
+		access_token, refresh_token = s.RegisterAndLogin(uid)
 	})
 	s.Run("2_VerifyTokens", func() {
 		s.VerifyTokens(access_token, refresh_token)
@@ -45,9 +49,14 @@ func (s *APISuite) TestUserFlow() {
 	s.Run("3_RevokeRefreshToken", func() {
 		s.RevokeRefreshToken(access_token, refresh_token)
 	})
-
+	s.Run("4_Login", func() {
+		access_token, refresh_token = s.Login(uid)
+	})
 	s.Run("4_Logout", func() {
 		s.Logout(access_token, refresh_token)
+	})
+		s.Run("5_GetEvents", func() {
+		s.GetEvents()
 	})
 }
 
