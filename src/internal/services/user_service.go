@@ -24,6 +24,10 @@ func (s *UserService) CreateEventCreator(user *models.User, email string) (*mode
 		return nil, err
 	}
 
+	if creator == nil {
+		return nil, errors.New("user not found")
+	}
+
 	if creator.IsEventCreator {
 		return nil, errors.New("user is already an event creator")
 	}
