@@ -42,7 +42,11 @@ func (s *APISuite) TestUserFlow() {
 	s.Run("2_VerifyTokens", func() {
 		s.VerifyTokens(access_token, refresh_token)
 	})
-	s.Run("3_Logout", func() {
+	s.Run("3_RevokeRefreshToken", func() {
+		s.RevokeRefreshToken(access_token, refresh_token)
+	})
+
+	s.Run("4_Logout", func() {
 		s.Logout(access_token, refresh_token)
 	})
 }

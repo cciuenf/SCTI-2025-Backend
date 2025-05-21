@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -87,5 +88,54 @@ func (s *APISuite) Logout(userAccessToken, userRefreshToken string) {
 		var resp utilities.Response
 		_ = json.NewDecoder(w.Body).Decode(&resp)
 		s.assertSuccess(w.Code, resp)
+	})
+}
+
+func (s *APISuite) Login(email, password string) (string, string) {
+	var userAccessToken, userRefreshToken string
+	s.Run("Login", func() {
+		loginReq := models.UserLogin{
+			Email:    email,
+			Password: password,
+		}
+
+		code, resp := s.request(http.MethodPost, "/login", loginReq)
+		s.assertSuccess(code, resp)
+
+		data := resp.Data.(map[string]interface{})
+		assert.NotEmpty(s.T(), data["access_token"])
+		userAccessToken = data["access_token"].(string)
+		assert.NotEmpty(s.T(), data["refresh_token"])
+		userRefreshToken = data["refresh_token"].(string)
+	})
+	return userAccessToken, userRefreshToken
+}
+
+func (s *APISuite) RevokeRefreshToken(userAccessToken, userRefreshToken string) {
+	s.Run("Revoke refresh user's token", func() {
+
+		var revokeTokenReq struct {
+			RefreshToken string
+		}
+
+		revokeTokenReq.RefreshToken = userRefreshToken
+
+    body, err := json.Marshal(revokeTokenReq)
+		if err != nil {
+			assert.True(s.T(), false)
+			return
+		}
+
+		req := httptest.NewRequest(http.MethodPost, "/revoke-refresh-token", bytes.NewReader(body))
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
 	})
 }
