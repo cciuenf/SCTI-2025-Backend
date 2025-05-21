@@ -690,3 +690,47 @@ func (h *ActivityHandler) GetUserActivitiesFromEvent(w http.ResponseWriter, r *h
 
 	handleSuccess(w, activities, "", http.StatusOK)
 }
+
+// GetActivityAttendants godoc
+// @Summary      Retrieves a list of attendants for an activity
+// @Description  The end point returns a list of all attendants for a specified activity
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Param        request body models.GetAttendeesRequest true "ActivityID"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.ActivityRegistration}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Failure      403  {object}  ActivityStandardErrorResponse
+// @Router       /events/{slug}/activity/attendants [get]
+func (h *ActivityHandler) GetActivityAttendants(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	var reqBody models.GetAttendeesRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	admin, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	attendants, err := h.ActivityService.GetActivityAttendants(admin, slug, reqBody.ID)
+	if err != nil {
+		HandleErrMsg("error getting attendants", err, w).Stack("activity").BadRequest()
+		return
+	}
+
+	handleSuccess(w, attendants, "", http.StatusOK)
+}
