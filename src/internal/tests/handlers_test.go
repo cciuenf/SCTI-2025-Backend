@@ -120,7 +120,7 @@ func (s *APISuite) RevokeRefreshToken(userAccessToken, userRefreshToken string) 
 
 		revokeTokenReq.RefreshToken = userRefreshToken
 
-    body, err := json.Marshal(revokeTokenReq)
+		body, err := json.Marshal(revokeTokenReq)
 		if err != nil {
 			assert.True(s.T(), false)
 			return
