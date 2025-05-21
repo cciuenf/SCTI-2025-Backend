@@ -654,3 +654,40 @@ func (s *ActivityService) GetUserActivitiesFromEvent(user models.User, eventSlug
 
 	return activities, nil
 }
+
+func (s *ActivityService) GetActivityAttendants(admin models.User, eventSlug string, activityID string) ([]models.ActivityRegistration, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	activity, err := s.ActivityRepo.GetActivityByID(activityID)
+	if err != nil {
+		return nil, errors.New("activity not found: " + err.Error())
+	}
+
+	if activity.EventID == nil || *activity.EventID != event.ID {
+		return nil, errors.New("activity does not belong to this event")
+	}
+
+	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
+		adminStatus, err := s.ActivityRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return nil, errors.New("unauthorized: only admins can get activity attendants")
+		}
+	}
+
+	registrations, err := s.ActivityRepo.GetActivityRegistrations(activityID)
+	if err != nil {
+		return nil, errors.New("failed to retrieve activity attendants: " + err.Error())
+	}
+
+	var attendants []models.ActivityRegistration
+	for _, registration := range registrations {
+		if registration.AttendedAt != nil {
+			attendants = append(attendants, registration)
+		}
+	}
+
+	return attendants, nil
+}
