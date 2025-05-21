@@ -150,7 +150,7 @@ func (h *ActivityHandler) UpdateEventActivity(w http.ResponseWriter, r *http.Req
 	handleSuccess(w, activity, "", http.StatusOK)
 }
 
-// TODO: Prohibit deleting activities that have attendees or paid participants
+// TODO: Prohibit deleting activities that have paid participants
 // DeleteEventActivity godoc
 // @Summary      Delete an activity
 // @Description  Deletes an existing activity from the specified event

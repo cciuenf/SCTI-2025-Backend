@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type ActivityService struct {
@@ -150,7 +151,6 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 	return activity, nil
 }
 
-// TODO: Prohibit deleting activities that have/had attendees or paid participants
 func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -171,6 +171,19 @@ func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string
 		if err != nil || isMasterAdmin.AdminType != models.AdminTypeMaster {
 			return errors.New("unauthorized to delete activities for this event")
 		}
+	}
+
+	registrations, err := s.ActivityRepo.GetActivityRegistrations(activityID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return errors.New("failed to get activity registrations: " + err.Error())
+	}
+
+	if len(registrations) > 0 {
+		return errors.New("activity has registrations")
+	}
+
+	if activity.StartTime.Before(time.Now()) {
+		return errors.New("activity has already started")
 	}
 
 	if err := s.ActivityRepo.DeleteActivity(activityID); err != nil {
