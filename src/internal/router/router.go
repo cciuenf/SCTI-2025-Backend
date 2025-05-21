@@ -26,6 +26,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	eventRepo := repos.NewEventRepo(database)
 	activityRepo := repos.NewActivityRepo(database)
 	productRepo := repos.NewProductRepo(database)
+	userRepo := repos.NewUserRepo(database)
 
 	// FATAL if fails, system can't exist without super user
 	// fatals located in DB func
@@ -35,11 +36,13 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	eventService := services.NewEventService(eventRepo)
 	activityService := services.NewActivityService(activityRepo)
 	productService := services.NewProductService(productRepo)
+	userService := services.NewUserService(userRepo)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	eventHandler := handlers.NewEventHandler(eventService)
 	activityHandler := handlers.NewActivityHandler(activityService)
 	productHandler := handlers.NewProductHandler(productService)
+	userHandler := handlers.NewUsersHandler(userService)
 
 	authMiddleware := mw.AuthMiddleware(authService)
 
@@ -47,6 +50,9 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 
 	// API documentation routes
 	mux.HandleFunc("/swagger/", httpSwagger.Handler(httpSwagger.URL("http://localhost:"+cfg.PORT+"/swagger/doc.json")))
+
+	// Users routes
+	mux.Handle("POST /users/create-event-creator", authMiddleware(http.HandlerFunc(userHandler.CreateEventCreator)))
 
 	// Authentication routes
 	mux.HandleFunc("POST /register", authHandler.Register)
@@ -92,6 +98,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("POST /events/{slug}/activity/unattend", authMiddleware(http.HandlerFunc(activityHandler.UnattendActivity)))                                  // Only for master admins and above to mark unattendance
 	mux.Handle("POST /events/{slug}/activity/register-standalone", authMiddleware(http.HandlerFunc(activityHandler.RegisterUserToStandaloneActivity)))       // Only if the user is not registered to the event that contains the activity
 	mux.Handle("POST /events/{slug}/activity/unregister-standalone", authMiddleware(http.HandlerFunc(activityHandler.UnregisterUserFromStandaloneActivity))) // Only if the user is not registered to the event that contains the activity
+	mux.Handle("GET /events/{slug}/activity/attendants", authMiddleware(http.HandlerFunc(activityHandler.GetActivityAttendants)))
 
 	// Event Product routes accessed by event slug
 	mux.Handle("POST /events/{slug}/product", authMiddleware(http.HandlerFunc(productHandler.CreateEventProduct)))
