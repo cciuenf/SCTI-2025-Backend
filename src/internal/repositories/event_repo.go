@@ -3,6 +3,7 @@ package repos
 import (
 	"errors"
 	"scti/internal/models"
+	"slices"
 
 	"gorm.io/gorm"
 )
@@ -243,4 +244,41 @@ func (r *EventRepo) GetUserEvents(userID string) ([]models.Event, error) {
 	}
 
 	return events, nil
+}
+
+func (r *EventRepo) GetEventBoughtProductsIDs(eventID string) ([]string, error) {
+	var products []models.Product
+	if err := r.DB.Where("event_id = ?", eventID).Find(&products).Error; err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	if len(products) == 0 {
+		return nil, nil
+	}
+
+	var productIDs []string
+	for _, product := range products {
+		productIDs = append(productIDs, product.ID)
+	}
+
+	var purchases []models.Purchase
+	if err := r.DB.Where("product_id IN ?", productIDs).Find(&purchases).Error; err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	if len(purchases) == 0 {
+		return nil, nil
+	}
+
+	var purchasedProductsIDs []string
+	var verifiedProductsIDs []string
+	for _, purchase := range purchases {
+		if slices.Contains(verifiedProductsIDs, purchase.ProductID) {
+			continue
+		}
+		verifiedProductsIDs = append(verifiedProductsIDs, purchase.ProductID)
+		purchasedProductsIDs = append(purchasedProductsIDs, purchase.ProductID)
+	}
+
+	return purchasedProductsIDs, nil
 }
