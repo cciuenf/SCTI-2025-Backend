@@ -320,6 +320,20 @@ func (s *AuthService) GenerateAcessToken(user models.User) (string, error) {
 		adminMap = "{}"
 	}
 
+	var refreshExpireTime int
+	if os.Getenv("TEST_MODE") == "true" {
+		refreshExpireTime, err = strconv.Atoi(os.Getenv("TEST_REFRESH_EXPIRE_TIME"))
+		if err != nil {
+			return "", err
+		}
+	} else {
+		refreshExpireTime, err = strconv.Atoi(os.Getenv("REFRESH_EXPIRE_TIME"))
+		if err != nil {
+			return "", err
+		}
+	}
+
+	expirationTime := time.Now().Add(time.Duration(refreshExpireTime) * time.Minute)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":               user.ID,
 		"name":             user.Name,
@@ -329,7 +343,7 @@ func (s *AuthService) GenerateAcessToken(user models.User) (string, error) {
 		"is_verified":      user.IsVerified,
 		"is_event_creator": user.IsEventCreator,
 		"is_super":         user.IsSuperUser,
-		"exp":              time.Now().Add(5 * time.Minute).Unix(),
+		"exp":              expirationTime.Unix(),
 	})
 	return token.SignedString([]byte(s.JWTSecret))
 }

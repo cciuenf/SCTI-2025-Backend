@@ -107,7 +107,14 @@ func (s *EventService) DeleteEvent(user models.User, slug string) error {
 		}
 	}
 
-	// TODO: Prohibit deletion if any product from the event was bought
+	products, err := s.EventRepo.GetEventBoughtProductsIDs(event.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(products) > 0 {
+		return errors.New("event has products that were bought, cannot delete")
+	}
 
 	// TODO: Prohibit deletion if any user attended any activity from the event
 
