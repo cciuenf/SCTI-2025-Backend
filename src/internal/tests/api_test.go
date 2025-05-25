@@ -50,7 +50,6 @@ func (s *APISuite) TestUserFlow() {
 		s.RevokeRefreshToken(access_token, refresh_token)
 	})
 
-
 	s.Run("4_Login", func() {
 		access_token, refresh_token = s.Login(uid)
 	})
@@ -61,11 +60,9 @@ func (s *APISuite) TestUserFlow() {
 		s.Logout(access_token, refresh_token)
 	})
 
-
 	s.Run("7_GetEvents", func() {
 		s.GetEvents()
 	})
-
 
 	s.Run("8_LoginSuperUser", func() {
 		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
