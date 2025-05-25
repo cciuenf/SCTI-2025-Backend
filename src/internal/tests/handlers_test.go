@@ -111,6 +111,27 @@ func (s *APISuite) Login(uid string) (string, string) {
 	return userAccessToken, userRefreshToken
 }
 
+func (s *APISuite) LoginEmailPassword(email, password string) (string, string) {
+	var userAccessToken, userRefreshToken string
+
+	s.Run("Login", func() {
+		loginReq := models.UserLogin{
+			Email:    email,
+			Password: password,
+		}
+
+		code, resp := s.request(http.MethodPost, "/login", loginReq)
+		s.assertSuccess(code, resp)
+
+		data := resp.Data.(map[string]interface{})
+		assert.NotEmpty(s.T(), data["access_token"])
+		userAccessToken = data["access_token"].(string)
+		assert.NotEmpty(s.T(), data["refresh_token"])
+		userRefreshToken = data["refresh_token"].(string)
+	})
+	return userAccessToken, userRefreshToken
+}
+
 func (s *APISuite) RevokeRefreshToken(userAccessToken, userRefreshToken string) {
 	s.Run("Revoke refresh user's token", func() {
 		var revokeTokenReq struct {
@@ -158,5 +179,37 @@ func (s *APISuite) GetEvents() {
 		assert.Empty(s.T(), resp.Errors)
 
 		assert.NotNil(s.T(), resp.Data)
+	})
+}
+
+func (s *APISuite) ChangeName(userAccessToken, userRefreshToken, uid string) {
+	s.Run("Change name user's", func() {
+		var changeNameReq struct {
+			Name     string `json:"name"`
+			LastName string `json:"last_name"`
+		}
+
+		changeNameReq.Name = fmt.Sprintf("TestNameChanged_%s", uid)
+		changeNameReq.LastName = "TestLastChanged"
+
+		body, err := json.Marshal(changeNameReq)
+		if err != nil {
+			assert.True(s.T(), false)
+			return
+		}
+
+		req := httptest.NewRequest(http.MethodPost, "/change-name", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
 	})
 }

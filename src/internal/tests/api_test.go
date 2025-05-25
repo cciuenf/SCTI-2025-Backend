@@ -49,15 +49,32 @@ func (s *APISuite) TestUserFlow() {
 	s.Run("3_RevokeRefreshToken", func() {
 		s.RevokeRefreshToken(access_token, refresh_token)
 	})
+
+
 	s.Run("4_Login", func() {
 		access_token, refresh_token = s.Login(uid)
 	})
-	s.Run("4_Logout", func() {
+	s.Run("5_ChangeName", func() {
+		s.ChangeName(access_token, refresh_token, uid)
+	})
+	s.Run("6_Logout", func() {
 		s.Logout(access_token, refresh_token)
 	})
-	s.Run("5_GetEvents", func() {
+
+
+	s.Run("7_GetEvents", func() {
 		s.GetEvents()
 	})
+
+
+	s.Run("8_LoginSuperUser", func() {
+		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
+	})
+
+	s.Run("9_Logout", func() {
+		s.Logout(access_token, refresh_token)
+	})
+
 }
 
 func (s *APISuite) request(method, path string, body any) (int, utilities.Response) {
