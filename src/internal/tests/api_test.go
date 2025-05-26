@@ -40,38 +40,56 @@ func (s *APISuite) TestUserFlow() {
 	uid := uuid.NewString()[:8]
 
 	var access_token, refresh_token string
-	s.Run("1_RegisterAndLogin", func() {
+
+	//Cria o usuário, verifica os tokens e revoga
+	s.Run("RegisterAndLogin", func() {
 		access_token, refresh_token = s.RegisterAndLogin(uid)
 	})
-	s.Run("2_VerifyTokens", func() {
+	s.Run("VerifyTokens", func() {
 		s.VerifyTokens(access_token, refresh_token)
 	})
-	s.Run("3_RevokeRefreshToken", func() {
+	s.Run("RevokeRefreshToken", func() {
 		s.RevokeRefreshToken(access_token, refresh_token)
 	})
 
-
-	s.Run("4_Login", func() {
+// loga o usuário, troca o nome e desloga
+	s.Run("Login", func() {
 		access_token, refresh_token = s.Login(uid)
 	})
-	s.Run("5_ChangeName", func() {
+	s.Run("ChangeName", func() {
 		s.ChangeName(access_token, refresh_token, uid)
 	})
-	s.Run("6_Logout", func() {
+	s.Run("Logout", func() {
 		s.Logout(access_token, refresh_token)
 	})
 
-
-	s.Run("7_GetEvents", func() {
+// verifica os eventos, não precisa de login
+	s.Run("GetEvents", func() {
 		s.GetEvents()
 	})
 
-
+// loga o superUser, transforma o usuario em criador de eventos e desloga
 	s.Run("8_LoginSuperUser", func() {
 		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
 	})
+	s.Run("9_SwitchEventCreatorStauts", func() {
+		s.SwitchEventCreatorStatus(access_token, refresh_token, uid)
+	})
+	s.Run("Logout", func() {
+		s.Logout(access_token, refresh_token)
+	})
 
-	s.Run("9_Logout", func() {
+	// o usuario cria um evento e desloga
+	s.Run("Login", func() {
+		access_token, refresh_token = s.Login(uid)
+	})
+	s.Run("CreateEvent", func() {
+		s.CreateEvent(access_token, refresh_token)
+	})
+	s.Run("GetEventsUser", func() {
+		s.GetEventsUser(access_token, refresh_token)
+	})
+	s.Run("Logout", func() {
 		s.Logout(access_token, refresh_token)
 	})
 

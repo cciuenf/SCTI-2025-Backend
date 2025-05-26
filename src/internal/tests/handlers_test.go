@@ -9,6 +9,7 @@ import (
 	"scti/internal/models"
 	"scti/internal/utilities"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -202,6 +203,89 @@ func (s *APISuite) ChangeName(userAccessToken, userRefreshToken, uid string) {
 		req.Header.Set("Authorization", "Bearer "+userAccessToken)
 		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
 		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) SwitchEventCreatorStatus(userAccessToken, userRefreshToken, uid string) {
+	s.Run("switch event creator status", func() {
+		var SECSReq struct {
+			Email     string `json:"email"`
+		}
+
+		SECSReq.Email = fmt.Sprintf("user_%s@example.com", uid)
+
+		body, err := json.Marshal(SECSReq)
+		if err != nil {
+			assert.True(s.T(), false)
+			return
+		}
+
+		req := httptest.NewRequest(http.MethodPost, "/switch-event-creator-status", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) CreateEvent(userAccessToken, userRefreshToken string) {
+	s.Run("Create event", func() {
+		randomSlug := fmt.Sprintf("gws-%s", uuid.New().String()[:8])
+
+		eventReq := map[string]interface{}{
+			"name":               "Go Workshop",
+			"slug":               randomSlug,
+			"description":        "Learn Go programming",
+			"location":           "Room 101",
+			"start_date":         "2025-05-01T14:00:00Z",
+			"end_date":           "2025-05-01T17:00:00Z",
+			"is_hidden":          true,
+			"is_blocked":         false,
+			"max_tokens_per_user": 1,
+		}
+
+		body, err := json.Marshal(eventReq)
+		assert.NoError(s.T(), err)
+
+		req := httptest.NewRequest(http.MethodPost, "/events", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		err = json.NewDecoder(w.Body).Decode(&resp)
+		assert.NoError(s.T(), err)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) GetEventsUser(userAccessToken, userRefreshToken string) {
+	s.Run("Get events created by a user", func() {
+		req := httptest.NewRequest(http.MethodGet, "/events/created", nil)
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
 
 		w := httptest.NewRecorder()
 		s.router.ServeHTTP(w, req)
