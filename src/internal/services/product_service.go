@@ -21,6 +21,7 @@ func NewProductService(repo *repos.ProductRepo) *ProductService {
 
 // TODO: Integrate bundled products
 // TODO: Verify if the access targets are valid
+// TODO: Event access target should give access to all activities in the event
 func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {

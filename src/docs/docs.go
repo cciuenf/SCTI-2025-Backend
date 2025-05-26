@@ -3254,6 +3254,13 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Create event creator request",
                         "name": "request",
                         "in": "body",
@@ -3272,18 +3279,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
                         }

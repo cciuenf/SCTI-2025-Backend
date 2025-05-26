@@ -2854,6 +2854,11 @@ paths:
         name: Authorization
         required: true
         type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
       - description: Create event creator request
         in: body
         name: request
@@ -2869,14 +2874,6 @@ paths:
             $ref: '#/definitions/handlers.NoMessageSuccessResponse'
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
-        "403":
-          description: Forbidden
           schema:
             $ref: '#/definitions/handlers.AuthStandardErrorResponse'
       security:

@@ -26,11 +26,10 @@ type CreateEventCreatorRequest struct {
 // @Produce      json
 // @Security     Bearer
 // @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
 // @Param        request body CreateEventCreatorRequest true "Create event creator request"
 // @Success      200  {object}  NoMessageSuccessResponse
 // @Failure      400  {object}  AuthStandardErrorResponse
-// @Failure      401  {object}  AuthStandardErrorResponse
-// @Failure      403  {object}  AuthStandardErrorResponse
 // @Router       /users/create-event-creator [post]
 func (h *UsersHandler) CreateEventCreator(w http.ResponseWriter, r *http.Request) {
 	user, err := getUserFromContext(h.UserService.UserRepo.GetUserByID, r)
