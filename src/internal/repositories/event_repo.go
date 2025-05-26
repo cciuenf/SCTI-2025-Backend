@@ -58,6 +58,7 @@ func (r *EventRepo) CreateEventRegistration(registration *models.EventRegistrati
 
 func (r *EventRepo) DeleteEventRegistration(userID string, eventID string) error {
 	return r.DB.Where("user_id = ? AND event_id = ?", userID, eventID).
+		Unscoped().
 		Delete(&models.EventRegistration{}).Error
 }
 
