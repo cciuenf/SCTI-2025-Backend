@@ -217,7 +217,7 @@ func (s *APISuite) ChangeName(userAccessToken, userRefreshToken, uid string) {
 func (s *APISuite) SwitchEventCreatorStatus(userAccessToken, userRefreshToken, uid string) {
 	s.Run("switch event creator status", func() {
 		var SECSReq struct {
-			Email     string `json:"email"`
+			Email string `json:"email"`
 		}
 
 		SECSReq.Email = fmt.Sprintf("user_%s@example.com", uid)
@@ -248,14 +248,14 @@ func (s *APISuite) CreateEvent(userAccessToken, userRefreshToken, slug string) {
 	s.Run("Create event", func() {
 
 		eventReq := map[string]interface{}{
-			"name":               "Go Workshop",
-			"slug":               slug,
-			"description":        "Learn Go programming",
-			"location":           "Room 101",
-			"start_date":         "2025-05-01T14:00:00Z",
-			"end_date":           "2025-05-01T17:00:00Z",
-			"is_hidden":          false,
-			"is_blocked":         false,
+			"name":                "Go Workshop",
+			"slug":                slug,
+			"description":         "Learn Go programming",
+			"location":            "Room 101",
+			"start_date":          "2025-05-01T14:00:00Z",
+			"end_date":            "2025-05-01T17:00:00Z",
+			"is_hidden":           false,
+			"is_blocked":          false,
 			"max_tokens_per_user": 1,
 		}
 
@@ -342,7 +342,6 @@ func (s *APISuite) GetEventSlug(slug string) {
 func (s *APISuite) DeleteEvent(userAccessToken, userRefreshToken, slug string) {
 	s.Run("Delete event", func() {
 
-
 		url := fmt.Sprintf("/events/%s", slug)
 		req := httptest.NewRequest(http.MethodDelete, url, nil)
 		req.Header.Set("Authorization", "Bearer "+userAccessToken)
@@ -366,21 +365,19 @@ func (s *APISuite) UpdateEvent(userAccessToken, userRefreshToken, slug string) {
 	s.Run("Create event", func() {
 
 		eventReq := map[string]interface{}{
-			"name":               "Go Workshop",
-			"slug":               slug,
-			"description":        "Learn Go programming UPDATED",
-			"location":           "Room 101",
-			"start_date":         "2025-05-01T14:00:00Z",
-			"end_date":           "2025-05-01T17:00:00Z",
-			"is_hidden":          false,
-			"is_blocked":         false,
+			"name":                "Go Workshop",
+			"slug":                slug,
+			"description":         "Learn Go programming UPDATED",
+			"location":            "Room 101",
+			"start_date":          "2025-05-01T14:00:00Z",
+			"end_date":            "2025-05-01T17:00:00Z",
+			"is_hidden":           false,
+			"is_blocked":          false,
 			"max_tokens_per_user": 1,
 		}
 
 		body, err := json.Marshal(eventReq)
 		assert.NoError(s.T(), err)
-
-
 
 		url := fmt.Sprintf("/events/%s", slug)
 		req := httptest.NewRequest(http.MethodPatch, url, bytes.NewReader(body))
@@ -403,7 +400,7 @@ func (s *APISuite) UpdateEvent(userAccessToken, userRefreshToken, slug string) {
 func (s *APISuite) DemoteUserEvent(userAccessToken, userRefreshToken, uid, slug string) {
 	s.Run("Demote user in event", func() {
 		var DemEvReq struct {
-			Email     string `json:"email"`
+			Email string `json:"email"`
 		}
 
 		DemEvReq.Email = fmt.Sprintf("user_%s@example.com", uid)
@@ -434,7 +431,7 @@ func (s *APISuite) DemoteUserEvent(userAccessToken, userRefreshToken, uid, slug 
 func (s *APISuite) PromoteUserEvent(userAccessToken, userRefreshToken, uid, slug string) {
 	s.Run("Promote user in event", func() {
 		var PromEvReq struct {
-			Email     string `json:"email"`
+			Email string `json:"email"`
 		}
 
 		PromEvReq.Email = fmt.Sprintf("user_%s@example.com", uid)

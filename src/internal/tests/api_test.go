@@ -53,7 +53,7 @@ func (s *APISuite) TestUserFlow() {
 		s.RevokeRefreshToken(access_token, refresh_token)
 	})
 
-// loga o usuário, troca o nome
+	// loga o usuário, troca o nome
 	s.Run("Login", func() {
 		access_token, refresh_token = s.Login(uid)
 	})
@@ -61,7 +61,7 @@ func (s *APISuite) TestUserFlow() {
 		s.ChangeName(access_token, refresh_token, uid)
 	})
 
-// loga o superUser, transforma o usuario em criador de eventos
+	// loga o superUser, transforma o usuario em criador de eventos
 	s.Run("8_LoginSuperUser", func() {
 		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
 	})
@@ -102,7 +102,6 @@ func (s *APISuite) TestUserFlow() {
 		s.RegisterUserEvent(access_token, refresh_token, slug)
 	})
 
-
 	// loga o superUser, transforma o usuario2 em gerenciador de evento
 	s.Run("8_LoginSuperUser", func() {
 		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
@@ -125,7 +124,7 @@ func (s *APISuite) TestUserFlow() {
 		s.Logout(access_token, refresh_token)
 	})
 
-// verifica os eventos, não precisa de login
+	// verifica os eventos, não precisa de login
 	s.Run("GetEvents", func() {
 		s.GetEvents()
 	})
