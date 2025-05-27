@@ -399,3 +399,120 @@ func (s *APISuite) UpdateEvent(userAccessToken, userRefreshToken, slug string) {
 		assert.Empty(s.T(), resp.Errors)
 	})
 }
+
+func (s *APISuite) DemoteUserEvent(userAccessToken, userRefreshToken, uid, slug string) {
+	s.Run("Demote user in event", func() {
+		var DemEvReq struct {
+			Email     string `json:"email"`
+		}
+
+		DemEvReq.Email = fmt.Sprintf("user_%s@example.com", uid)
+
+		body, err := json.Marshal(DemEvReq)
+		if err != nil {
+			assert.True(s.T(), false)
+			return
+		}
+
+		url := fmt.Sprintf("/events/%s/demote", slug)
+		req := httptest.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) PromoteUserEvent(userAccessToken, userRefreshToken, uid, slug string) {
+	s.Run("Promote user in event", func() {
+		var PromEvReq struct {
+			Email     string `json:"email"`
+		}
+
+		PromEvReq.Email = fmt.Sprintf("user_%s@example.com", uid)
+
+		body, err := json.Marshal(PromEvReq)
+		if err != nil {
+			assert.True(s.T(), false)
+			return
+		}
+
+		url := fmt.Sprintf("/events/%s/promote", slug)
+		req := httptest.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) RegisterUserEvent(userAccessToken, userRefreshToken, slug string) {
+	s.Run("Register user in event", func() {
+		url := fmt.Sprintf("/events/%s/register", slug)
+		req := httptest.NewRequest(http.MethodPost, url, nil)
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) UnregisterUserEvent(userAccessToken, userRefreshToken, slug string) {
+	s.Run("Unregister user in event", func() {
+		url := fmt.Sprintf("/events/%s/unregister", slug)
+		req := httptest.NewRequest(http.MethodPost, url, nil)
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) UserEvents(userAccessToken, userRefreshToken string) {
+	s.Run("events with this user", func() {
+		req := httptest.NewRequest(http.MethodGet, "/user-events", nil)
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}

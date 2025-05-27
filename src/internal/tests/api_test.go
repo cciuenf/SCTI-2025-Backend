@@ -53,29 +53,23 @@ func (s *APISuite) TestUserFlow() {
 		s.RevokeRefreshToken(access_token, refresh_token)
 	})
 
-// loga o usuário, troca o nome e desloga
+// loga o usuário, troca o nome
 	s.Run("Login", func() {
 		access_token, refresh_token = s.Login(uid)
 	})
 	s.Run("ChangeName", func() {
 		s.ChangeName(access_token, refresh_token, uid)
 	})
-	s.Run("Logout", func() {
-		s.Logout(access_token, refresh_token)
-	})
 
-// loga o superUser, transforma o usuario em criador de eventos e desloga
+// loga o superUser, transforma o usuario em criador de eventos
 	s.Run("8_LoginSuperUser", func() {
 		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
 	})
 	s.Run("9_SwitchEventCreatorStauts", func() {
 		s.SwitchEventCreatorStatus(access_token, refresh_token, uid)
 	})
-	s.Run("Logout", func() {
-		s.Logout(access_token, refresh_token)
-	})
 
-	// o usuario cria um evento e desloga
+	// o usuario cria um evento, apaga, cria outro, atualiza, se registra nele, vê os eventos registrados
 	s.Run("Login", func() {
 		access_token, refresh_token = s.Login(uid)
 	})
@@ -85,7 +79,6 @@ func (s *APISuite) TestUserFlow() {
 	s.Run("DeleteEvent", func() {
 		s.DeleteEvent(access_token, refresh_token, slug)
 	})
-
 	slug = uuid.New().String()[:8]
 	s.Run("CreateEvent", func() {
 		s.CreateEvent(access_token, refresh_token, slug)
@@ -93,8 +86,40 @@ func (s *APISuite) TestUserFlow() {
 	s.Run("UpdateEvent", func() {
 		s.UpdateEvent(access_token, refresh_token, slug)
 	})
+	s.Run("RegisterUserEvent", func() {
+		s.RegisterUserEvent(access_token, refresh_token, slug)
+	})
 	s.Run("GetEventsUser", func() {
 		s.GetEventsUser(access_token, refresh_token)
+	})
+
+	// novo usuario, se registra em um evento
+	uid2 := uuid.NewString()[:8]
+	s.Run("RegisterAndLogin", func() {
+		access_token, refresh_token = s.RegisterAndLogin(uid2)
+	})
+	s.Run("RegisterUserEvent", func() {
+		s.RegisterUserEvent(access_token, refresh_token, slug)
+	})
+
+
+	// loga o superUser, transforma o usuario2 em gerenciador de evento
+	s.Run("8_LoginSuperUser", func() {
+		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
+	})
+	s.Run("PromoteUserEvent", func() {
+		s.PromoteUserEvent(access_token, refresh_token, uid2, slug)
+	})
+
+	// login usuario2, desregistra e desloga
+	s.Run("Login", func() {
+		access_token, refresh_token = s.Login(uid2)
+	})
+	s.Run("UnregisterUserEvent", func() {
+		s.UnregisterUserEvent(access_token, refresh_token, slug)
+	})
+	s.Run("UserEvents", func() {
+		s.UserEvents(access_token, refresh_token)
 	})
 	s.Run("Logout", func() {
 		s.Logout(access_token, refresh_token)
