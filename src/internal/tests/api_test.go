@@ -38,6 +38,7 @@ func TestAPISuite(t *testing.T) {
 func (s *APISuite) TestUserFlow() {
 	// Unique ID for test traceability
 	uid := uuid.NewString()[:8]
+	slug := uuid.New().String()[:8]
 
 	var access_token, refresh_token string
 
@@ -63,11 +64,6 @@ func (s *APISuite) TestUserFlow() {
 		s.Logout(access_token, refresh_token)
 	})
 
-// verifica os eventos, não precisa de login
-	s.Run("GetEvents", func() {
-		s.GetEvents()
-	})
-
 // loga o superUser, transforma o usuario em criador de eventos e desloga
 	s.Run("8_LoginSuperUser", func() {
 		access_token, refresh_token = s.LoginEmailPassword(os.Getenv("SCTI_EMAIL"), os.Getenv("MASTER_USER_PASS"))
@@ -84,13 +80,35 @@ func (s *APISuite) TestUserFlow() {
 		access_token, refresh_token = s.Login(uid)
 	})
 	s.Run("CreateEvent", func() {
-		s.CreateEvent(access_token, refresh_token)
+		s.CreateEvent(access_token, refresh_token, slug)
+	})
+	s.Run("DeleteEvent", func() {
+		s.DeleteEvent(access_token, refresh_token, slug)
+	})
+
+	slug = uuid.New().String()[:8]
+	s.Run("CreateEvent", func() {
+		s.CreateEvent(access_token, refresh_token, slug)
+	})
+	s.Run("UpdateEvent", func() {
+		s.UpdateEvent(access_token, refresh_token, slug)
 	})
 	s.Run("GetEventsUser", func() {
 		s.GetEventsUser(access_token, refresh_token)
 	})
 	s.Run("Logout", func() {
 		s.Logout(access_token, refresh_token)
+	})
+
+// verifica os eventos, não precisa de login
+	s.Run("GetEvents", func() {
+		s.GetEvents()
+	})
+	s.Run("GetPublicEvents", func() {
+		s.GetPublicEvents()
+	})
+	s.Run("GetEventSlug", func() {
+		s.GetEventSlug(slug)
 	})
 
 }

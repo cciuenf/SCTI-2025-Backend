@@ -9,7 +9,6 @@ import (
 	"scti/internal/models"
 	"scti/internal/utilities"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -245,18 +244,17 @@ func (s *APISuite) SwitchEventCreatorStatus(userAccessToken, userRefreshToken, u
 	})
 }
 
-func (s *APISuite) CreateEvent(userAccessToken, userRefreshToken string) {
+func (s *APISuite) CreateEvent(userAccessToken, userRefreshToken, slug string) {
 	s.Run("Create event", func() {
-		randomSlug := fmt.Sprintf("gws-%s", uuid.New().String()[:8])
 
 		eventReq := map[string]interface{}{
 			"name":               "Go Workshop",
-			"slug":               randomSlug,
+			"slug":               slug,
 			"description":        "Learn Go programming",
 			"location":           "Room 101",
 			"start_date":         "2025-05-01T14:00:00Z",
 			"end_date":           "2025-05-01T17:00:00Z",
-			"is_hidden":          true,
+			"is_hidden":          false,
 			"is_blocked":         false,
 			"max_tokens_per_user": 1,
 		}
@@ -293,6 +291,110 @@ func (s *APISuite) GetEventsUser(userAccessToken, userRefreshToken string) {
 		assert.Equal(s.T(), http.StatusOK, w.Code)
 		var resp utilities.Response
 		_ = json.NewDecoder(w.Body).Decode(&resp)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) GetPublicEvents() {
+	s.Run("Get Public Events", func() {
+		req := httptest.NewRequest(http.MethodGet, "/events/public", nil)
+		req.Header.Set("accept", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+
+		var resp utilities.Response
+		err := json.NewDecoder(w.Body).Decode(&resp)
+		assert.NoError(s.T(), err)
+
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+
+		assert.NotNil(s.T(), resp.Data)
+	})
+}
+
+func (s *APISuite) GetEventSlug(slug string) {
+	s.Run("Get Event by Slug", func() {
+		url := fmt.Sprintf("/events/%s", slug)
+		req := httptest.NewRequest(http.MethodGet, url, nil)
+		req.Header.Set("accept", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+
+		var resp utilities.Response
+		err := json.NewDecoder(w.Body).Decode(&resp)
+		assert.NoError(s.T(), err)
+
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+
+		assert.NotNil(s.T(), resp.Data)
+	})
+}
+
+func (s *APISuite) DeleteEvent(userAccessToken, userRefreshToken, slug string) {
+	s.Run("Delete event", func() {
+
+
+		url := fmt.Sprintf("/events/%s", slug)
+		req := httptest.NewRequest(http.MethodDelete, url, nil)
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+
+		var resp utilities.Response
+		err := json.NewDecoder(w.Body).Decode(&resp)
+		assert.NoError(s.T(), err)
+		assert.True(s.T(), resp.Success)
+		assert.Empty(s.T(), resp.Errors)
+	})
+}
+
+func (s *APISuite) UpdateEvent(userAccessToken, userRefreshToken, slug string) {
+	s.Run("Create event", func() {
+
+		eventReq := map[string]interface{}{
+			"name":               "Go Workshop",
+			"slug":               slug,
+			"description":        "Learn Go programming UPDATED",
+			"location":           "Room 101",
+			"start_date":         "2025-05-01T14:00:00Z",
+			"end_date":           "2025-05-01T17:00:00Z",
+			"is_hidden":          false,
+			"is_blocked":         false,
+			"max_tokens_per_user": 1,
+		}
+
+		body, err := json.Marshal(eventReq)
+		assert.NoError(s.T(), err)
+
+
+
+		url := fmt.Sprintf("/events/%s", slug)
+		req := httptest.NewRequest(http.MethodPatch, url, bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+userAccessToken)
+		req.Header.Set("Refresh", "Bearer "+userRefreshToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		s.router.ServeHTTP(w, req)
+
+		assert.Equal(s.T(), http.StatusOK, w.Code)
+		var resp utilities.Response
+		err = json.NewDecoder(w.Body).Decode(&resp)
+		assert.NoError(s.T(), err)
 		assert.True(s.T(), resp.Success)
 		assert.Empty(s.T(), resp.Errors)
 	})
