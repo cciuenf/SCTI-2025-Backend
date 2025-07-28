@@ -7,6 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
+type UserInfo struct {
+	Name     string `example:"John"`
+	LastName string `example:"Carmack"`
+	Email    string `example:"john@carmack.com"`
+}
+
 type User struct {
 	ID         string   `gorm:"type:varchar(36);primaryKey;" json:"id"`
 	Name       string   `gorm:"not null" json:"name"`

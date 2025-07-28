@@ -4,6 +4,8 @@ import (
 	"errors"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {
@@ -35,4 +37,54 @@ func (s *UserService) CreateEventCreator(user *models.User, email string) (*mode
 	creator.IsEventCreator = true
 
 	return s.UserRepo.UpdateUser(creator)
+}
+
+func (s *UserService) GetUserInfoFromID(userID string) (*models.UserInfo, error) {
+	user, err := s.UserRepo.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	info := models.UserInfo{
+		Name:     user.Name,
+		LastName: user.LastName,
+		Email:    user.Email,
+	}
+
+	return &info, nil
+}
+
+func (s *UserService) GetUserInfoFromIDBatch(id_array []string) ([]models.UserInfo, error) {
+	var result []models.UserInfo
+	for _, id := range id_array {
+		if _, err := uuid.Parse(id); err != nil {
+			// Malformed UUID
+			result = append(result, models.UserInfo{
+				Name:     "MALFORMED USER",
+				LastName: "MALFORMED USER",
+				Email:    "MALFORMED USER",
+			})
+			continue
+		}
+
+		user, err := s.UserRepo.GetUserByID(id)
+		if err != nil {
+			// Could not find user, treat as malformed
+			result = append(result, models.UserInfo{
+				Name:     "MISSING USER",
+				LastName: "MISSING USER",
+				Email:    "MISSING USER",
+			})
+			continue
+		}
+
+		info := models.UserInfo{
+			Name:     user.Name,
+			LastName: user.LastName,
+			Email:    user.Email,
+		}
+		result = append(result, info)
+	}
+
+	return result, nil
 }
