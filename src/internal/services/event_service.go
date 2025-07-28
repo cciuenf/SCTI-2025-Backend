@@ -145,6 +145,9 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 		RegisteredAt: time.Now(),
 	}
 
+	event.ParticipantCount++
+	s.EventRepo.UpdateEvent(event)
+
 	return s.EventRepo.CreateEventRegistration(&registration)
 }
 
@@ -165,6 +168,11 @@ func (s *EventService) UnregisterUserFromEvent(user models.User, slug string) er
 	// TODO: Prohibit unregistration if the user paid for any product from the event
 
 	// TODO: Prohibit unregistration if the user attended any activity from the event
+
+	if event.ParticipantCount > 0 {
+		event.ParticipantCount--
+		s.EventRepo.UpdateEvent(event)
+	}
 
 	return s.EventRepo.DeleteEventRegistration(user.ID, event.ID)
 }
