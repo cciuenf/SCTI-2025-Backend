@@ -50,6 +50,15 @@ func (r *AuthRepo) DeleteUserVerification(userID string) error {
 	return r.DB.Where("id = ?", userID).Unscoped().Delete(&models.UserVerification{}).Error
 }
 
+func (r *AuthRepo) UpdateUserVerification(userID string, verificationNumber int) error {
+	return r.DB.Model(&models.UserVerification{}).
+		Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"verification_number": verificationNumber,
+			"expires_at":          time.Now().Add(time.Minute * 15),
+		}).Error
+}
+
 func (r *AuthRepo) CreateSuperUser() {
 	var existingUser models.User
 	err := r.DB.Where("email = ?", config.GetSystemEmail()).First(&existingUser).Error
