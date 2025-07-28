@@ -139,7 +139,3 @@ type ActivityRegistrationRequest struct {
 type ActivityDeleteRequest struct {
 	ActivityID string `json:"activity_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
-
-type GetAttendeesRequest struct {
-	ID string `json:"id" example:"18d03d08-267b-4b27-b5bc-e423e2489202"`
-}

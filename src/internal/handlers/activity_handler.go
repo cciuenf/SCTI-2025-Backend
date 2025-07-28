@@ -518,12 +518,12 @@ func (h *ActivityHandler) UnattendActivity(w http.ResponseWriter, r *http.Reques
 // @Param        Authorization header string true "Bearer {access_token}"
 // @Param        Refresh header string true "Bearer {refresh_token}"
 // @Param        slug path string true "Event slug"
-// @Param        request body models.GetAttendeesRequest true "ActivityID"
-// @Success      200  {object}  NoMessageSuccessResponse{data=models.ActivityRegistration}
+// @Param        id path string true "Activity ID"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.ActivityRegistration}
 // @Failure      400  {object}  ActivityStandardErrorResponse
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse
-// @Router       /events/{slug}/activity/attendees [get]
+// @Router       /events/{slug}/activity/registrations/{id} [get]
 func (h *ActivityHandler) GetActivityRegistrations(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
@@ -531,13 +531,9 @@ func (h *ActivityHandler) GetActivityRegistrations(w http.ResponseWriter, r *htt
 		return
 	}
 
-	var reqBody models.GetAttendeesRequest
-	if err := decodeRequestBody(r, &reqBody); err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
+	activityID := r.PathValue("id")
 
-	if reqBody.ID == "" {
+	if activityID == "" {
 		BadRequestError(w, NewErr("activity ID is required"), "activity")
 		return
 	}
@@ -549,7 +545,7 @@ func (h *ActivityHandler) GetActivityRegistrations(w http.ResponseWriter, r *htt
 	}
 
 	var registrations []models.ActivityRegistration
-	if registrations, err = h.ActivityService.GetActivityRegistrations(admin, slug, reqBody.ID); err != nil {
+	if registrations, err = h.ActivityService.GetActivityRegistrations(admin, slug, activityID); err != nil {
 		HandleErrMsg("error getting registrations", err, w).Stack("activity").BadRequest()
 		return
 	}
@@ -701,12 +697,12 @@ func (h *ActivityHandler) GetUserActivitiesFromEvent(w http.ResponseWriter, r *h
 // @Param        Authorization header string true "Bearer {access_token}"
 // @Param        Refresh header string true "Bearer {refresh_token}"
 // @Param        slug path string true "Event slug"
-// @Param        request body models.GetAttendeesRequest true "ActivityID"
+// @Param        id path string true "Activity ID"
 // @Success      200  {object}  NoMessageSuccessResponse{data=[]models.ActivityRegistration}
 // @Failure      400  {object}  ActivityStandardErrorResponse
 // @Failure      401  {object}  ActivityStandardErrorResponse
 // @Failure      403  {object}  ActivityStandardErrorResponse
-// @Router       /events/{slug}/activity/attendants [get]
+// @Router       /events/{slug}/activity/attendants/{id} [get]
 func (h *ActivityHandler) GetActivityAttendants(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
@@ -714,11 +710,7 @@ func (h *ActivityHandler) GetActivityAttendants(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var reqBody models.GetAttendeesRequest
-	if err := decodeRequestBody(r, &reqBody); err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
+	activityID := r.PathValue("id")
 
 	admin, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
 	if err != nil {
@@ -726,7 +718,7 @@ func (h *ActivityHandler) GetActivityAttendants(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	attendants, err := h.ActivityService.GetActivityAttendants(admin, slug, reqBody.ID)
+	attendants, err := h.ActivityService.GetActivityAttendants(admin, slug, activityID)
 	if err != nil {
 		HandleErrMsg("error getting attendants", err, w).Stack("activity").BadRequest()
 		return
