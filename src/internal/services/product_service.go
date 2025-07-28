@@ -64,7 +64,7 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 				ProductID: productID,
 				TargetID:  target.TargetID,
 				EventID:   &event.ID,
-				IsEvent:   true,
+				IsEvent:   target.IsEvent,
 			}
 		} else if !target.IsEvent && req.IsActivityAccess {
 			accessTargets[i] = models.AccessTarget{
@@ -72,7 +72,7 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 				ProductID: productID,
 				TargetID:  target.TargetID,
 				EventID:   &event.ID,
-				IsEvent:   false,
+				IsEvent:   target.IsEvent,
 			}
 		}
 	}
@@ -193,7 +193,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 				ProductID: productID,
 				TargetID:  target.TargetID,
 				EventID:   &event.ID,
-				IsEvent:   false,
+				IsEvent:   target.IsEvent,
 			}
 		} else if !target.IsEvent && req.IsActivityAccess {
 			accessTargets[i] = models.AccessTarget{
@@ -201,7 +201,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 				ProductID: productID,
 				TargetID:  target.TargetID,
 				EventID:   &event.ID,
-				IsEvent:   false,
+				IsEvent:   target.IsEvent,
 			}
 		}
 	}
