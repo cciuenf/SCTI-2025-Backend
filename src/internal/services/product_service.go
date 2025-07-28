@@ -20,7 +20,6 @@ func NewProductService(repo *repos.ProductRepo) *ProductService {
 }
 
 // TODO: Integrate bundled products
-// TODO: Verify if the access targets are valid
 // TODO: Event access target should give access to all activities in the event
 func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
@@ -57,12 +56,15 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 	accessTargets := make([]models.AccessTarget, len(req.AccessTargets))
 	for i, target := range req.AccessTargets {
 		if target.IsEvent && req.IsEventAccess {
+			if target.TargetID != event.ID {
+				return nil, errors.New("invalid access target: targeting wrong event")
+			}
 			accessTargets[i] = models.AccessTarget{
 				ID:        uuid.New().String(),
 				ProductID: productID,
 				TargetID:  target.TargetID,
 				EventID:   &event.ID,
-				IsEvent:   target.IsEvent,
+				IsEvent:   true,
 			}
 		} else if !target.IsEvent && req.IsActivityAccess {
 			accessTargets[i] = models.AccessTarget{
@@ -70,7 +72,19 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 				ProductID: productID,
 				TargetID:  target.TargetID,
 				EventID:   &event.ID,
-				IsEvent:   target.IsEvent,
+				IsEvent:   false,
+			}
+		}
+	}
+
+	for _, target := range accessTargets {
+		if req.IsActivityAccess {
+			activity, err := s.ProductRepo.GetActivityByID(target.TargetID)
+			if err != nil {
+				return nil, errors.New("invalid access target, couldn't find activity")
+			}
+			if activity.EventID != nil && target.EventID != nil && *activity.EventID != *target.EventID {
+				return nil, errors.New("invalid access target: targeting inexistent activity")
 			}
 		}
 	}
@@ -114,7 +128,6 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 	return &product, nil
 }
 
-// TODO: Verify if the access targets are valid
 // TODO: Integrate bundled products
 func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, productID string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
@@ -169,13 +182,40 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 	product.Quantity = req.Quantity
 	product.ExpiresAt = req.ExpiresAt
 
-	var accessTargets []models.AccessTarget
-	for _, target := range req.AccessTargets {
-		accessTargets = append(accessTargets, models.AccessTarget{
-			ID:        uuid.New().String(),
-			ProductID: target.ProductID,
-			TargetID:  target.TargetID,
-		})
+	accessTargets := make([]models.AccessTarget, len(req.AccessTargets))
+	for i, target := range req.AccessTargets {
+		if target.IsEvent && req.IsEventAccess {
+			if target.TargetID != event.ID {
+				return nil, errors.New("invalid access target: targeting wrong event")
+			}
+			accessTargets[i] = models.AccessTarget{
+				ID:        uuid.New().String(),
+				ProductID: productID,
+				TargetID:  target.TargetID,
+				EventID:   &event.ID,
+				IsEvent:   true,
+			}
+		} else if !target.IsEvent && req.IsActivityAccess {
+			accessTargets[i] = models.AccessTarget{
+				ID:        uuid.New().String(),
+				ProductID: productID,
+				TargetID:  target.TargetID,
+				EventID:   &event.ID,
+				IsEvent:   false,
+			}
+		}
+	}
+
+	for _, target := range accessTargets {
+		if req.IsActivityAccess {
+			activity, err := s.ProductRepo.GetActivityByID(target.TargetID)
+			if err != nil {
+				return nil, errors.New("invalid access target, couldn't find activity")
+			}
+			if activity.EventID != nil && target.EventID != nil && *activity.EventID != *target.EventID {
+				return nil, errors.New("invalid access target: targeting inexistent activity")
+			}
+		}
 	}
 
 	err = s.ProductRepo.RemoveAccessTargets(product)

@@ -88,6 +88,14 @@ func (r *ProductRepo) GetUserByEmail(userEmail string) (models.User, error) {
 	return user, nil
 }
 
+func (r *ProductRepo) GetActivityByID(activityID string) (*models.Activity, error) {
+	var activity models.Activity
+	if err := r.DB.Where("id = ?", activityID).First(&activity).Error; err != nil {
+		return nil, err
+	}
+	return &activity, nil
+}
+
 func (r *ProductRepo) GetEventByID(eventID string) (*models.Event, error) {
 	var event models.Event
 	if err := r.DB.Where("id = ?", eventID).First(&event).Error; err != nil {
