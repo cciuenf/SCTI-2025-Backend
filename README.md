@@ -5,7 +5,7 @@ Contém a API de backend para o evento da SCTI 2025
 ## Requisitos
 
 ### Pré-Projeto
-- [ ] Fazer setup inicial (Docker com Postgres) + go
+- [x] Fazer setup inicial (Docker com Postgres) + go
 - [x] Criar .env.example
 - [x] Criar a API base de maneira extensível
 - [ ] Github Actions para PRs e Issues no Trello
@@ -19,14 +19,14 @@ Contém a API de backend para o evento da SCTI 2025
 - [ ] Possui uma interface para conectar seu próprio DB
 - [ ] Possui uma interface para interagir com seu usuário
 - [x] Proporciona o middleware de  autenticação
-- [ ] Proporciona uma função para trocar senha
-- [ ] Proporciona verificação de conta
+- [x] Proporciona uma função para trocar senha
+- [x] Proporciona verificação de conta
 - [ ] Possui rate limiting pra evitar ataques de força bruta
 
 
 ### Banco de Dados
-- [ ] Modelagem do banco de dados
-- [ ] Usar transações em código crítico
+- [x] Modelagem do banco de dados
+- [x] Usar transações em código crítico
 - [x] Modelagem do banco no próprio códgio usando GORM
 
 
@@ -34,7 +34,7 @@ Contém a API de backend para o evento da SCTI 2025
 - [x] UUID pk
 - [x] IsVerified
 - [x] IsPaid
-- [ ] Tokens
+- [x] Tokens
 - [x] Nome
 - [x] Sobrenome
 - [x] Email
@@ -81,15 +81,15 @@ Contém a API de backend para o evento da SCTI 2025
 
 
 #### Activity
-- [ ] ID pk
-- [ ] Tipo (MC|Minicurso, PL|Palestra, EV|Evento[Extra])
-- [ ] Nome
-- [ ] Descrição
-- [ ] Horário
-- [ ] Ministrante
-- [ ] Sala
-- [ ] DiaEvento
-- [ ] Vagas
+- [x] ID pk
+- [x] Tipo (MC|Minicurso, PL|Palestra, EV|Evento[Extra])
+- [x] Nome
+- [x] Descrição
+- [x] Horário
+- [x] Ministrante
+- [x] Sala
+- [x] DiaEvento
+- [x] Vagas
 - [ ] Thumbnail (Path)
 
 - Desinscrição
@@ -108,9 +108,9 @@ Contém a API de backend para o evento da SCTI 2025
 
 
 #### Registrations
-- [ ] UserID fk
-- [ ] ActivityID fk
-- [ ] Attended
+- [x] UserID fk
+- [x] ActivityID fk
+- [x] Attended
 
 - Race condition
     - A implementação atual possui uma condição de corrida, achar uma implementação que diminua ou remova essa condição de corrida
@@ -131,9 +131,9 @@ Contém a API de backend para o evento da SCTI 2025
 
 
 ### Logging Middleware
-- [ ] Log padronizado (Rota/Modulo/Arquivo)
-- [ ] Arquivo de Log Global
-- [ ] Arquivo de log Localizado
+- [x] Log padronizado (Rota/Modulo/Arquivo)
+- [x] Arquivo de Log Global
+- [x] Arquivo de log Localizado
 - [ ] Arquivo de log por usuário
 - [ ] Contador de Visitas / Server metrics
 

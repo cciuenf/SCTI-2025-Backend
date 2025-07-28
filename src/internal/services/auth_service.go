@@ -187,7 +187,6 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 		if err := s.AuthRepo.DeleteUserVerification(user.ID); err != nil {
 			return errors.New("failed deleting expired verification token: " + err.Error())
 		}
-		// TODO: Implement sending a new token if token has expired
 		return errors.New("token has expired")
 	}
 
@@ -493,4 +492,12 @@ func (s *AuthService) ChangeUserName(user models.User, name, lastName string) er
 	user.LastName = lastName
 
 	return s.AuthRepo.UpdateUser(&user)
+}
+
+func (s *AuthService) ResendVerificationCode(user *models.User) error {
+	verificationNumber := utilities.GenerateVerificationCode()
+	if err := s.AuthRepo.UpdateUserVerification(user.ID, verificationNumber); err != nil {
+		return err
+	}
+	return s.SendVerificationEmail(user, verificationNumber)
 }

@@ -69,6 +69,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("POST /secure-verify-tokens", authMiddleware(http.HandlerFunc(authHandler.VerifyJWT)))
 	mux.Handle("POST /verify-account", authMiddleware(http.HandlerFunc(authHandler.VerifyAccount)))
 	mux.Handle("POST /switch-event-creator-status", authMiddleware(http.HandlerFunc(authHandler.SwitchEventCreatorStatus)))
+	mux.Handle("POST /resend-verification-code", authMiddleware(http.HandlerFunc(authHandler.ResendVerificationCode)))
 
 	// Event routes
 	mux.HandleFunc("GET /events/{slug}", eventHandler.GetEvent)

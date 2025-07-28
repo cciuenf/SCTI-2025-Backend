@@ -524,3 +524,31 @@ func (h *AuthHandler) ChangeUserName(w http.ResponseWriter, r *http.Request) {
 
 	handleSuccess(w, nil, "user name changed successfully", http.StatusOK)
 }
+
+// ResendVerificationCode godoc
+// @Summary      Resend verification code
+// @Description  Generates a new verification code and resends it to the authenticated user
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /resend-verification-code [post]
+func (h *AuthHandler) ResendVerificationCode(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.AuthService.AuthRepo.FindUserByID, r)
+	if err != nil {
+		BadRequestError(w, errors.New("couldn't find user in context"), "auth")
+		return
+	}
+
+	if err := h.AuthService.ResendVerificationCode(&user); err != nil {
+		HandleErrMsg("error resending verification code", err, w).Stack("auth").BadRequest()
+		return
+	}
+
+	handleSuccess(w, nil, "verification code resent", http.StatusOK)
+}
