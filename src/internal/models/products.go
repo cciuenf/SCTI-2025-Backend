@@ -190,7 +190,7 @@ type AccessTarget struct {
 	ID        string `gorm:"type:varchar(36);primaryKey" json:"id"`
 	ProductID string `gorm:"type:varchar(36);index" json:"product_id"`
 	TargetID  string `gorm:"type:varchar(36);index" json:"target_id"` // Event ID or Activity ID
-	IsEvent   bool   `gorm:"default:true" json:"is_event"`            // True if target is an event, false if activity
+	IsEvent   bool   `json:"is_event"`                                // True if target is an event, false if activity
 
 	EventID *string `gorm:"type:varchar(36)" json:"event_id"` // For searching purposes
 

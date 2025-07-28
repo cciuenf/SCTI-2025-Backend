@@ -193,7 +193,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 				ProductID: productID,
 				TargetID:  target.TargetID,
 				EventID:   &event.ID,
-				IsEvent:   true,
+				IsEvent:   false,
 			}
 		} else if !target.IsEvent && req.IsActivityAccess {
 			accessTargets[i] = models.AccessTarget{
