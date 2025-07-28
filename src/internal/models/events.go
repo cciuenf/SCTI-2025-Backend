@@ -15,6 +15,8 @@ type Event struct {
 	StartDate   time.Time `gorm:"not null" json:"start_date"`
 	EndDate     time.Time `gorm:"not null" json:"end_date"`
 
+	ParticipantCount int `json:"participant_count"`
+
 	// Admission control
 	IsPublic bool `gorm:"default:true" json:"is_public"` // Whether the event is visible to non-registered users
 
