@@ -51,6 +51,10 @@ func (r *ProductRepo) UpdateProduct(product *models.Product) error {
 	return r.DB.Save(product).Error
 }
 
+func (r *ProductRepo) RemoveAccessTargets(product *models.Product) error {
+	return r.DB.Where("product_id = ?", product.ID).Delete(&models.AccessTarget{}).Error
+}
+
 func (r *ProductRepo) DeleteProduct(id string) error {
 	return r.DB.Where("id = ?", id).Delete(&models.Product{}).Error
 }

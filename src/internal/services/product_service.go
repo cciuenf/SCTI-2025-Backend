@@ -178,6 +178,11 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 		})
 	}
 
+	err = s.ProductRepo.RemoveAccessTargets(product)
+	if err != nil {
+		return nil, errors.New("failed to clear access targets for updating: " + err.Error())
+	}
+
 	product.AccessTargets = accessTargets
 
 	err = s.ProductRepo.UpdateProduct(product)
