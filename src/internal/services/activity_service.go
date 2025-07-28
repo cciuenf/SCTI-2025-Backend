@@ -653,9 +653,17 @@ func (s *ActivityService) GetUserActivitiesFromEvent(user models.User, eventSlug
 		return nil, errors.New("event not found: " + err.Error())
 	}
 
+	if event == nil {
+		return nil, errors.New("event not found: came back as nil")
+	}
+
 	userActivities, err := s.ActivityRepo.GetUserActivities(user.ID)
 	if err != nil {
 		return nil, errors.New("error checking user activities: " + err.Error())
+	}
+
+	if userActivities == nil {
+		return nil, errors.New("activities not found: came back as nil")
 	}
 
 	var activities []models.Activity
