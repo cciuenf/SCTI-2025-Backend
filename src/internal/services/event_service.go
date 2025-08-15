@@ -1,11 +1,9 @@
 package services
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
-	"net/smtp"
 	"os"
 	"path/filepath"
 	"scti/config"
@@ -16,6 +14,7 @@ import (
 	"time"
 
 	qrcode "github.com/skip2/go-qrcode"
+	"gopkg.in/mail.v2"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -170,9 +169,6 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 	from := config.GetSystemEmail()
 	password := config.GetSystemEmailPass()
 
-	smtpHost := "smtp.gmail.com"
-	smtpPort := "587"
-
 	// Generate QR code as PNG
 	var png []byte
 	png, err := qrcode.Encode(user.ID, qrcode.Medium, 256)
@@ -184,21 +180,7 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 	safeFirstName := strings.ReplaceAll(user.Name, " ", "_")
 	safeLastName := strings.ReplaceAll(user.LastName, " ", "_")
 	timestamp := time.Now().Unix()
-	filename := fmt.Sprintf("qr_%s_%s_%d.png", safeFirstName, safeLastName, timestamp)
-
-	// Save QR code to temporary file
-	tempDir := os.TempDir()
-	filePath := filepath.Join(tempDir, filename)
-
-	err = os.WriteFile(filePath, png, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to save QR code file: %v", err)
-	}
-
-	// Ensure file is deleted after function returns
-	defer func() {
-		os.Remove(filePath)
-	}()
+	filename := fmt.Sprintf("%s_%s_%d", safeFirstName, safeLastName, timestamp)
 
 	// Read the template
 	templatePath := filepath.Join("templates", "registration_email.html")
@@ -218,13 +200,15 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 		return fmt.Errorf("failed to parse template: %v", err)
 	}
 
-	// Prepare template data (no QR code needed in template now)
+	// Prepare template data with filename for QR code
 	data := struct {
-		User  models.User
-		Event models.Event
+		User     models.User
+		Event    models.Event
+		Filename string
 	}{
-		User:  *user,
-		Event: *event,
+		User:     *user,
+		Event:    *event,
+		Filename: filename,
 	}
 
 	var body strings.Builder
@@ -232,34 +216,22 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 		return fmt.Errorf("failed to execute template: %v", err)
 	}
 
-	subject := "Registration to " + event.Name
+	// Create email using gomail
+	m := mail.NewMessage()
+	m.SetHeader("From", from)
+	m.SetHeader("To", user.Email)
+	m.SetHeader("Subject", "Registration to "+event.Name)
+	m.SetBody("text/html", body.String())
+	
+	// Embed the QR code image
+	m.EmbedReader(filename, strings.NewReader(string(png)))
 
-	// Create multipart email with HTML body and PNG attachment
-	boundary := "boundary123"
+	// Create dialer
+	d := mail.NewDialer("smtp.gmail.com", 587, from, password)
+	d.StartTLSPolicy = mail.MandatoryStartTLS
 
-	message := []byte(fmt.Sprintf(`Subject: %s
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="%s"
-
---%s
-Content-Type: text/html; charset="UTF-8"
-
-%s
-
---%s
-Content-Type: image/png; name="%s"
-Content-Transfer-Encoding: base64
-Content-Disposition: inline; filename="%s"
-
-%s
-
---%s--
-`, subject, boundary, boundary, body.String(), boundary, filename, filename, base64.StdEncoding.EncodeToString(png), boundary))
-
-	auth := smtp.PlainAuth("", from, password, smtpHost)
-
-	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{user.Email}, message)
-	if err != nil {
+	// Send email
+	if err := d.DialAndSend(m); err != nil {
 		return fmt.Errorf("failed to send email: %v", err)
 	}
 
