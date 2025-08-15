@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	mp_config "github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/joho/godotenv"
+	mp_config "github.com/mercadopago/sdk-go/pkg/config"
 )
 
 type Config struct {
@@ -22,21 +22,21 @@ type Config struct {
 }
 
 var (
-	server_host    string
-	server_port    string
-	db             string
-	db_port        string
-	db_user        string
-	db_pass        string
-	jwtSecret      string
-	dsn            string
-	systemEmail    string
-	emailPass      string
-	masterUserPass string
-	siteURL        string
+	server_host            string
+	server_port            string
+	db                     string
+	db_port                string
+	db_user                string
+	db_pass                string
+	jwtSecret              string
+	dsn                    string
+	systemEmail            string
+	emailPass              string
+	masterUserPass         string
+	siteURL                string
 	mercadoPagoAccessToken string
-	mercadoPagoPublicKey string
-	mercadoPagoConfig *mp_config.Config
+	mercadoPagoPublicKey   string
+	mercadoPagoConfig      *mp_config.Config
 )
 
 func LoadConfig(path string) *Config {

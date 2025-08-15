@@ -4,16 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/smtp"
 	"os"
 	"path/filepath"
-	"strings"
-	"text/template"
-	"net/smtp"
-	"time"
-	qrcode "github.com/skip2/go-qrcode"
 	"scti/config"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
+	"strings"
+	"text/template"
+	"time"
+
+	qrcode "github.com/skip2/go-qrcode"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -165,9 +166,9 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 }
 
 type registrationEmailData struct {
-	User     models.User
-	Event    models.Event
-	QRCode   []byte
+	User   models.User
+	Event  models.Event
+	QRCode []byte
 }
 
 func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Event) error {
@@ -202,9 +203,9 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 	}
 
 	data := registrationEmailData{
-		User:     *user,
-		Event:    *event,
-		QRCode:   png,
+		User:   *user,
+		Event:  *event,
+		QRCode: png,
 	}
 
 	var body strings.Builder
