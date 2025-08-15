@@ -222,7 +222,7 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 	m.SetHeader("To", user.Email)
 	m.SetHeader("Subject", "Registration to "+event.Name)
 	m.SetBody("text/html", body.String())
-	
+
 	// Embed the QR code image
 	m.EmbedReader(filename, strings.NewReader(string(png)))
 
