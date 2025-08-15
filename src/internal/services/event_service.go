@@ -190,7 +190,7 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 		return fmt.Errorf("failed to read email template: %v", err)
 	}
 
-	tmpl, err := template.New("emailTemplate").Funcs(templateFuncs).Parse(string(content))
+	tmpl, err := template.New("emailTemplate").Parse(string(content))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %v", err)
 	}

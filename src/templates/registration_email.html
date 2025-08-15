@@ -7,13 +7,12 @@
 </head>
 <body>
     <h1>Registration Email</h1>
-    <p>Hello {{ .User.Name }} you have been registered to the event {{ .Event.Name }}</p>
-    <p>Event Date: {{ .Event.Date }}</p>
-    <p>Event Time: {{ .Event.Time }}</p>
-    <p>Event Location: {{ .Event.Location }}</p>
+    <p>Hello {{ .User.Name }} {{ .User.LastName }} you have been registered to the event {{ .Event.Name }}</p>
+    <p>Event Name: {{ .Event.Name }}</p>
     <p>Event Description: {{ .Event.Description }}</p>
-    <p>Event Organizer: {{ .Event.Organizer }}</p>
-    <p>Event Contact: {{ .Event.Contact }}</p>
+    <p>Event Location: {{ .Event.Location }}</p>
+    <p>Event Start Date: {{ .Event.StartDate }}</p>
+    <p>Event End Date: {{ .Event.EndDate }}</p>
     <img src="data:image/png;base64,{{ .QRCode }}" alt="Event QR Code">
 </body>
 </html>
