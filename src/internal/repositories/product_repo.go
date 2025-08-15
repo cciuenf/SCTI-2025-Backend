@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"scti/config"
 	"scti/internal/models"
 	"strings"
 	"time"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/order"
@@ -202,7 +202,7 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 	client := order.NewClient(mercadoPagoConfig)
 	request := order.Request{
 		Type:              "online",
-		TotalAmount: fmt.Sprintf("%.2f", float64(product.PriceInt)/100),
+		TotalAmount:       fmt.Sprintf("%.2f", float64(product.PriceInt)/100),
 		ExternalReference: fmt.Sprintf("scti_app:%s_%s:%s", event.ID, user.ID, time.Now().Format("20060102150405")),
 		Transactions: &order.TransactionRequest{
 			Payments: []order.PaymentRequest{
