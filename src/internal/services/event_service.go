@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -154,21 +155,15 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 		RegisteredAt: time.Now(),
 	}
 
-	event.ParticipantCount++
-	s.EventRepo.UpdateEvent(event)
-
 	err = s.SendRegistrationEmail(&user, event)
 	if err != nil {
 		return err
 	}
+	
+	event.ParticipantCount++
+	s.EventRepo.UpdateEvent(event)
 
 	return s.EventRepo.CreateEventRegistration(&registration)
-}
-
-type registrationEmailData struct {
-	User   models.User
-	Event  models.Event
-	QRCode []byte
 }
 
 func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Event) error {
@@ -178,8 +173,35 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 
-	templatePath := filepath.Join("templates", "registration_email.html")
+	// Generate QR code as PNG
+	var png []byte
+	png, err := qrcode.Encode(user.ID, qrcode.Medium, 256)
+	if err != nil {
+		return fmt.Errorf("failed to generate QR code: %v", err)
+	}
 
+	// Create a unique filename using user's name and timestamp
+	safeFirstName := strings.ReplaceAll(user.Name, " ", "_")
+	safeLastName := strings.ReplaceAll(user.LastName, " ", "_")
+	timestamp := time.Now().Unix()
+	filename := fmt.Sprintf("qr_%s_%s_%d.png", safeFirstName, safeLastName, timestamp)
+	
+	// Save QR code to temporary file
+	tempDir := os.TempDir()
+	filePath := filepath.Join(tempDir, filename)
+	
+	err = os.WriteFile(filePath, png, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to save QR code file: %v", err)
+	}
+
+	// Ensure file is deleted after function returns
+	defer func() {
+		os.Remove(filePath)
+	}()
+
+	// Read the template
+	templatePath := filepath.Join("templates", "registration_email.html")
 	file, err := os.Open(templatePath)
 	if err != nil {
 		return fmt.Errorf("failed to open email template: %v", err)
@@ -196,16 +218,13 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 		return fmt.Errorf("failed to parse template: %v", err)
 	}
 
-	var png []byte
-	png, err = qrcode.Encode(user.ID, qrcode.Medium, 256)
-	if err != nil {
-		return fmt.Errorf("failed to generate QR code: %v", err)
-	}
-
-	data := registrationEmailData{
-		User:   *user,
-		Event:  *event,
-		QRCode: png,
+	// Prepare template data (no QR code needed in template now)
+	data := struct {
+		User  models.User
+		Event models.Event
+	}{
+		User:  *user,
+		Event: *event,
 	}
 
 	var body strings.Builder
@@ -215,8 +234,27 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 
 	subject := "Registration to " + event.Name
 
-	message := []byte(fmt.Sprintf("Subject: %s\r\nMIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n%s",
-		subject, body.String()))
+	// Create multipart email with HTML body and PNG attachment
+	boundary := "boundary123"
+	
+	message := []byte(fmt.Sprintf(`Subject: %s
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="%s"
+
+--%s
+Content-Type: text/html; charset="UTF-8"
+
+%s
+
+--%s
+Content-Type: image/png; name="%s"
+Content-Transfer-Encoding: base64
+Content-Disposition: inline; filename="%s"
+
+%s
+
+--%s--
+`, subject, boundary, boundary, body.String(), boundary, filename, filename, base64.StdEncoding.EncodeToString(png), boundary))
 
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
