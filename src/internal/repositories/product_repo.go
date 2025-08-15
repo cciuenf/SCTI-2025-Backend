@@ -1,17 +1,16 @@
 package repos
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"scti/config"
 	"scti/internal/models"
 	"strings"
 	"time"
-	"context"
 
-
-	"github.com/mercadopago/sdk-go/pkg/order"
 	"github.com/google/uuid"
+	"github.com/mercadopago/sdk-go/pkg/order"
 	"gorm.io/gorm"
 )
 
@@ -215,7 +214,6 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		return nil, errors.New("failed to create mercado pago order: " + err.Error())
 	}
 	fmt.Println(resource)
-
 
 	// --------------------------------------------------//
 	// ---------------- FIM DO PAGAMENTO ----------------//
