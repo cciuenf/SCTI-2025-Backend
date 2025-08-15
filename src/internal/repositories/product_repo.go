@@ -3,10 +3,14 @@ package repos
 import (
 	"errors"
 	"fmt"
+	"scti/config"
 	"scti/internal/models"
 	"strings"
 	"time"
+	"context"
 
+
+	"github.com/mercadopago/sdk-go/pkg/order"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -176,6 +180,46 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 			tx.Rollback()
 		}
 	}()
+
+	// -----------------------------------------------------//
+	// ----------------COMEÇO DO PAGAMENTO -----------------//
+	// ----------------------------------------------------//
+
+	mercadoPagoConfig := config.GetMercadoPagoConfig()
+
+	client := order.NewClient(mercadoPagoConfig)
+	request := order.Request{
+		Type:              "online",
+		TotalAmount:       "1000.00",
+		ExternalReference: "ext_ref_1234",
+		Transactions: &order.TransactionRequest{
+			Payments: []order.PaymentRequest{
+				{
+					Amount: "1000.00",
+					PaymentMethod: &order.PaymentMethodRequest{
+						ID:           "master",
+						Token:        "{{CARD_TOKEN}}",
+						Type:         "credit_card",
+						Installments: 1,
+					},
+				},
+			},
+		},
+		Payer: &order.PayerRequest{
+			Email: "{{PAYER_EMAIL}}",
+		},
+	}
+
+	resource, err := client.Create(context.Background(), request)
+	if err != nil {
+		return nil, errors.New("failed to create mercado pago order: " + err.Error())
+	}
+	fmt.Println(resource)
+
+
+	// --------------------------------------------------//
+	// ---------------- FIM DO PAGAMENTO ----------------//
+	// -------------------------------------------------//
 
 	event, err := r.GetEventBySlug(eventSlug)
 	if err != nil {

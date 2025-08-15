@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	mp_config "github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/joho/godotenv"
 )
 
@@ -33,6 +34,9 @@ var (
 	emailPass      string
 	masterUserPass string
 	siteURL        string
+	mercadoPagoAccessToken string
+	mercadoPagoPublicKey string
+	mercadoPagoConfig *mp_config.Config
 )
 
 func LoadConfig(path string) *Config {
@@ -52,6 +56,14 @@ func LoadConfig(path string) *Config {
 	masterUserPass = os.Getenv("MASTER_USER_PASS")
 	emailPass = os.Getenv("SCTI_APP_PASSWORD")
 	siteURL = os.Getenv("SITE_URL")
+	mercadoPagoAccessToken = os.Getenv("MERCADO_PAGO_ACCESS_TOKEN")
+	mercadoPagoPublicKey = os.Getenv("MERCADO_PAGO_PUBLIC_KEY")
+
+	accessToken := mercadoPagoAccessToken
+	mercadoPagoConfig, err = mp_config.New(accessToken)
+	if err != nil {
+		log.Fatalf("Failed to create mercado pago config: %v", err)
+	}
 
 	dsn = fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=America/Sao_Paulo", server_host, db_user, db_pass, db, db_port)
 
@@ -113,4 +125,16 @@ func GetMasterUserPass() string {
 
 func GetSiteURL() string {
 	return siteURL
+}
+
+func GetMercadoPagoAccessToken() string {
+	return mercadoPagoAccessToken
+}
+
+func GetMercadoPagoPublicKey() string {
+	return mercadoPagoPublicKey
+}
+
+func GetMercadoPagoConfig() *mp_config.Config {
+	return mercadoPagoConfig
 }

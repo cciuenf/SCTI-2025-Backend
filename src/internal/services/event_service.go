@@ -2,10 +2,18 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"text/template"
+	"net/smtp"
+	"time"
+	qrcode "github.com/skip2/go-qrcode"
+	"scti/config"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -148,7 +156,75 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 	event.ParticipantCount++
 	s.EventRepo.UpdateEvent(event)
 
+	err = s.SendRegistrationEmail(&user, event)
+	if err != nil {
+		return err
+	}
+
 	return s.EventRepo.CreateEventRegistration(&registration)
+}
+
+type registrationEmailData struct {
+	User     models.User
+	Event    models.Event
+	QRCode   []byte
+}
+
+func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Event) error {
+	from := config.GetSystemEmail()
+	password := config.GetSystemEmailPass()
+
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+
+	templatePath := filepath.Join("templates", "registration_email.html")
+
+	file, err := os.Open(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to open email template: %v", err)
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("failed to read email template: %v", err)
+	}
+
+	tmpl, err := template.New("emailTemplate").Funcs(templateFuncs).Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	var png []byte
+	png, err = qrcode.Encode(user.ID, qrcode.Medium, 256)
+	if err != nil {
+		return fmt.Errorf("failed to generate QR code: %v", err)
+	}
+
+	data := registrationEmailData{
+		User:     *user,
+		Event:    *event,
+		QRCode:   png,
+	}
+
+	var body strings.Builder
+	if err := tmpl.Execute(&body, data); err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	subject := "Registration to " + event.Name
+
+	message := []byte(fmt.Sprintf("Subject: %s\r\nMIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n%s",
+		subject, body.String()))
+
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+
+	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{user.Email}, message)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
+
+	return nil
 }
 
 func (s *EventService) UnregisterUserFromEvent(user models.User, slug string) error {
