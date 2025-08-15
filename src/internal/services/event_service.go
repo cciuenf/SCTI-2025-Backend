@@ -159,7 +159,7 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 	if err != nil {
 		return err
 	}
-	
+
 	event.ParticipantCount++
 	s.EventRepo.UpdateEvent(event)
 
@@ -185,11 +185,11 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 	safeLastName := strings.ReplaceAll(user.LastName, " ", "_")
 	timestamp := time.Now().Unix()
 	filename := fmt.Sprintf("qr_%s_%s_%d.png", safeFirstName, safeLastName, timestamp)
-	
+
 	// Save QR code to temporary file
 	tempDir := os.TempDir()
 	filePath := filepath.Join(tempDir, filename)
-	
+
 	err = os.WriteFile(filePath, png, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to save QR code file: %v", err)
@@ -236,7 +236,7 @@ func (s *EventService) SendRegistrationEmail(user *models.User, event *models.Ev
 
 	// Create multipart email with HTML body and PNG attachment
 	boundary := "boundary123"
-	
+
 	message := []byte(fmt.Sprintf(`Subject: %s
 MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="%s"
