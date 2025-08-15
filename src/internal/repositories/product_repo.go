@@ -8,6 +8,7 @@ import (
 	"scti/internal/models"
 	"strings"
 	"time"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/order"
@@ -180,50 +181,57 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		}
 	}()
 
+	event, err := r.GetEventBySlug(eventSlug)
+	if err != nil {
+		tx.Rollback()
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	product, err := r.GetProductByID(req.ProductID)
+	if err != nil {
+		tx.Rollback()
+		return nil, errors.New("product not found: " + err.Error())
+	}
+
 	// -----------------------------------------------------//
 	// ----------------COMEÇO DO PAGAMENTO -----------------//
-	// ----------------------------------------------------//
+	// -----------------------------------------------------//
 
 	mercadoPagoConfig := config.GetMercadoPagoConfig()
 
 	client := order.NewClient(mercadoPagoConfig)
 	request := order.Request{
 		Type:              "online",
-		TotalAmount:       "1000.00",
-		ExternalReference: "ext_ref_1234",
+		TotalAmount: fmt.Sprintf("%.2f", float64(product.PriceInt)/100),
+		ExternalReference: fmt.Sprintf("scti_app:%s_%s:%s", event.ID, user.ID, time.Now().Format("20060102150405")),
 		Transactions: &order.TransactionRequest{
 			Payments: []order.PaymentRequest{
 				{
-					Amount: "1000.00",
+					Amount: fmt.Sprintf("%.2f", float64(product.PriceInt)/100),
 					PaymentMethod: &order.PaymentMethodRequest{
-						ID:           "master",
-						Token:        "{{CARD_TOKEN}}",
-						Type:         "credit_card",
-						Installments: 1,
+						ID:           req.PaymentMethodID,
+						Token:        req.PaymentMethodToken,
+						Type:         req.PaymentMethodType,
+						Installments: req.PaymentMethodInstallments,
 					},
 				},
 			},
 		},
 		Payer: &order.PayerRequest{
-			Email: "{{PAYER_EMAIL}}",
+			Email: user.Email,
 		},
 	}
 
 	resource, err := client.Create(context.Background(), request)
 	if err != nil {
+		log.Printf("Mercado Pago API error: %v", err)
 		return nil, errors.New("failed to create mercado pago order: " + err.Error())
 	}
 	fmt.Println(resource)
 
 	// --------------------------------------------------//
 	// ---------------- FIM DO PAGAMENTO ----------------//
-	// -------------------------------------------------//
-
-	event, err := r.GetEventBySlug(eventSlug)
-	if err != nil {
-		tx.Rollback()
-		return nil, errors.New("event not found: " + err.Error())
-	}
+	// --------------------------------------------------//
 
 	isUserRegistered, err := r.IsUserRegisteredToEvent(user.ID, event.ID)
 	if err != nil {
@@ -234,12 +242,6 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 	if !isUserRegistered {
 		tx.Rollback()
 		return nil, errors.New("user is not registered to this event")
-	}
-
-	product, err := r.GetProductByID(req.ProductID)
-	if err != nil {
-		tx.Rollback()
-		return nil, errors.New("product not found: " + err.Error())
 	}
 
 	if product.EventID != event.ID {

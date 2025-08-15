@@ -291,6 +291,17 @@ func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, re
 	if req.IsGift && *req.GiftedToEmail == user.Email {
 		return nil, errors.New("invalid operation: cannot gift to yourself")
 	}
+
+	if req.PaymentMethodToken == "" {
+		return nil, errors.New("payment method token is required")
+	}
+	if req.PaymentMethodID == "" {
+		return nil, errors.New("payment method ID is required")
+	}
+	if req.PaymentMethodInstallments < 1 {
+		return nil, errors.New("installments must be at least 1")
+	}
+
 	return s.ProductRepo.PurchaseProduct(user, eventSlug, req)
 }
 
