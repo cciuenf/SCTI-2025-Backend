@@ -706,3 +706,12 @@ func (s *ActivityService) GetActivityAttendants(admin models.User, eventSlug str
 
 	return attendants, nil
 }
+
+func (s *ActivityService) GetUserAttendedActivities(user models.User) ([]models.Activity, error) {
+	userActivities, err := s.ActivityRepo.GetUserAttendedActivities(user.ID)
+	if err != nil {
+		return nil, errors.New("error getting user attended activities: " + err.Error())
+	}
+
+	return userActivities, nil
+}

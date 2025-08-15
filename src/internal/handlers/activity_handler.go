@@ -687,6 +687,35 @@ func (h *ActivityHandler) GetUserActivitiesFromEvent(w http.ResponseWriter, r *h
 	handleSuccess(w, activities, "", http.StatusOK)
 }
 
+// GetUserAttendedActivities godoc
+// @Summary      Retrieves a list of activities that the current user has attended
+// @Description  The end point returns a list of all activities that the authenticated user has attended
+// @Tags         activities
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Activity}
+// @Failure      400  {object}  ActivityStandardErrorResponse
+// @Failure      401  {object}  ActivityStandardErrorResponse
+// @Router       /user-attended-activities [get]
+func (h *ActivityHandler) GetUserAttendedActivities(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "activity")
+		return
+	}
+
+	var activities []models.Activity
+	if activities, err = h.ActivityService.GetUserAttendedActivities(user); err != nil {
+		HandleErrMsg("error getting attended activities", err, w).Stack("activity").BadRequest()
+		return
+	}
+
+	handleSuccess(w, activities, "", http.StatusOK)
+}
+
 // GetActivityAttendants godoc
 // @Summary      Retrieves a list of attendants for an activity
 // @Description  The end point returns a list of all attendants for a specified activity

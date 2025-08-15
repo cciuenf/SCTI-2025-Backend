@@ -316,3 +316,29 @@ func (r *ActivityRepo) GetUserActivities(userID string) ([]models.Activity, erro
 
 	return activities, nil
 }
+
+func (r *ActivityRepo) GetUserAttendedActivities(userID string) ([]models.Activity, error) {
+	var activitiesRegistrations []models.ActivityRegistration
+	if err := r.DB.Where("user_id = ? AND attended_at IS NOT NULL", userID).Find(&activitiesRegistrations).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return []models.Activity{}, nil
+		}
+		return nil, err
+	}
+
+	if len(activitiesRegistrations) == 0 {
+		return []models.Activity{}, nil
+	}
+
+	var activityIDs []string
+	for _, activityRegistration := range activitiesRegistrations {
+		activityIDs = append(activityIDs, activityRegistration.ActivityID)
+	}
+
+	var activities []models.Activity
+	if err := r.DB.Where("id IN ?", activityIDs).Find(&activities).Error; err != nil {
+		return nil, err
+	}
+
+	return activities, nil
+}
