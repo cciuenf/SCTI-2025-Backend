@@ -129,10 +129,10 @@ type PurchaseRequest struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
 
-	PaymentMethodID string `json:"payment_method_id"`
-	PaymentMethodType string `json:"payment_method_type"`
-	PaymentMethodToken string `json:"payment_method_token"`
-	PaymentMethodInstallments int `json:"payment_method_installments"`
+	PaymentMethodID           string `json:"payment_method_id"`
+	PaymentMethodType         string `json:"payment_method_type"`
+	PaymentMethodToken        string `json:"payment_method_token"`
+	PaymentMethodInstallments int    `json:"payment_method_installments"`
 
 	// For gifting functionality
 	IsGift        bool    `json:"is_gift"`         // Whether this purchase was a gift
