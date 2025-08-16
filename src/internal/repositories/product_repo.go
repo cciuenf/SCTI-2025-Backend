@@ -202,12 +202,12 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 	client := order.NewClient(mercadoPagoConfig)
 	request := order.Request{
 		Type:              "online",
-		TotalAmount: fmt.Sprintf("%.2f", float64(product.PriceInt)/100),
+		TotalAmount: fmt.Sprintf("%.2f", (float64(product.PriceInt) * product.quantity)/100),
 		ExternalReference: fmt.Sprintf("scti_app:%s_%s:%s", event.ID, user.ID, time.Now().Format("20060102150405")),
 		Transactions: &order.TransactionRequest{
 			Payments: []order.PaymentRequest{
 				{
-					Amount: fmt.Sprintf("%.2f", float64(product.PriceInt)/100),
+					Amount: fmt.Sprintf("%.2f",  (float64(product.PriceInt) * product.quantity)/100),
 					PaymentMethod: &order.PaymentMethodRequest{
 						ID:           req.PaymentMethodID,
 						Token:        req.PaymentMethodToken,
