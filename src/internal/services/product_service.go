@@ -294,14 +294,18 @@ func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, re
 		return nil, errors.New("invalid operation: cannot gift to yourself")
 	}
 
-	if req.PaymentMethodToken == "" {
-		return nil, errors.New("payment method token is required")
-	}
 	if req.PaymentMethodID == "" {
 		return nil, errors.New("payment method ID is required")
 	}
-	if req.PaymentMethodInstallments < 1 {
-		return nil, errors.New("installments must be at least 1")
+
+	if req.PaymentMethodID != "pix" {
+		if req.PaymentMethodToken == "" {
+			return nil, errors.New("payment method token is required")
+		}
+		if req.PaymentMethodInstallments < 1 {
+			return nil, errors.New("installments must be at least 1")
+		}
+
 	}
 
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
@@ -333,6 +337,10 @@ func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, re
 
 	if product.EventID != event.ID {
 		return nil, errors.New("product does not belong to this event")
+	}
+
+	if req.Quantity < 1 {
+		return nil, errors.New("quantity must be at least 1")
 	}
 
 	if !product.HasUnlimitedQuantity {

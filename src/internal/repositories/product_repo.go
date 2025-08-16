@@ -303,7 +303,7 @@ func (r *ProductRepo) PurchaseProduct(user models.User, event *models.Event, pro
 	request := order.Request{
 		Type:              "online",
 		TotalAmount:       fmt.Sprintf("%.2f", (float64(product.PriceInt)*float64(req.Quantity))/100),
-		ExternalReference: fmt.Sprintf("scti_app:%s_%s", event.Slug, user.ID),
+		ExternalReference: fmt.Sprintf("%s_%s", event.Slug, user.ID),
 		Transactions: &order.TransactionRequest{
 			Payments: []order.PaymentRequest{
 				{
