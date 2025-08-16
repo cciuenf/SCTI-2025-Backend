@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/mercadopago/sdk-go/pkg/order"
 	"gorm.io/gorm"
 )
 
@@ -140,9 +141,10 @@ type PurchaseRequest struct {
 }
 
 type PurchaseResponse struct {
-	Purchase    Purchase    `json:"purchase"`
-	UserProduct UserProduct `json:"user_product"`
-	UserTokens  []UserToken `json:"user_tokens"`
+	Purchase         Purchase        `json:"purchase"`
+	UserProduct      UserProduct     `json:"user_product"`
+	UserTokens       []UserToken     `json:"user_tokens"`
+	PurchaseResource *order.Response `json:"purchase_resource"`
 }
 
 // ProductBundle represents products bundled within other products

@@ -5,13 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"scti/config"
 	"scti/internal/models"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/order"
+	"github.com/mercadopago/sdk-go/pkg/refund"
 	"gorm.io/gorm"
 )
 
@@ -170,7 +173,7 @@ func (r *ProductRepo) GetUserTokens(userID string) ([]models.UserToken, error) {
 }
 
 // TODO: Think very carefully about this but for now, just do the basic proccess as I think it should be done
-func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req models.PurchaseRequest) (*models.PurchaseResponse, error) {
+func (r *ProductRepo) PurchaseProduct(user models.User, event *models.Event, product *models.Product, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
 	tx := r.DB.Begin()
 	if tx.Error != nil {
 		return nil, errors.New("failed to begin transaction: " + tx.Error.Error())
@@ -181,116 +184,7 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		}
 	}()
 
-	event, err := r.GetEventBySlug(eventSlug)
-	if err != nil {
-		tx.Rollback()
-		return nil, errors.New("event not found: " + err.Error())
-	}
-
-	product, err := r.GetProductByID(req.ProductID)
-	if err != nil {
-		tx.Rollback()
-		return nil, errors.New("product not found: " + err.Error())
-	}
-
-	// -----------------------------------------------------//
-	// ----------------COMEÇO DO PAGAMENTO -----------------//
-	// -----------------------------------------------------//
-
-	mercadoPagoConfig := config.GetMercadoPagoConfig()
-
-	client := order.NewClient(mercadoPagoConfig)
-	request := order.Request{
-		Type:              "online",
-		TotalAmount:       fmt.Sprintf("%.2f", (float64(product.PriceInt)*float64(req.Quantity))/100),
-		ExternalReference: fmt.Sprintf("scti_app:%s_%s:%s", event.ID, user.ID, time.Now().Format("20060102150405")),
-		Transactions: &order.TransactionRequest{
-			Payments: []order.PaymentRequest{
-				{
-					Amount: fmt.Sprintf("%.2f", (float64(product.PriceInt)*float64(req.Quantity))/100),
-					PaymentMethod: &order.PaymentMethodRequest{
-						ID:           req.PaymentMethodID,
-						Token:        req.PaymentMethodToken,
-						Type:         req.PaymentMethodType,
-						Installments: req.PaymentMethodInstallments,
-					},
-				},
-			},
-		},
-		Payer: &order.PayerRequest{
-			Email: user.Email,
-		},
-	}
-
-	resource, err := client.Create(context.Background(), request)
-	if err != nil {
-		log.Printf("Mercado Pago API error: %v", err)
-		return nil, errors.New("failed to create mercado pago order: " + err.Error())
-	}
-	fmt.Println(resource)
-
-	// --------------------------------------------------//
-	// ---------------- FIM DO PAGAMENTO ----------------//
-	// --------------------------------------------------//
-
-	isUserRegistered, err := r.IsUserRegisteredToEvent(user.ID, event.ID)
-	if err != nil {
-		tx.Rollback()
-		return nil, errors.New("error checking user registration: " + err.Error())
-	}
-
-	if !isUserRegistered {
-		tx.Rollback()
-		return nil, errors.New("user is not registered to this event")
-	}
-
-	if product.EventID != event.ID {
-		tx.Rollback()
-		return nil, errors.New("product does not belong to this event")
-	}
-
-	if product.IsBlocked {
-		tx.Rollback()
-		return nil, errors.New("product is blocked from purchases")
-	}
-
-	if product.ExpiresAt.Before(time.Now()) {
-		tx.Rollback()
-		return nil, errors.New("product has expired")
-	}
-
-	if !product.HasUnlimitedQuantity {
-		if product.Quantity < req.Quantity {
-			tx.Rollback()
-			return nil, fmt.Errorf("not enough quantity available, want %v have %v", req.Quantity, product.Quantity)
-		}
-	}
-
-	if req.Quantity > product.MaxOwnableQuantity {
-		tx.Rollback()
-		return nil, fmt.Errorf("requested quantity exceeds max ownable quantity by: %d", req.Quantity-product.MaxOwnableQuantity)
-	}
-
 	// Query for existing user product
-	ownedUserProducts, err := r.GetUserProductByUserIDAndProductID(user.ID, product.ID)
-	if err != nil {
-		tx.Rollback()
-		return nil, errors.New("failed to get user product: " + err.Error())
-	}
-
-	var ownedQuantity int
-	if len(ownedUserProducts) > 0 {
-		for _, userProduct := range ownedUserProducts {
-			ownedQuantity += userProduct.Quantity
-		}
-	}
-
-	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
-		tx.Rollback()
-		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
-		return nil, errors.New(text)
-	}
-
 	purchaseID := uuid.New().String()
 	purchase := &models.Purchase{
 		ID:            purchaseID,
@@ -301,7 +195,7 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		GiftedToEmail: req.GiftedToEmail,
 	}
 
-	err = tx.Create(purchase).Error
+	err := tx.Create(purchase).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, errors.New("failed to create purchase: " + err.Error())
@@ -399,13 +293,118 @@ func (r *ProductRepo) PurchaseProduct(user models.User, eventSlug string, req mo
 		}
 	}
 
+	// ----------------------------------------------------- //
+	// ----------------COMEÇO DO PAGAMENTO ----------------- //
+	// ----------------------------------------------------- //
+
+	mercadoPagoConfig := config.GetMercadoPagoConfig()
+
+	client := order.NewClient(mercadoPagoConfig)
+	request := order.Request{
+		Type:              "online",
+		TotalAmount:       fmt.Sprintf("%.2f", (float64(product.PriceInt)*float64(req.Quantity))/100),
+		ExternalReference: fmt.Sprintf("scti_app:%s_%s", event.Slug, user.ID),
+		Transactions: &order.TransactionRequest{
+			Payments: []order.PaymentRequest{
+				{
+					Amount: fmt.Sprintf("%.2f", (float64(product.PriceInt)*float64(req.Quantity))/100),
+					PaymentMethod: &order.PaymentMethodRequest{
+						ID:           req.PaymentMethodID,
+						Token:        req.PaymentMethodToken,
+						Type:         req.PaymentMethodType,
+						Installments: req.PaymentMethodInstallments,
+					},
+				},
+			},
+		},
+		Payer: &order.PayerRequest{
+			Email: user.Email,
+		},
+	}
+
+	resource, err := client.Create(context.Background(), request)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Mercado Pago API error: %v", err)
+		return nil, errors.New("failed to create mercado pago order: " + err.Error())
+	}
+
+	// -------------------------------------------------- //
+	// ---------------- FIM DO PAGAMENTO ---------------- //
+	// -------------------------------------------------- //
+
+	// CRITICAL SECTION: Commit with refund fallback
 	if err := tx.Commit().Error; err != nil {
+		// Payment succeeded but database commit failed - MUST refund
+		log.Printf("CRITICAL: Database commit failed after successful payment %s. Attempting refund...", resource.ID)
+
+		refundErr := r.attemptRefund(resource)
+		if refundErr != nil {
+			// This is the worst case scenario - log extensively and alert admins
+			log.Printf("CRITICAL FAILURE: Could not refund payment %s after failed commit. Manual intervention required. Original error: %v, Refund error: %v",
+				resource.ID, err, refundErr)
+
+			// Store for manual processing
+			r.storeFailedTransaction(resource, user, purchase, err.Error(), refundErr.Error())
+		}
+
 		return nil, errors.New("failed to commit transaction: " + err.Error())
 	}
 
 	return &models.PurchaseResponse{
-		Purchase:    *purchase,
-		UserProduct: *userProduct,
-		UserTokens:  userTokens,
+		Purchase:         *purchase,
+		UserProduct:      *userProduct,
+		UserTokens:       userTokens,
+		PurchaseResource: resource,
 	}, nil
+}
+
+// Helper to attempt refund
+func (r *ProductRepo) attemptRefund(resource *order.Response) error {
+	if resource == nil || resource.ID == "" {
+		return errors.New("invalid payment resource")
+	}
+
+	paymentID, err := strconv.Atoi(resource.ID)
+	if err != nil {
+		return errors.New("invalid payment ID format: " + err.Error())
+	}
+
+	amount, err := strconv.ParseFloat(resource.TotalAmount, 64)
+	if err != nil {
+		return errors.New("invalid amount format: " + err.Error())
+	}
+
+	mercadoPagoConfig := config.GetMercadoPagoConfig()
+	refundClient := refund.NewClient(mercadoPagoConfig)
+
+	_, err = refundClient.Create(context.Background(), paymentID)
+
+	if err != nil {
+		log.Printf("Failed to refund payment %d: %v", paymentID, err)
+		return err
+	}
+
+	log.Printf("Successfully refunded payment %d for amount %.2f", paymentID, amount)
+	return nil
+}
+
+// Store failed transactions for manual processing, still need to implement on DB
+func (r *ProductRepo) storeFailedTransaction(resource *order.Response, user models.User, purchase *models.Purchase, dbError, refundError string) {
+	// Create a record in a separate table/system for manual intervention
+	failedTx := map[string]interface{}{
+		"payment_id":    resource.ID,
+		"user_id":       user.ID,
+		"amount":        resource.TotalAmount,
+		"purchase_data": purchase,
+		"db_error":      dbError,
+		"refund_error":  refundError,
+		"created_at":    time.Now(),
+		"status":        "manual_intervention_required",
+	}
+
+	// Log to a monitoring system, database table, or external service
+	log.Printf("FAILED_TRANSACTION: %+v", failedTx)
+
+	// Send alerts to administrators
 }
