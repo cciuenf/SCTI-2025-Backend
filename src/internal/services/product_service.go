@@ -2,9 +2,11 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -291,7 +293,84 @@ func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, re
 	if req.IsGift && *req.GiftedToEmail == user.Email {
 		return nil, errors.New("invalid operation: cannot gift to yourself")
 	}
-	return s.ProductRepo.PurchaseProduct(user, eventSlug, req)
+
+	if req.PaymentMethodID == "" {
+		return nil, errors.New("payment method ID is required")
+	}
+
+	if req.PaymentMethodID != "pix" {
+		if req.PaymentMethodToken == "" {
+			return nil, errors.New("payment method token is required")
+		}
+		if req.PaymentMethodInstallments < 1 {
+			return nil, errors.New("installments must be at least 1")
+		}
+
+	}
+
+	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	isUserRegistered, err := s.ProductRepo.IsUserRegisteredToEvent(user.ID, event.ID)
+	if err != nil {
+		return nil, errors.New("error checking user registration: " + err.Error())
+	}
+
+	if !isUserRegistered {
+		return nil, errors.New("user is not registered to this event")
+	}
+
+	product, err := s.ProductRepo.GetProductByID(req.ProductID)
+	if err != nil {
+		return nil, errors.New("product not found: " + err.Error())
+	}
+
+	if product.IsBlocked {
+		return nil, errors.New("product is blocked from purchases")
+	}
+
+	if product.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("product has expired")
+	}
+
+	if product.EventID != event.ID {
+		return nil, errors.New("product does not belong to this event")
+	}
+
+	if req.Quantity < 1 {
+		return nil, errors.New("quantity must be at least 1")
+	}
+
+	if !product.HasUnlimitedQuantity {
+		if product.Quantity < req.Quantity {
+			return nil, fmt.Errorf("not enough quantity available, want %v have %v", req.Quantity, product.Quantity)
+		}
+	}
+
+	if req.Quantity > product.MaxOwnableQuantity {
+		return nil, fmt.Errorf("requested quantity exceeds max ownable quantity by: %d", req.Quantity-product.MaxOwnableQuantity)
+	}
+
+	ownedUserProducts, err := s.ProductRepo.GetUserProductByUserIDAndProductID(user.ID, product.ID)
+	if err != nil {
+		return nil, errors.New("failed to get user product: " + err.Error())
+	}
+
+	var ownedQuantity int
+	if len(ownedUserProducts) > 0 {
+		for _, userProduct := range ownedUserProducts {
+			ownedQuantity += userProduct.Quantity
+		}
+	}
+
+	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
+		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
+		return nil, errors.New(text)
+	}
+
+	return s.ProductRepo.PurchaseProduct(user, event, product, req, w)
 }
 
 func (s *ProductService) GetUserProductsRelation(user models.User) ([]models.UserProduct, error) {

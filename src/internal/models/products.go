@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/mercadopago/sdk-go/pkg/order"
 	"gorm.io/gorm"
 )
 
@@ -129,15 +130,21 @@ type PurchaseRequest struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
 
+	PaymentMethodID           string `json:"payment_method_id"`
+	PaymentMethodType         string `json:"payment_method_type"`
+	PaymentMethodToken        string `json:"payment_method_token"`
+	PaymentMethodInstallments int    `json:"payment_method_installments"`
+
 	// For gifting functionality
 	IsGift        bool    `json:"is_gift"`         // Whether this purchase was a gift
 	GiftedToEmail *string `json:"gifted_to_email"` // User email of gift recipient
 }
 
 type PurchaseResponse struct {
-	Purchase    Purchase    `json:"purchase"`
-	UserProduct UserProduct `json:"user_product"`
-	UserTokens  []UserToken `json:"user_tokens"`
+	Purchase         Purchase        `json:"purchase"`
+	UserProduct      UserProduct     `json:"user_product"`
+	UserTokens       []UserToken     `json:"user_tokens"`
+	PurchaseResource *order.Response `json:"purchase_resource"`
 }
 
 // ProductBundle represents products bundled within other products
