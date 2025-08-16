@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/order"
+	"github.com/mercadopago/sdk-go/pkg/preference"
 	"github.com/mercadopago/sdk-go/pkg/refund"
 	"gorm.io/gorm"
 )
@@ -408,3 +409,64 @@ func (r *ProductRepo) storeFailedTransaction(resource *order.Response, user mode
 
 	// Send alerts to administrators
 }
+
+func (r *ProductRepo) PixPurchaseRequest(user models.User, event models.Event, product models.Product, req models.PixPurchaseRequest) (*preference.Response, error) {
+	// ----------------------------------------------------- //
+	// ----------------COMEÇO DO PAGAMENTO ----------------- //
+	// ----------------------------------------------------- //
+	mercadoPagoConfig := config.GetMercadoPagoConfig()
+
+	request := preference.Request{
+		Items: []preference.ItemRequest{
+			{
+				ID:          product.ID,
+				Title:       product.Name,
+				UnitPrice:   float64(product.PriceInt) / 100,
+				Quantity:    req.Quantity,
+				Description: product.Description,
+				CurrencyID:  "BRL",
+				CategoryID:  "event-product",
+			},
+		},
+		PaymentMethods: &preference.PaymentMethodsRequest{
+			ExcludedPaymentMethods: []preference.ExcludedPaymentMethodRequest{
+				{
+					ID: "bolbradesco",
+				},
+			},
+		},
+		NotificationURL: "https://webhook.site/fdfdb700-b508-45f6-bd90-ebab4e9dc81b",
+	}
+
+	client := preference.NewClient(mercadoPagoConfig)
+	resource, err := client.Create(context.Background(), request)
+	if err != nil {
+		log.Printf("Mercado Pago Preference error: %v", err)
+		return nil, errors.New("failed to create mercado pago preference: " + err.Error())
+	}
+
+	return resource, nil
+	// -------------------------------------------------- //
+	// ---------------- FIM DO PAGAMENTO ---------------- //
+	// -------------------------------------------------- //
+}
+
+// func (r *ProductRepo) storePixPayment(userID, eventID, productID string, paymentID int64, pixData *models.PixPaymentResponse) error {
+// 	// Implementation depends on your database structure
+// 	// Example structure:
+// 	payment := models.Payment{
+// 		ID:             fmt.Sprintf("%d", paymentID),
+// 		UserID:         userID,
+// 		EventID:        eventID,
+// 		ProductID:      productID,
+// 		PaymentMethod:  "pix",
+// 		Status:         pixData.Status,
+// 		Amount:         pixData.TransactionAmount,
+// 		QRCode:         pixData.QRCode,
+// 		QRCodeBase64:   pixData.QRCodeBase64,
+// 		ExpirationDate: pixData.ExpirationDate,
+// 		CreatedAt:      time.Now(),
+// 	}
+
+// 	return r.DB.Create(&payment).Error
+// }
