@@ -271,6 +271,49 @@ func (h *ProductHandler) PreferenceRequest(w http.ResponseWriter, r *http.Reques
 	handleSuccess(w, purchase_info, "", http.StatusOK)
 }
 
+// ForcedPix godoc
+// @Summary      Start a PIX purchase
+// @Description  Creates a pending PIX purchase so the user can pay for the product
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Param        request body models.PixPurchaseRequest true "Purchase info"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.Purchase}
+// @Failure      400  {object}  ProductStandardErrorResponse
+// @Failure      401  {object}  ProductStandardErrorResponse
+// @Router       /events/{slug}/forced-pix [post]
+func (h *ProductHandler) ForcedPix(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
+	var reqBody models.PixPurchaseRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
+	user, err := getUserFromContext(h.ProductService.ProductRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
+	purchase_info, err := h.ProductService.ForcedPix(user, slug, reqBody)
+	if err != nil {
+		HandleErrMsg("error starting pix purchase", err, w).Stack("product").BadRequest()
+		return
+	}
+
+	handleSuccess(w, purchase_info, "", http.StatusOK)
+}
+
 // GetUserProducts godoc
 // @Summary      Get user products
 // @Description  Returns a list of all products for the authenticated user

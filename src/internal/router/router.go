@@ -117,6 +117,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 
 	// Payment Only Route
 	mux.Handle("POST /events/{slug}/preference-request", authMiddleware(http.HandlerFunc(productHandler.PreferenceRequest)))
+	mux.Handle("POST /events/{slug}/forced-pix", authMiddleware(http.HandlerFunc(productHandler.ForcedPix)))
 
 	loggingMux := mw.WithLogging(mux, logsDir)
 	corsHandler := cors.New(cors.Options{

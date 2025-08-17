@@ -547,7 +547,7 @@ func (s *ProductService) PreferenceRequest(user models.User, eventSlug string, r
 	// ---------------------------------------------------- //
 }
 
-func (s *ProductService) ForcedPayment(user models.User, eventSlug string, req models.PixPurchaseRequest) (*payment.Response, error) {
+func (s *ProductService) ForcedPix(user models.User, eventSlug string, req models.PixPurchaseRequest) (*payment.Response, error) {
 	if req.IsGift {
 		if req.GiftedToEmail == nil {
 			return nil, errors.New("gifted_to_email is required when gifting")
