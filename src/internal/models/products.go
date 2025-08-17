@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/mercadopago/sdk-go/pkg/order"
-	"github.com/mercadopago/sdk-go/pkg/preference"
 	"gorm.io/gorm"
 )
 
@@ -127,45 +126,14 @@ func (Purchase) TableName() string {
 	return "purchases"
 }
 
-type PixPaymentResponse struct {
-	PaymentID         int64   `json:"payment_id"`
-	Status            string  `json:"status"`
-	StatusDetail      string  `json:"status_detail"`
-	QRCode            string  `json:"qr_code"`
-	QRCodeBase64      string  `json:"qr_code_base64"`
-	TicketURL         string  `json:"ticket_url"`
-	ExpirationDate    string  `json:"expiration_date"`
-	TransactionAmount float64 `json:"transaction_amount"`
-}
-
-type Payment struct {
-	ID             string    `json:"payment_id"`
-	UserID         string    `json:"user_id"`
-	EventID        string    `json:"event_id"`
-	ProductID      string    `json:"product_id"`
-	PaymentMethod  string    `json:"payment_method"`
-	Status         string    `json:"status"`
-	Amount         float64   `json:"amount"`
-	QRCode         string    `json:"qr_code"`
-	QRCodeBase64   string    `json:"qr_code_base64"`
-	ExpirationDate string    `json:"expiration_date"`
-	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
-}
-
-type MercadoPagoPayments struct {
-	Resource *preference.Response
-
-	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
-}
-
 type PixPurchaseRequest struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
 
-	PaymentMethodID   string `json:"payment_method_id"`
-	PaymentMethodType string `json:"payment_method_type"`
+	PaymentMethodID           string `json:"payment_method_id"`
+	PaymentMethodType         string `json:"payment_method_type"`
+	PaymentMethodToken        string `json:"payment_method_token"`
+	PaymentMethodInstallments int    `json:"payment_method_installments"`
 
 	IsGift        bool    `json:"is_gift"`         // Whether this purchase was a gift
 	GiftedToEmail *string `json:"gifted_to_email"` // User email of gift recipient

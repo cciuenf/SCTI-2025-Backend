@@ -410,13 +410,18 @@ func (r *ProductRepo) storeFailedTransaction(resource *order.Response, user mode
 	// Send alerts to administrators
 }
 
-func (r *ProductRepo) PixPurchaseRequest(user models.User, event models.Event, product models.Product, req models.PixPurchaseRequest) (*preference.Response, error) {
+func (r *ProductRepo) PreferenceRequest(user models.User, event models.Event, product models.Product, req models.PixPurchaseRequest) (*preference.Response, error) {
 	// ----------------------------------------------------- //
 	// ----------------COMEÇO DO PAGAMENTO ----------------- //
 	// ----------------------------------------------------- //
 	mercadoPagoConfig := config.GetMercadoPagoConfig()
 
 	request := preference.Request{
+		BackURLs: &preference.BackURLsRequest{
+			Success: "http://localhost:3000/",
+			Pending: "",
+			Failure: "",
+		},
 		Items: []preference.ItemRequest{
 			{
 				ID:          product.ID,
@@ -428,14 +433,14 @@ func (r *ProductRepo) PixPurchaseRequest(user models.User, event models.Event, p
 				CategoryID:  "event-product",
 			},
 		},
-		PaymentMethods: &preference.PaymentMethodsRequest{
-			ExcludedPaymentMethods: []preference.ExcludedPaymentMethodRequest{
-				{
-					ID: "bolbradesco",
-				},
-			},
-		},
 		NotificationURL: "https://webhook.site/fdfdb700-b508-45f6-bd90-ebab4e9dc81b",
+	}
+
+	if req.PaymentMethodID != "pix" {
+		request.PaymentMethods = &preference.PaymentMethodsRequest{
+			DefaultPaymentMethodID: req.PaymentMethodID,
+			Installments:           req.PaymentMethodInstallments,
+		}
 	}
 
 	client := preference.NewClient(mercadoPagoConfig)

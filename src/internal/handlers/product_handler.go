@@ -242,8 +242,8 @@ func (h *ProductHandler) PurchaseProducts(w http.ResponseWriter, r *http.Request
 // @Success      200  {object}  NoMessageSuccessResponse{data=models.Purchase}
 // @Failure      400  {object}  ProductStandardErrorResponse
 // @Failure      401  {object}  ProductStandardErrorResponse
-// @Router       /events/{slug}/start-pix-purchase [post]
-func (h *ProductHandler) StartPixPurchase(w http.ResponseWriter, r *http.Request) {
+// @Router       /events/{slug}/preference-request [post]
+func (h *ProductHandler) PreferenceRequest(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
 		BadRequestError(w, err, "product")
@@ -262,7 +262,7 @@ func (h *ProductHandler) StartPixPurchase(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	purchase_info, err := h.ProductService.StartPixPurchase(user, slug, reqBody)
+	purchase_info, err := h.ProductService.PreferenceRequest(user, slug, reqBody)
 	if err != nil {
 		HandleErrMsg("error starting pix purchase", err, w).Stack("product").BadRequest()
 		return

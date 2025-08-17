@@ -414,7 +414,7 @@ func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, re
 	return s.ProductRepo.PurchaseProduct(user, event, product, req, w)
 }
 
-func (s *ProductService) StartPixPurchase(user models.User, eventSlug string, req models.PixPurchaseRequest) (*preference.Response, error) {
+func (s *ProductService) PreferenceRequest(user models.User, eventSlug string, req models.PixPurchaseRequest) (*preference.Response, error) {
 	if req.IsGift {
 		if req.GiftedToEmail == nil {
 			return nil, errors.New("gifted_to_email is required when gifting")
@@ -428,7 +428,12 @@ func (s *ProductService) StartPixPurchase(user models.User, eventSlug string, re
 		return nil, errors.New("payment method ID is required")
 	}
 	if req.PaymentMethodID != "pix" {
-		return nil, errors.New("use the purchase-products endpoint")
+		if req.PaymentMethodToken == "" {
+			return nil, errors.New("payment method token is required")
+		}
+		if req.PaymentMethodInstallments < 1 {
+			return nil, errors.New("installments must be at least 1")
+		}
 	}
 
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
@@ -493,5 +498,5 @@ func (s *ProductService) StartPixPurchase(user models.User, eventSlug string, re
 		return nil, errors.New(text)
 	}
 
-	return s.ProductRepo.PixPurchaseRequest(user, *event, *product, req)
+	return s.ProductRepo.PreferenceRequest(user, *event, *product, req)
 }
