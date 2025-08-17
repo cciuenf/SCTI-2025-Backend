@@ -542,6 +542,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 		}
 	}
 
+	// TODO Fix if AccessTarget is EventTarget
 	for _, access := range product.AccessTargets {
 		registration := &models.ActivityRegistration{
 			ActivityID:   access.TargetID,
@@ -568,6 +569,12 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 		if err != nil {
 			tx.Rollback()
 			log.Println("Error 11")
+			return errors.New("failed to create activity registration: " + err.Error())
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			tx.Rollback()
+			log.Println("Error 12")
 			return errors.New("failed to create activity registration: " + err.Error())
 		}
 	}
