@@ -1,10 +1,19 @@
 package handlers
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
+	"scti/config"
 	"scti/internal/models"
 	"scti/internal/services"
+	"strconv"
+	"strings"
 )
 
 type ProductHandler struct {
@@ -228,49 +237,6 @@ func (h *ProductHandler) PurchaseProducts(w http.ResponseWriter, r *http.Request
 	handleSuccess(w, purchase_info, "", http.StatusOK)
 }
 
-// StartPixPurchase godoc
-// @Summary      Start a PIX purchase
-// @Description  Creates a pending PIX purchase so the user can pay for the product
-// @Tags         products
-// @Accept       json
-// @Produce      json
-// @Security     Bearer
-// @Param        Authorization header string true "Bearer {access_token}"
-// @Param        Refresh header string true "Bearer {refresh_token}"
-// @Param        slug path string true "Event slug"
-// @Param        request body models.PixPurchaseRequest true "Purchase info"
-// @Success      200  {object}  NoMessageSuccessResponse{data=models.Purchase}
-// @Failure      400  {object}  ProductStandardErrorResponse
-// @Failure      401  {object}  ProductStandardErrorResponse
-// @Router       /events/{slug}/preference-request [post]
-func (h *ProductHandler) PreferenceRequest(w http.ResponseWriter, r *http.Request) {
-	slug, err := extractSlugAndValidate(r)
-	if err != nil {
-		BadRequestError(w, err, "product")
-		return
-	}
-
-	var reqBody models.PixPurchaseRequest
-	if err := decodeRequestBody(r, &reqBody); err != nil {
-		BadRequestError(w, err, "product")
-		return
-	}
-
-	user, err := getUserFromContext(h.ProductService.ProductRepo.GetUserByID, r)
-	if err != nil {
-		BadRequestError(w, err, "product")
-		return
-	}
-
-	purchase_info, err := h.ProductService.PreferenceRequest(user, slug, reqBody)
-	if err != nil {
-		HandleErrMsg("error starting pix purchase", err, w).Stack("product").BadRequest()
-		return
-	}
-
-	handleSuccess(w, purchase_info, "", http.StatusOK)
-}
-
 // ForcedPix godoc
 // @Summary      Start a PIX purchase
 // @Description  Creates a pending PIX purchase so the user can pay for the product
@@ -293,7 +259,7 @@ func (h *ProductHandler) ForcedPix(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var reqBody models.PixPurchaseRequest
+	var reqBody models.PurchaseRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
 		BadRequestError(w, err, "product")
 		return
@@ -312,6 +278,118 @@ func (h *ProductHandler) ForcedPix(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleSuccess(w, purchase_info, "", http.StatusOK)
+}
+
+type Approved struct {
+	Status string `json:"status"`
+}
+
+// GetUserPurchases godoc
+// @Summary      Get user purchases
+// @Description  Returns a list of all purchases for the authenticated user
+// @Tags         products
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Purchase}
+// @Failure      400  {object}  ProductStandardErrorResponse
+// @Failure      401  {object}  ProductStandardErrorResponse
+// @Router       /webhook/mp [post]
+func (h *ProductHandler) MPWebhook(w http.ResponseWriter, r *http.Request) {
+	var reqBody models.MP_WebhookRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
+	xSignature := r.Header.Get("x-signature")
+	xRequestId := r.Header.Get("x-request-id")
+
+	queryParams := r.URL.Query()
+	dataID := queryParams.Get("data.id")
+	parts := strings.Split(xSignature, ",")
+
+	var ts, hash string
+	for _, part := range parts {
+		keyValue := strings.SplitN(part, "=", 2)
+		if len(keyValue) == 2 {
+			key := strings.TrimSpace(keyValue[0])
+			value := strings.TrimSpace(keyValue[1])
+			if key == "ts" {
+				ts = value
+			} else if key == "v1" {
+				hash = value
+			}
+		}
+	}
+
+	secret := config.GetWebhookSignature()
+	manifest := fmt.Sprintf("id:%v;request-id:%v;ts:%v;", dataID, xRequestId, ts)
+
+	hmac := hmac.New(sha256.New, []byte(secret))
+	hmac.Write([]byte(manifest))
+
+	sha := hex.EncodeToString(hmac.Sum(nil))
+	if sha == hash {
+		handleSuccess(w, nil, "", http.StatusOK)
+	} else {
+		BadRequestError(w, errors.New("hmac verification failed"), "product")
+		return
+	}
+
+	url := fmt.Sprintf("https://api.mercadopago.com/v1/payments/%v", reqBody.Data.Id)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	AuthHeader := fmt.Sprintf("Bearer %v", config.GetMercadoPagoAccessToken())
+	req.Header.Add("Authorization", AuthHeader)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var bodyContent Approved
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&bodyContent)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// URGENT: CREATE FILE LOG
+	PurchaseID, err := strconv.Atoi(reqBody.Data.Id)
+	if err != nil {
+		log.Println("ATTENTION COULD NOT FINISH PURCHASE")
+		return
+	}
+
+	if bodyContent.Status == "approved" {
+		purchase, err := h.ProductService.ProductRepo.GetPixPurchase(PurchaseID)
+		if err != nil {
+			log.Println("ATTENTION COULD NOT FINISH PURCHASE")
+			return
+		}
+
+		err = h.ProductService.ProductRepo.FinalizePixPurchase(*purchase)
+		if err != nil {
+			log.Println("WTF: " + err.Error())
+			return
+		}
+
+		err = h.ProductService.ProductRepo.DeletePixPurchase(PurchaseID)
+		if err != nil {
+			log.Println("Error deleting pix purchase")
+		}
+	}
 }
 
 // GetUserProducts godoc

@@ -126,17 +126,28 @@ func (Purchase) TableName() string {
 	return "purchases"
 }
 
-type PixPurchaseRequest struct {
-	ProductID string `json:"product_id"`
-	Quantity  int    `json:"quantity"`
+type PixPurchase struct {
+	UserID        string  `gorm:"type:varchar(36);index" json:"user_id"`
+	ProductID     string  `gorm:"type:varchar(36);index" json:"product_id"`
+	PurchaseID    int     `gorm:"unique" json:"purchase_id"`
+	Quantity      int     `json:"quantity"`
+	IsGift        bool    `json:"is_gift"`
+	GiftedToEmail *string `json:"gifted_to_email"`
+}
 
-	PaymentMethodID           string `json:"payment_method_id"`
-	PaymentMethodType         string `json:"payment_method_type"`
-	PaymentMethodToken        string `json:"payment_method_token"`
-	PaymentMethodInstallments int    `json:"payment_method_installments"`
+type MP_WH_Data struct {
+	Id string `json:"id"`
+}
 
-	IsGift        bool    `json:"is_gift"`         // Whether this purchase was a gift
-	GiftedToEmail *string `json:"gifted_to_email"` // User email of gift recipient
+type MP_WebhookRequest struct {
+	Action      string     `json:"action"`
+	Api_version string     `json:"api_version"`
+	Data        MP_WH_Data `json:"data"`
+	DateCreated string     `json:"date_created"`
+	Id          int        `json:"id"`
+	LiveMode    bool       `json:"live_mode"`
+	Type        string     `json:"type"`
+	UserID      string     `json:"user_id"`
 }
 
 type PurchaseRequest struct {

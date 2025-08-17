@@ -37,6 +37,7 @@ var (
 	mercadoPagoAccessToken string
 	mercadoPagoPublicKey   string
 	mercadoPagoConfig      *mp_config.Config
+	webhook_signature      string
 )
 
 func LoadConfig(path string) *Config {
@@ -58,6 +59,7 @@ func LoadConfig(path string) *Config {
 	siteURL = os.Getenv("SITE_URL")
 	mercadoPagoAccessToken = os.Getenv("MERCADO_PAGO_ACCESS_TOKEN")
 	mercadoPagoPublicKey = os.Getenv("MERCADO_PAGO_PUBLIC_KEY")
+	webhook_signature = os.Getenv("WEBHOOK_SIGNATURE")
 
 	accessToken := mercadoPagoAccessToken
 	mercadoPagoConfig, err = mp_config.New(accessToken)
@@ -137,4 +139,8 @@ func GetMercadoPagoPublicKey() string {
 
 func GetMercadoPagoConfig() *mp_config.Config {
 	return mercadoPagoConfig
+}
+
+func GetWebhookSignature() string {
+	return webhook_signature
 }
