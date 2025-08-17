@@ -1,14 +1,18 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"scti/config"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mercadopago/sdk-go/pkg/payment"
 	"github.com/mercadopago/sdk-go/pkg/preference"
 )
 
@@ -498,5 +502,145 @@ func (s *ProductService) PreferenceRequest(user models.User, eventSlug string, r
 		return nil, errors.New(text)
 	}
 
-	return s.ProductRepo.PreferenceRequest(user, *event, *product, req)
+	// ---------------------------------------------------------- //
+	// ----------------COMEÇO DA PREFERENCIA -------------------- //
+	// ---------------------------------------------------------- //
+	mercadoPagoConfig := config.GetMercadoPagoConfig()
+
+	request := preference.Request{
+		BackURLs: &preference.BackURLsRequest{
+			Success: "http://localhost:3000/",
+			Pending: "",
+			Failure: "",
+		},
+		Items: []preference.ItemRequest{
+			{
+				ID:          product.ID,
+				Title:       product.Name,
+				UnitPrice:   float64(product.PriceInt) / 100,
+				Quantity:    req.Quantity,
+				Description: product.Description,
+				CurrencyID:  "BRL",
+				CategoryID:  "event-product",
+			},
+		},
+		NotificationURL: "https://webhook.site/fdfdb700-b508-45f6-bd90-ebab4e9dc81b",
+	}
+
+	if req.PaymentMethodID != "pix" {
+		request.PaymentMethods = &preference.PaymentMethodsRequest{
+			DefaultPaymentMethodID: req.PaymentMethodID,
+			Installments:           req.PaymentMethodInstallments,
+		}
+	}
+
+	client := preference.NewClient(mercadoPagoConfig)
+	resource, err := client.Create(context.Background(), request)
+	if err != nil {
+		log.Printf("Mercado Pago Preference error: %v", err)
+		return nil, errors.New("failed to create mercado pago preference: " + err.Error())
+	}
+
+	return resource, nil
+	// ---------------------------------------------------- //
+	// ---------------- FIM DA PREFERENCIA ---------------- //
+	// ---------------------------------------------------- //
+}
+
+func (s *ProductService) ForcedPayment(user models.User, eventSlug string, req models.PixPurchaseRequest) (*payment.Response, error) {
+	if req.IsGift {
+		if req.GiftedToEmail == nil {
+			return nil, errors.New("gifted_to_email is required when gifting")
+		}
+		if *req.GiftedToEmail == user.Email {
+			return nil, errors.New("invalid operation: cannot gift to yourself")
+		}
+	}
+
+	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	isUserRegistered, err := s.ProductRepo.IsUserRegisteredToEvent(user.ID, event.ID)
+	if err != nil {
+		return nil, errors.New("error checking user registration: " + err.Error())
+	}
+
+	if !isUserRegistered {
+		return nil, errors.New("user is not registered to this event")
+	}
+
+	product, err := s.ProductRepo.GetProductByID(req.ProductID)
+	if err != nil {
+		return nil, errors.New("product not found: " + err.Error())
+	}
+
+	if product.IsBlocked {
+		return nil, errors.New("product is blocked from purchases")
+	}
+
+	if product.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("product has expired")
+	}
+
+	if product.EventID != event.ID {
+		return nil, errors.New("product does not belong to this event")
+	}
+
+	if req.Quantity < 1 {
+		return nil, errors.New("quantity must be at least 1")
+	}
+
+	if !product.HasUnlimitedQuantity {
+		if product.Quantity < req.Quantity {
+			return nil, fmt.Errorf("not enough quantity available, want %v have %v", req.Quantity, product.Quantity)
+		}
+	}
+
+	if req.Quantity > product.MaxOwnableQuantity {
+		return nil, fmt.Errorf("requested quantity exceeds max ownable quantity by: %d", req.Quantity-product.MaxOwnableQuantity)
+	}
+
+	ownedUserProducts, err := s.ProductRepo.GetUserProductByUserIDAndProductID(user.ID, product.ID)
+	if err != nil {
+		return nil, errors.New("failed to get user product: " + err.Error())
+	}
+
+	var ownedQuantity int
+	if len(ownedUserProducts) > 0 {
+		for _, userProduct := range ownedUserProducts {
+			ownedQuantity += userProduct.Quantity
+		}
+	}
+
+	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
+		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
+		return nil, errors.New(text)
+	}
+
+	// ----------------------------------------------------- //
+	// ----------------COMEÇO DO PAGAMENTO ----------------- //
+	// ----------------------------------------------------- //
+
+	mercadoPagoConfig := config.GetMercadoPagoConfig()
+	paymentClient := payment.NewClient(mercadoPagoConfig)
+	request := payment.Request{
+		TransactionAmount: (float64(product.PriceInt) / 100) * float64(req.Quantity),
+		PaymentMethodID:   "pix",
+		Payer: &payment.PayerRequest{
+			Email: user.Email,
+		},
+	}
+	resource, err := paymentClient.Create(context.Background(), request)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("failed to create mercado pago payment")
+	}
+
+	// -------------------------------------------------- //
+	// ---------------- FIM DO PAGAMENTO ---------------- //
+	// -------------------------------------------------- //
+
+	return resource, nil
 }
