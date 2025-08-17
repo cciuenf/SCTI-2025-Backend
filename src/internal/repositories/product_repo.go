@@ -434,16 +434,19 @@ func (r *ProductRepo) DeletePixPurchase(purchaseID int) error {
 func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error {
 	user, err := r.GetUserByID(pixPurchase.UserID)
 	if err != nil {
+		log.Println("Error 1")
 		return errors.New("UHM FUCK")
 	}
 
 	product, err := r.GetProductByID(pixPurchase.ProductID)
 	if err != nil {
+		log.Println("Error 2")
 		return errors.New("UHM FUCK")
 	}
 
 	tx := r.DB.Begin()
 	if tx.Error != nil {
+		log.Println("Error 3")
 		return errors.New("failed to begin transaction: " + tx.Error.Error())
 	}
 	defer func() {
@@ -466,6 +469,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 	err = tx.Create(purchase).Error
 	if err != nil {
 		tx.Rollback()
+		log.Println("Error 4")
 		return errors.New("failed to create purchase: " + err.Error())
 	}
 
@@ -474,6 +478,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 		err = tx.Save(product).Error
 		if err != nil {
 			tx.Rollback()
+			log.Println("Error 5")
 			return errors.New("failed to update product quantity: " + err.Error())
 		}
 	}
@@ -488,11 +493,13 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 	if pixPurchase.IsGift {
 		if pixPurchase.GiftedToEmail == nil {
 			tx.Rollback()
+			log.Println("Error 6")
 			return errors.New("can't gift to nil email")
 		}
 		giftedUser, err := r.GetUserByEmail(*pixPurchase.GiftedToEmail)
 		if err != nil {
 			tx.Rollback()
+			log.Println("Error 7")
 			return errors.New("failed to retrieve user for gifting")
 		}
 		userProduct.ReceivedAsGift = true
@@ -507,6 +514,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 	err = tx.Create(userProduct).Error
 	if err != nil {
 		tx.Rollback()
+		log.Println("Error 8")
 		return errors.New("failed to create user product: " + err.Error())
 	}
 
@@ -527,6 +535,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 			err = tx.Create(token).Error
 			if err != nil {
 				tx.Rollback()
+				log.Println("Error 9")
 				return errors.New("failed to create user token: " + err.Error())
 			}
 			userTokens[i] = *token
@@ -547,6 +556,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 
 		if err != nil && err != gorm.ErrRecordNotFound {
 			tx.Rollback()
+			log.Println("Error 10")
 			return errors.New("failed to get activity registration: " + err.Error())
 		}
 
@@ -557,6 +567,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 		err = tx.Create(registration).Error
 		if err != nil {
 			tx.Rollback()
+			log.Println("Error 11")
 			return errors.New("failed to create activity registration: " + err.Error())
 		}
 	}
