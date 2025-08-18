@@ -8,18 +8,22 @@ import (
 )
 
 type UserInfo struct {
-	Name     string `example:"John"`
-	LastName string `example:"Carmack"`
-	Email    string `example:"john@carmack.com"`
+	Name         string `example:"John"`
+	LastName     string `json:"last_name" example:"Carmack"`
+	Email        string `example:"john@carmack.com"`
+	IsUenf       bool   `json:"is_uenf" example:"true"`
+	UenfSemester int    `json:"uenf_semester" example:"5"`
 }
 
 type User struct {
-	ID         string   `gorm:"type:varchar(36);primaryKey;" json:"id"`
-	Name       string   `gorm:"not null" json:"name"`
-	LastName   string   `gorm:"not null" json:"last_name"`
-	Email      string   `gorm:"unique;not null" json:"email"`
-	IsVerified bool     `gorm:"default:false" json:"is_verified"`
-	UserPass   UserPass `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	ID           string   `gorm:"type:varchar(36);primaryKey;" json:"id"`
+	Name         string   `gorm:"not null" json:"name"`
+	LastName     string   `gorm:"not null" json:"last_name"`
+	Email        string   `gorm:"unique;not null" json:"email"`
+	IsVerified   bool     `gorm:"default:false" json:"is_verified"`
+	UserPass     UserPass `gorm:"foreignKey:ID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	IsUenf       bool     `json:"is_uenf"`
+	UenfSemester int      `json:"uenf_semester"`
 
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
@@ -72,10 +76,12 @@ type UserVerification struct {
 
 type UserRegister struct {
 	gorm.Model
-	Name     string `gorm:"not null"`
-	LastName string `gorm:"not null" json:"last_name"`
-	Email    string `gorm:"unique;not null"`
-	Password string `gorm:"not null"`
+	Name         string `gorm:"not null"`
+	LastName     string `gorm:"not null" json:"last_name"`
+	Email        string `gorm:"unique;not null"`
+	Password     string `gorm:"not null"`
+	IsUenf       bool   `json:"is_uenf"`
+	UenfSemester int    `json:"uenf_semester"`
 }
 
 type UserLogin struct {

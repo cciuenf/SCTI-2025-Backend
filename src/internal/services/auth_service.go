@@ -36,9 +36,13 @@ func NewAuthService(repo *repos.AuthRepo, secret string) *AuthService {
 	}
 }
 
-func (s *AuthService) Register(email, password, name, last_name string) error {
+func (s *AuthService) Register(email, password, name, last_name string, isUenf bool, uenfSemester int) error {
 	if email == "" || password == "" || name == "" || last_name == "" {
 		return errors.New("all fields are required")
+	}
+
+	if uenfSemester < 1 || uenfSemester > 10 {
+		return errors.New("uenf semester must be between 1 and 10, inclusive")
 	}
 
 	email = strings.TrimSpace(strings.ToLower(email))
@@ -64,11 +68,13 @@ func (s *AuthService) Register(email, password, name, last_name string) error {
 
 	userID := uuid.New().String()
 	user := &models.User{
-		ID:         userID,
-		Name:       name,
-		LastName:   last_name,
-		Email:      email,
-		IsVerified: false,
+		ID:           userID,
+		Name:         name,
+		LastName:     last_name,
+		Email:        email,
+		IsVerified:   false,
+		IsUenf:       isUenf,
+		UenfSemester: uenfSemester,
 		UserPass: models.UserPass{
 			ID:       userID,
 			Password: string(hashedPassword),

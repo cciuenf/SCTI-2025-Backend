@@ -221,7 +221,6 @@ func (h *EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	handleSuccess(w, nil, "deleted event", http.StatusOK)
 }
 
-// TODO: Implement generating and sending QR Code to user email
 // Saving the qr code as a png file in the server
 // RegisterToEvent godoc
 // @Summary      Register to an event
@@ -257,7 +256,6 @@ func (h *EventHandler) RegisterToEvent(w http.ResponseWriter, r *http.Request) {
 	handleSuccess(w, nil, "registered to event", http.StatusOK)
 }
 
-// TODO: Implement deleting the qr code from the server
 // UnregisterFromEvent godoc
 // @Summary      Unregister from an event
 // @Description  Unregisters the authenticated user from an event by its slug

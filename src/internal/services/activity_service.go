@@ -396,7 +396,6 @@ func (s *ActivityService) UnregisterUserFromActivity(user models.User, eventSlug
 	return nil
 }
 
-// TODO: When user buys the ticket to a standalone activity, we need to register them to the activity automatically
 // so when that logic is implemented, we can remove the need to call this function and delete it
 func (s *ActivityService) RegisterUserToStandaloneActivity(user models.User, eventSlug string, activityID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)

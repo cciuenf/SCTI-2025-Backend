@@ -50,7 +50,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.AuthService.Register(user.Email, user.Password, user.Name, user.LastName)
+	err := h.AuthService.Register(user.Email, user.Password, user.Name, user.LastName, user.IsUenf, user.UenfSemester)
 	if err != nil {
 		HandleErrMsg("error registering user", err, w).Stack("auth").BadRequest()
 		return

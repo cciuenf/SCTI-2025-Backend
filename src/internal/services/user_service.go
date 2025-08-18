@@ -46,9 +46,11 @@ func (s *UserService) GetUserInfoFromID(userID string) (*models.UserInfo, error)
 	}
 
 	info := models.UserInfo{
-		Name:     user.Name,
-		LastName: user.LastName,
-		Email:    user.Email,
+		Name:         user.Name,
+		LastName:     user.LastName,
+		Email:        user.Email,
+		IsUenf:       user.IsUenf,
+		UenfSemester: user.UenfSemester,
 	}
 
 	return &info, nil
@@ -60,9 +62,11 @@ func (s *UserService) GetUserInfoFromIDBatch(id_array []string) ([]models.UserIn
 		if _, err := uuid.Parse(id); err != nil {
 			// Malformed UUID
 			result = append(result, models.UserInfo{
-				Name:     "MALFORMED USER",
-				LastName: "MALFORMED USER",
-				Email:    "MALFORMED USER",
+				Name:         "MALFORMED USER",
+				LastName:     "MALFORMED USER",
+				Email:        "MALFORMED USER",
+				IsUenf:       false,
+				UenfSemester: -1,
 			})
 			continue
 		}
@@ -71,17 +75,21 @@ func (s *UserService) GetUserInfoFromIDBatch(id_array []string) ([]models.UserIn
 		if err != nil {
 			// Could not find user, treat as malformed
 			result = append(result, models.UserInfo{
-				Name:     "MISSING USER",
-				LastName: "MISSING USER",
-				Email:    "MISSING USER",
+				Name:         "MISSING USER",
+				LastName:     "MISSING USER",
+				Email:        "MISSING USER",
+				IsUenf:       false,
+				UenfSemester: -1,
 			})
 			continue
 		}
 
 		info := models.UserInfo{
-			Name:     user.Name,
-			LastName: user.LastName,
-			Email:    user.Email,
+			Name:         user.Name,
+			LastName:     user.LastName,
+			Email:        user.Email,
+			IsUenf:       user.IsUenf,
+			UenfSemester: user.UenfSemester,
 		}
 		result = append(result, info)
 	}
