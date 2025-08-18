@@ -1047,7 +1047,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/events/{slug}/activity/attendants": {
+        "/events/{slug}/activity/attendants/{id}": {
             "get": {
                 "security": [
                     {
@@ -1088,13 +1088,11 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "ActivityID",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.GetAttendeesRequest"
-                        }
+                        "type": "string",
+                        "description": "Activity ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1113,96 +1111,6 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/models.ActivityRegistration"
                                             }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/events/{slug}/activity/attendees": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "The end point returns a list of all registrations of a specified activity (all admins)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "activities"
-                ],
-                "summary": "Retrieves a list of registrations of an activity",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {access_token}",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer {refresh_token}",
-                        "name": "Refresh",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Event slug",
-                        "name": "slug",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "ActivityID",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.GetAttendeesRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.ActivityRegistration"
                                         }
                                     }
                                 }
@@ -1367,6 +1275,97 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{slug}/activity/registrations/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "The end point returns a list of all registrations of a specified activity (all admins)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Retrieves a list of registrations of an activity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Activity ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.ActivityRegistration"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
                         }
@@ -2597,6 +2596,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/resend-verification-code": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Generates a new verification code and resends it to the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend verification code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/revoke-refresh-token": {
             "post": {
                 "security": [
@@ -2880,6 +2935,77 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user-attended-activities": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "The end point returns a list of all activities that the authenticated user has attended",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "activities"
+                ],
+                "summary": "Retrieves a list of activities that the current user has attended",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {access_token}",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer {refresh_token}",
+                        "name": "Refresh",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Activity"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
                         }
@@ -3227,6 +3353,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/batch": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get user info from ID array",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user info from ID array",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Array list of all users IDs",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UserInfoBatch"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.UserInfoBatch"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/create-event-creator": {
             "post": {
                 "security": [
@@ -3275,6 +3465,61 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthStandardErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get user info from ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user info from ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.NoMessageSuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.UserInfo"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3589,6 +3834,17 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.UserInfoBatch": {
+            "type": "object",
+            "properties": {
+                "id_array": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "handlers.UserLoginRequest": {
             "type": "object",
             "properties": {
@@ -3735,6 +3991,9 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "level": {
+                    "$ref": "#/definitions/models.ActivityLevel"
+                },
                 "location": {
                     "type": "string",
                     "example": "Sala 101"
@@ -3752,6 +4011,9 @@ const docTemplate = `{
                     "description": "If a token is required for this activity",
                     "type": "boolean",
                     "example": true
+                },
+                "requirements": {
+                    "type": "string"
                 },
                 "speaker": {
                     "type": "string",
@@ -3788,6 +4050,19 @@ const docTemplate = `{
                     "example": "550e8400-e29b-41d4-a716-446655440000"
                 }
             }
+        },
+        "models.ActivityLevel": {
+            "type": "string",
+            "enum": [
+                "easy",
+                "medium",
+                "hard"
+            ],
+            "x-enum-varnames": [
+                "ActivityEasy",
+                "ActivityMedium",
+                "ActivityHard"
+            ]
         },
         "models.ActivityRegistration": {
             "type": "object",
@@ -3898,6 +4173,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "level": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ActivityLevel"
+                        }
+                    ],
+                    "example": "easy"
+                },
                 "location": {
                     "type": "string",
                     "example": "Sala 101"
@@ -3909,6 +4192,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Workshop de Go"
+                },
+                "requirements": {
+                    "type": "string",
+                    "example": "VSCode e Python 3.12"
                 },
                 "speaker": {
                     "type": "string",
@@ -3967,6 +4254,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "level": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ActivityLevel"
+                        }
+                    ],
+                    "example": "easy"
+                },
                 "location": {
                     "type": "string",
                     "example": "Sala 101"
@@ -3978,6 +4273,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Workshop de Go"
+                },
+                "requirements": {
+                    "type": "string",
+                    "example": "VSCode e Python 3.12"
                 },
                 "speaker": {
                     "type": "string",
@@ -4098,6 +4397,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "participant_count": {
+                    "type": "integer"
+                },
                 "products": {
                     "type": "array",
                     "items": {
@@ -4112,15 +4414,6 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
-                }
-            }
-        },
-        "models.GetAttendeesRequest": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string",
-                    "example": "18d03d08-267b-4b27-b5bc-e423e2489202"
                 }
             }
         },
@@ -4367,6 +4660,18 @@ const docTemplate = `{
                     "description": "For gifting functionality",
                     "type": "boolean"
                 },
+                "payment_method_id": {
+                    "type": "string"
+                },
+                "payment_method_installments": {
+                    "type": "integer"
+                },
+                "payment_method_token": {
+                    "type": "string"
+                },
+                "payment_method_type": {
+                    "type": "string"
+                },
                 "product_id": {
                     "type": "string"
                 },
@@ -4460,6 +4765,9 @@ const docTemplate = `{
                 "is_super_user": {
                     "type": "boolean"
                 },
+                "is_uenf": {
+                    "type": "boolean"
+                },
                 "is_verified": {
                     "type": "boolean"
                 },
@@ -4475,8 +4783,36 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.Product"
                     }
                 },
+                "uenf_semester": {
+                    "type": "integer"
+                },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "models.UserInfo": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john@carmack.com"
+                },
+                "is_uenf": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Carmack"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John"
+                },
+                "uenf_semester": {
+                    "type": "integer",
+                    "example": 5
                 }
             }
         },

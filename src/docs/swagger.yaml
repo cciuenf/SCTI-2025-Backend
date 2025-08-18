@@ -131,6 +131,13 @@ definitions:
         example: user@example.com
         type: string
     type: object
+  handlers.UserInfoBatch:
+    properties:
+      id_array:
+        items:
+          type: string
+        type: array
+    type: object
   handlers.UserLoginRequest:
     properties:
       email:
@@ -236,6 +243,8 @@ definitions:
         description: Standalone properties
         example: false
         type: boolean
+      level:
+        $ref: '#/definitions/models.ActivityLevel'
       location:
         example: Sala 101
         type: string
@@ -250,6 +259,8 @@ definitions:
         description: If a token is required for this activity
         example: true
         type: boolean
+      requirements:
+        type: string
       speaker:
         example: John Doe
         type: string
@@ -274,6 +285,16 @@ definitions:
         example: 550e8400-e29b-41d4-a716-446655440000
         type: string
     type: object
+  models.ActivityLevel:
+    enum:
+    - easy
+    - medium
+    - hard
+    type: string
+    x-enum-varnames:
+    - ActivityEasy
+    - ActivityMedium
+    - ActivityHard
   models.ActivityRegistration:
     properties:
       access_method:
@@ -353,6 +374,10 @@ definitions:
       is_standalone:
         example: false
         type: boolean
+      level:
+        allOf:
+        - $ref: '#/definitions/models.ActivityLevel'
+        example: easy
       location:
         example: Sala 101
         type: string
@@ -361,6 +386,9 @@ definitions:
         type: integer
       name:
         example: Workshop de Go
+        type: string
+      requirements:
+        example: VSCode e Python 3.12
         type: string
       speaker:
         example: John Doe
@@ -402,6 +430,10 @@ definitions:
       is_standalone:
         example: false
         type: boolean
+      level:
+        allOf:
+        - $ref: '#/definitions/models.ActivityLevel'
+        example: easy
       location:
         example: Sala 101
         type: string
@@ -410,6 +442,9 @@ definitions:
         type: integer
       name:
         example: Workshop de Go
+        type: string
+      requirements:
+        example: VSCode e Python 3.12
         type: string
       speaker:
         example: John Doe
@@ -494,6 +529,8 @@ definitions:
         type: integer
       name:
         type: string
+      participant_count:
+        type: integer
       products:
         items:
           $ref: '#/definitions/models.Product'
@@ -503,12 +540,6 @@ definitions:
       start_date:
         type: string
       updated_at:
-        type: string
-    type: object
-  models.GetAttendeesRequest:
-    properties:
-      id:
-        example: 18d03d08-267b-4b27-b5bc-e423e2489202
         type: string
     type: object
   models.Product:
@@ -680,6 +711,14 @@ definitions:
       is_gift:
         description: For gifting functionality
         type: boolean
+      payment_method_id:
+        type: string
+      payment_method_installments:
+        type: integer
+      payment_method_token:
+        type: string
+      payment_method_type:
+        type: string
       product_id:
         type: string
       quantity:
@@ -744,6 +783,8 @@ definitions:
         type: boolean
       is_super_user:
         type: boolean
+      is_uenf:
+        type: boolean
       is_verified:
         type: boolean
       last_name:
@@ -754,8 +795,28 @@ definitions:
         items:
           $ref: '#/definitions/models.Product'
         type: array
+      uenf_semester:
+        type: integer
       updated_at:
         type: string
+    type: object
+  models.UserInfo:
+    properties:
+      email:
+        example: john@carmack.com
+        type: string
+      is_uenf:
+        example: true
+        type: boolean
+      last_name:
+        example: Carmack
+        type: string
+      name:
+        example: John
+        type: string
+      uenf_semester:
+        example: 5
+        type: integer
     type: object
   models.UserToken:
     properties:
@@ -1372,7 +1433,7 @@ paths:
       summary: Mark attendance for an activity
       tags:
       - activities
-  /events/{slug}/activity/attendants:
+  /events/{slug}/activity/attendants/{id}:
     get:
       consumes:
       - application/json
@@ -1394,12 +1455,11 @@ paths:
         name: slug
         required: true
         type: string
-      - description: ActivityID
-        in: body
-        name: request
+      - description: Activity ID
+        in: path
+        name: id
         required: true
-        schema:
-          $ref: '#/definitions/models.GetAttendeesRequest'
+        type: string
       produces:
       - application/json
       responses:
@@ -1429,63 +1489,6 @@ paths:
       security:
       - Bearer: []
       summary: Retrieves a list of attendants for an activity
-      tags:
-      - activities
-  /events/{slug}/activity/attendees:
-    get:
-      consumes:
-      - application/json
-      description: The end point returns a list of all registrations of a specified
-        activity (all admins)
-      parameters:
-      - description: Bearer {access_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Bearer {refresh_token}
-        in: header
-        name: Refresh
-        required: true
-        type: string
-      - description: Event slug
-        in: path
-        name: slug
-        required: true
-        type: string
-      - description: ActivityID
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.GetAttendeesRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ActivityRegistration'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
-      security:
-      - Bearer: []
-      summary: Retrieves a list of registrations of an activity
       tags:
       - activities
   /events/{slug}/activity/register:
@@ -1582,6 +1585,64 @@ paths:
       security:
       - Bearer: []
       summary: Register to a standalone activity
+      tags:
+      - activities
+  /events/{slug}/activity/registrations/{id}:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all registrations of a specified
+        activity (all admins)
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      - description: Event slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Activity ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ActivityRegistration'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of registrations of an activity
       tags:
       - activities
   /events/{slug}/activity/unattend:
@@ -2452,6 +2513,43 @@ paths:
       summary: Register new user and send a verification email
       tags:
       - auth
+  /resend-verification-code:
+    post:
+      consumes:
+      - application/json
+      description: Generates a new verification code and resends it to the authenticated
+        user
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.NoDataSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Resend verification code
+      tags:
+      - auth
   /revoke-refresh-token:
     post:
       consumes:
@@ -2636,6 +2734,50 @@ paths:
       security:
       - Bearer: []
       summary: Retrieves a list of activities for a user
+      tags:
+      - activities
+  /user-attended-activities:
+    get:
+      consumes:
+      - application/json
+      description: The end point returns a list of all activities that the authenticated
+        user has attended
+      parameters:
+      - description: Bearer {access_token}
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bearer {refresh_token}
+        in: header
+        name: Refresh
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Activity'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Retrieves a list of activities that the current user has attended
       tags:
       - activities
   /user-events:
@@ -2843,6 +2985,76 @@ paths:
       summary: Get user tokens
       tags:
       - products
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get user info from ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserInfo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user info from ID
+      tags:
+      - users
+  /users/batch:
+    post:
+      consumes:
+      - application/json
+      description: Get user info from ID array
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Array list of all users IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserInfoBatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.NoMessageSuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.UserInfoBatch'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.AuthStandardErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user info from ID array
+      tags:
+      - users
   /users/create-event-creator:
     post:
       consumes:

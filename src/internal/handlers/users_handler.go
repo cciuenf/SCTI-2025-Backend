@@ -94,7 +94,7 @@ type UserInfoBatch struct {
 // @Security     Bearer
 // @Param        id path string true "User ID"
 // @Param        request body UserInfoBatch true "Array list of all users IDs"
-// @Success      200  {object}  NoMessageSuccessResponse{data=models.UserInfoBatch}
+// @Success      200  {object}  NoMessageSuccessResponse{data=UserInfoBatch}
 // @Failure      400  {object}  AuthStandardErrorResponse
 // @Router       /users/batch [post]
 func (h *UsersHandler) GetUserInfoBatched(w http.ResponseWriter, r *http.Request) {
