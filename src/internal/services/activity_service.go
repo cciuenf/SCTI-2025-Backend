@@ -42,6 +42,10 @@ func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string
 		return nil, errors.New("activity must be scheduled within event timeframe")
 	}
 
+	if req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
+		return nil, errors.New("activity must have valid level (\"easy\", \"medium\", \"hard\")")
+	}
+
 	activity := models.Activity{
 		ID:                   uuid.New().String(),
 		EventID:              &event.ID,
@@ -59,6 +63,8 @@ func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string
 		IsStandalone:         req.IsStandalone,
 		IsHidden:             req.IsHidden,
 		IsBlocked:            req.IsBlocked,
+		Level:                req.Level,
+		Requirements:         req.Requirements,
 	}
 
 	if req.IsStandalone {
@@ -119,6 +125,10 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 		return nil, errors.New("activity must be scheduled within event timeframe")
 	}
 
+	if req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
+		return nil, errors.New("activity must have valid level (\"easy\", \"medium\", \"hard\")")
+	}
+
 	activity.Name = req.Name
 	activity.Description = req.Description
 	activity.Speaker = req.Speaker
@@ -132,6 +142,8 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 	activity.HasFee = req.HasFee
 	activity.IsHidden = req.IsHidden
 	activity.IsBlocked = req.IsBlocked
+	activity.Level = req.Level
+	activity.Requirements = req.Requirements
 
 	if req.IsStandalone {
 		if req.StandaloneSlug == "" {

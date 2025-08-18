@@ -6,6 +6,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type ActivityLevel string
+
+const (
+	ActivityEasy   ActivityLevel = "easy"
+	ActivityMedium ActivityLevel = "medium"
+	ActivityHard   ActivityLevel = "hard"
+)
+
 // Activity represents a scheduled activity that can be part of an event or standalone
 type Activity struct {
 	ID string `gorm:"type:varchar(36);primaryKey" example:"550e8400-e29b-41d4-a716-446655440000"`
@@ -13,10 +21,12 @@ type Activity struct {
 	// Event relationship - nullable for standalone activities
 	EventID *string `gorm:"type:varchar(36);index" json:"event_id" example:"550e8400-e29b-41d4-a716-446655440001"`
 
-	Name        string `gorm:"type:varchar(100);not null" json:"name" example:"Workshop de Go"`
-	Description string `json:"description" example:"Workshop introdutório sobre a linguagem Go"`
-	Speaker     string `json:"speaker" example:"John Doe"`
-	Location    string `json:"location" example:"Sala 101"`
+	Name         string        `gorm:"type:varchar(100);not null" json:"name" example:"Workshop de Go"`
+	Description  string        `json:"description" example:"Workshop introdutório sobre a linguagem Go"`
+	Speaker      string        `json:"speaker" example:"John Doe"`
+	Location     string        `json:"location" example:"Sala 101"`
+	Requirements string        `gorm:"type:varchar(1024)" json:"requirements"`
+	Level        ActivityLevel `gorm:"not null" json:"level"`
 
 	// Changed from int to boolean flags for capacity management
 	HasUnlimitedCapacity bool `gorm:"default:false" json:"has_unlimited_capacity" example:"true"` // Whether activity has unlimited capacity
@@ -95,40 +105,44 @@ const (
 // ----------------- Request and Response Models ----------------- //
 
 type CreateActivityRequest struct {
-	Name                 string       `json:"name" example:"Workshop de Go"`
-	Description          string       `json:"description" example:"Workshop introdutório sobre a linguagem Go"`
-	Speaker              string       `json:"speaker" example:"John Doe"`
-	Location             string       `json:"location" example:"Sala 101"`
-	Type                 ActivityType `json:"type" example:"palestra"`
-	StartTime            time.Time    `json:"start_time" example:"2024-10-15T14:00:00Z"`
-	EndTime              time.Time    `json:"end_time" example:"2024-10-15T16:00:00Z"`
-	HasUnlimitedCapacity bool         `json:"has_unlimited_capacity" example:"false"`
-	MaxCapacity          int          `json:"max_capacity" example:"30"`
-	IsMandatory          bool         `json:"is_mandatory" example:"false"`
-	HasFee               bool         `json:"has_fee" example:"false"`
-	IsStandalone         bool         `json:"is_standalone" example:"false"`
-	StandaloneSlug       string       `json:"standalone_slug" example:"workshop-go-2024"`
-	IsHidden             bool         `json:"is_hidden" example:"false"`
-	IsBlocked            bool         `json:"is_blocked" example:"false"`
+	Name                 string        `json:"name" example:"Workshop de Go"`
+	Description          string        `json:"description" example:"Workshop introdutório sobre a linguagem Go"`
+	Speaker              string        `json:"speaker" example:"John Doe"`
+	Location             string        `json:"location" example:"Sala 101"`
+	Type                 ActivityType  `json:"type" example:"palestra"`
+	StartTime            time.Time     `json:"start_time" example:"2024-10-15T14:00:00Z"`
+	EndTime              time.Time     `json:"end_time" example:"2024-10-15T16:00:00Z"`
+	HasUnlimitedCapacity bool          `json:"has_unlimited_capacity" example:"false"`
+	MaxCapacity          int           `json:"max_capacity" example:"30"`
+	IsMandatory          bool          `json:"is_mandatory" example:"false"`
+	HasFee               bool          `json:"has_fee" example:"false"`
+	IsStandalone         bool          `json:"is_standalone" example:"false"`
+	StandaloneSlug       string        `json:"standalone_slug" example:"workshop-go-2024"`
+	IsHidden             bool          `json:"is_hidden" example:"false"`
+	IsBlocked            bool          `json:"is_blocked" example:"false"`
+	Level                ActivityLevel `json:"level" example:"easy"`
+	Requirements         string        `json:"requirements" example:"VSCode e Python 3.12"`
 }
 
 type ActivityUpdateRequest struct {
-	ActivityID           string       `json:"activity_id" example:"550e8400-e29b-41d4-a716-446655440000"`
-	Name                 string       `json:"name" example:"Workshop de Go"`
-	Description          string       `json:"description" example:"Workshop introdutório sobre a linguagem Go"`
-	Speaker              string       `json:"speaker" example:"John Doe"`
-	Location             string       `json:"location" example:"Sala 101"`
-	Type                 ActivityType `json:"type" example:"palestra"`
-	StartTime            time.Time    `json:"start_time" example:"2024-10-15T14:00:00Z"`
-	EndTime              time.Time    `json:"end_time" example:"2024-10-15T16:00:00Z"`
-	HasUnlimitedCapacity bool         `json:"has_unlimited_capacity" example:"false"`
-	MaxCapacity          int          `json:"max_capacity" example:"30"`
-	IsMandatory          bool         `json:"is_mandatory" example:"false"`
-	HasFee               bool         `json:"has_fee" example:"false"`
-	IsStandalone         bool         `json:"is_standalone" example:"false"`
-	StandaloneSlug       string       `json:"standalone_slug" example:"workshop-go-2024"`
-	IsHidden             bool         `json:"is_hidden" example:"false"`
-	IsBlocked            bool         `json:"is_blocked" example:"false"`
+	ActivityID           string        `json:"activity_id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	Name                 string        `json:"name" example:"Workshop de Go"`
+	Description          string        `json:"description" example:"Workshop introdutório sobre a linguagem Go"`
+	Speaker              string        `json:"speaker" example:"John Doe"`
+	Location             string        `json:"location" example:"Sala 101"`
+	Type                 ActivityType  `json:"type" example:"palestra"`
+	StartTime            time.Time     `json:"start_time" example:"2024-10-15T14:00:00Z"`
+	EndTime              time.Time     `json:"end_time" example:"2024-10-15T16:00:00Z"`
+	HasUnlimitedCapacity bool          `json:"has_unlimited_capacity" example:"false"`
+	MaxCapacity          int           `json:"max_capacity" example:"30"`
+	IsMandatory          bool          `json:"is_mandatory" example:"false"`
+	HasFee               bool          `json:"has_fee" example:"false"`
+	IsStandalone         bool          `json:"is_standalone" example:"false"`
+	StandaloneSlug       string        `json:"standalone_slug" example:"workshop-go-2024"`
+	IsHidden             bool          `json:"is_hidden" example:"false"`
+	IsBlocked            bool          `json:"is_blocked" example:"false"`
+	Level                ActivityLevel `json:"level" example:"easy"`
+	Requirements         string        `json:"requirements" example:"VSCode e Python 3.12"`
 }
 
 type ActivityRegistrationRequest struct {
