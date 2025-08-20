@@ -4,7 +4,6 @@ import (
 	"errors"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -60,18 +59,10 @@ func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string
 		MaxCapacity:          req.MaxCapacity,
 		IsMandatory:          req.IsMandatory,
 		HasFee:               req.HasFee,
-		IsStandalone:         req.IsStandalone,
 		IsHidden:             req.IsHidden,
 		IsBlocked:            req.IsBlocked,
 		Level:                req.Level,
 		Requirements:         req.Requirements,
-	}
-
-	if req.IsStandalone {
-		if req.StandaloneSlug == "" {
-			return nil, errors.New("standalone activities must have a slug")
-		}
-		activity.StandaloneSlug = strings.ToLower(req.StandaloneSlug)
 	}
 
 	if err := s.ActivityRepo.CreateActivity(&activity); err != nil {
@@ -144,17 +135,6 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 	activity.IsBlocked = req.IsBlocked
 	activity.Level = req.Level
 	activity.Requirements = req.Requirements
-
-	if req.IsStandalone {
-		if req.StandaloneSlug == "" {
-			return nil, errors.New("standalone activities must have a slug")
-		}
-		activity.IsStandalone = true
-		activity.StandaloneSlug = strings.ToLower(req.StandaloneSlug)
-	} else {
-		activity.IsStandalone = false
-		activity.StandaloneSlug = ""
-	}
 
 	if err := s.ActivityRepo.UpdateActivity(activity); err != nil {
 		return nil, errors.New("failed to update activity: " + err.Error())
@@ -428,10 +408,6 @@ func (s *ActivityService) RegisterUserToStandaloneActivity(user models.User, eve
 		return errors.New("activity does not belong to this event")
 	}
 
-	if !activity.IsStandalone {
-		return errors.New("this activity does not support standalone registration")
-	}
-
 	if !activity.HasUnlimitedCapacity {
 		currentRegistrations, maxCapacity, err := s.ActivityRepo.GetActivityCapacity(activityID)
 		if err != nil {
@@ -475,10 +451,6 @@ func (s *ActivityService) UnregisterUserFromStandaloneActivity(user models.User,
 
 	if activity.EventID == nil || *activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
-	}
-
-	if !activity.IsStandalone {
-		return errors.New("this activity does not support standalone registration")
 	}
 
 	isRegistered, registration, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)

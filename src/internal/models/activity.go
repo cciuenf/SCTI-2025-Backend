@@ -46,10 +46,6 @@ type Activity struct {
 	IsHidden  bool `gorm:"default:false" json:"is_hidden" example:"false"`  // Whether the activity is hidden from search/listings
 	IsBlocked bool `gorm:"default:false" json:"is_blocked" example:"false"` // Whether the activity is blocked from interactions
 
-	// Standalone properties
-	IsStandalone   bool   `gorm:"default:false" json:"is_standalone" example:"false"`                              // If it can be registered for independently
-	StandaloneSlug string `gorm:"type:varchar(100);unique;default:null" json:"standalone_slug" example:"scti-wkg"` // Used when standalone
-
 	// Relationships
 	Registrants []User `gorm:"many2many:activity_registrations;constraint:OnDelete:CASCADE" json:"-"`
 
@@ -116,8 +112,6 @@ type CreateActivityRequest struct {
 	MaxCapacity          int           `json:"max_capacity" example:"30"`
 	IsMandatory          bool          `json:"is_mandatory" example:"false"`
 	HasFee               bool          `json:"has_fee" example:"false"`
-	IsStandalone         bool          `json:"is_standalone" example:"false"`
-	StandaloneSlug       string        `json:"standalone_slug" example:"workshop-go-2024"`
 	IsHidden             bool          `json:"is_hidden" example:"false"`
 	IsBlocked            bool          `json:"is_blocked" example:"false"`
 	Level                ActivityLevel `json:"level" example:"easy"`
@@ -137,8 +131,6 @@ type ActivityUpdateRequest struct {
 	MaxCapacity          int           `json:"max_capacity" example:"30"`
 	IsMandatory          bool          `json:"is_mandatory" example:"false"`
 	HasFee               bool          `json:"has_fee" example:"false"`
-	IsStandalone         bool          `json:"is_standalone" example:"false"`
-	StandaloneSlug       string        `json:"standalone_slug" example:"workshop-go-2024"`
 	IsHidden             bool          `json:"is_hidden" example:"false"`
 	IsBlocked            bool          `json:"is_blocked" example:"false"`
 	Level                ActivityLevel `json:"level" example:"easy"`
