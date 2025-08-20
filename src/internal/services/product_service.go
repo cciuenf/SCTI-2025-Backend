@@ -1,14 +1,18 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"scti/config"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mercadopago/sdk-go/pkg/payment"
 )
 
 type ProductService struct {
@@ -288,24 +292,64 @@ func (s *ProductService) GetAllProductsFromEvent(eventSlug string) ([]models.Pro
 	return products, nil
 }
 
+func (s *ProductService) GetUserProductsRelation(user models.User) ([]models.UserProduct, error) {
+	products, err := s.ProductRepo.GetUserProductsRelation(user.ID)
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	return products, nil
+}
+
+func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, error) {
+	userProducts, err := s.ProductRepo.GetUserProductsRelation(user.ID)
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	productIDs := make([]string, len(userProducts))
+	for i, product := range userProducts {
+		productIDs[i] = product.ProductID
+	}
+
+	products, err := s.ProductRepo.GetProductsByIDs(productIDs)
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	return products, nil
+}
+
+func (s *ProductService) GetUserTokens(user models.User) ([]models.UserToken, error) {
+	return s.ProductRepo.GetUserTokens(user.ID)
+}
+
+func (s *ProductService) GetUserPurchases(user models.User) ([]models.Purchase, error) {
+	return s.ProductRepo.GetUserPurchases(user.ID)
+}
+
 // TODO: Integrate bundled products
 func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
-	if req.IsGift && *req.GiftedToEmail == user.Email {
-		return nil, errors.New("invalid operation: cannot gift to yourself")
+	if req.IsGift {
+		if req.GiftedToEmail == nil {
+			return nil, errors.New("gifted_to_email is required when gifting")
+		}
+		if *req.GiftedToEmail == user.Email {
+			return nil, errors.New("invalid operation: cannot gift to yourself")
+		}
 	}
 
 	if req.PaymentMethodID == "" {
 		return nil, errors.New("payment method ID is required")
 	}
-
-	if req.PaymentMethodID != "pix" {
-		if req.PaymentMethodToken == "" {
-			return nil, errors.New("payment method token is required")
-		}
-		if req.PaymentMethodInstallments < 1 {
-			return nil, errors.New("installments must be at least 1")
-		}
-
+	if req.PaymentMethodID == "pix" {
+		return nil, errors.New("use the create-pix-purchase endpoint")
+	}
+	if req.PaymentMethodToken == "" {
+		return nil, errors.New("payment method token is required")
+	}
+	if req.PaymentMethodInstallments < 1 {
+		return nil, errors.New("installments must be at least 1")
 	}
 
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
@@ -373,38 +417,105 @@ func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, re
 	return s.ProductRepo.PurchaseProduct(user, event, product, req, w)
 }
 
-func (s *ProductService) GetUserProductsRelation(user models.User) ([]models.UserProduct, error) {
-	products, err := s.ProductRepo.GetUserProductsRelation(user.ID)
+func (s *ProductService) ForcedPix(user models.User, eventSlug string, req models.PurchaseRequest) (*payment.Response, error) {
+	if req.IsGift {
+		if req.GiftedToEmail == nil {
+			return nil, errors.New("gifted_to_email is required when gifting")
+		}
+		if *req.GiftedToEmail == user.Email {
+			return nil, errors.New("invalid operation: cannot gift to yourself")
+		}
+	}
+
+	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
-		return nil, errors.New("failed to get products: " + err.Error())
+		return nil, errors.New("event not found: " + err.Error())
 	}
 
-	return products, nil
-}
-
-func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, error) {
-	userProducts, err := s.ProductRepo.GetUserProductsRelation(user.ID)
+	isUserRegistered, err := s.ProductRepo.IsUserRegisteredToEvent(user.ID, event.ID)
 	if err != nil {
-		return nil, errors.New("failed to get products: " + err.Error())
+		return nil, errors.New("error checking user registration: " + err.Error())
 	}
 
-	productIDs := make([]string, len(userProducts))
-	for i, product := range userProducts {
-		productIDs[i] = product.ProductID
+	if !isUserRegistered {
+		return nil, errors.New("user is not registered to this event")
 	}
 
-	products, err := s.ProductRepo.GetProductsByIDs(productIDs)
+	product, err := s.ProductRepo.GetProductByID(req.ProductID)
 	if err != nil {
-		return nil, errors.New("failed to get products: " + err.Error())
+		return nil, errors.New("product not found: " + err.Error())
 	}
 
-	return products, nil
-}
+	if product.IsBlocked {
+		return nil, errors.New("product is blocked from purchases")
+	}
 
-func (s *ProductService) GetUserTokens(user models.User) ([]models.UserToken, error) {
-	return s.ProductRepo.GetUserTokens(user.ID)
-}
+	if product.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("product has expired")
+	}
 
-func (s *ProductService) GetUserPurchases(user models.User) ([]models.Purchase, error) {
-	return s.ProductRepo.GetUserPurchases(user.ID)
+	if product.EventID != event.ID {
+		return nil, errors.New("product does not belong to this event")
+	}
+
+	if req.Quantity < 1 {
+		return nil, errors.New("quantity must be at least 1")
+	}
+
+	if !product.HasUnlimitedQuantity {
+		if product.Quantity < req.Quantity {
+			return nil, fmt.Errorf("not enough quantity available, want %v have %v", req.Quantity, product.Quantity)
+		}
+	}
+
+	if req.Quantity > product.MaxOwnableQuantity {
+		return nil, fmt.Errorf("requested quantity exceeds max ownable quantity by: %d", req.Quantity-product.MaxOwnableQuantity)
+	}
+
+	ownedUserProducts, err := s.ProductRepo.GetUserProductByUserIDAndProductID(user.ID, product.ID)
+	if err != nil {
+		return nil, errors.New("failed to get user product: " + err.Error())
+	}
+
+	var ownedQuantity int
+	if len(ownedUserProducts) > 0 {
+		for _, userProduct := range ownedUserProducts {
+			ownedQuantity += userProduct.Quantity
+		}
+	}
+
+	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
+		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
+		return nil, errors.New(text)
+	}
+
+	// ----------------------------------------------------- //
+	// ----------------COMEÇO DO PAGAMENTO ----------------- //
+	// ----------------------------------------------------- //
+
+	mercadoPagoConfig := config.GetMercadoPagoConfig()
+	paymentClient := payment.NewClient(mercadoPagoConfig)
+	request := payment.Request{
+		TransactionAmount: (float64(product.PriceInt) / 100) * float64(req.Quantity),
+		PaymentMethodID:   "pix",
+		Payer: &payment.PayerRequest{
+			Email: user.Email,
+		},
+	}
+	resource, err := paymentClient.Create(context.Background(), request)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("failed to create mercado pago payment")
+	}
+
+	// -------------------------------------------------- //
+	// ---------------- FIM DO PAGAMENTO ---------------- //
+	// -------------------------------------------------- //
+
+	err = s.ProductRepo.CreatePixPurchase(user, product, resource.ID, req)
+	if err != nil {
+		return nil, errors.New("could not create a pix statement")
+	}
+
+	return resource, nil
 }
