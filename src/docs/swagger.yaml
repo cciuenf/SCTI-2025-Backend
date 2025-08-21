@@ -213,11 +213,10 @@ definitions:
         example: "2024-10-15T16:00:00Z"
         type: string
       event_id:
-        description: Event relationship - nullable for standalone activities
         example: 550e8400-e29b-41d4-a716-446655440001
         type: string
       has_fee:
-        description: If an event ticket or standalone ticket is required
+        description: If an event ticket or token is required
         example: true
         type: boolean
       has_unlimited_capacity:
@@ -239,10 +238,6 @@ definitions:
         description: Access control
         example: true
         type: boolean
-      is_standalone:
-        description: Standalone properties
-        example: false
-        type: boolean
       level:
         $ref: '#/definitions/models.ActivityLevel'
       location:
@@ -263,10 +258,6 @@ definitions:
         type: string
       speaker:
         example: John Doe
-        type: string
-      standalone_slug:
-        description: Used when standalone
-        example: scti-wkg
         type: string
       start_time:
         example: "2024-10-15T14:00:00Z"
@@ -309,9 +300,6 @@ definitions:
         type: string
       deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
-      is_standalone_registration:
-        description: Is this from an event or standalone
-        type: boolean
       product_id:
         description: Which product was used (if applicable)
         type: string
@@ -371,9 +359,6 @@ definitions:
       is_mandatory:
         example: false
         type: boolean
-      is_standalone:
-        example: false
-        type: boolean
       level:
         allOf:
         - $ref: '#/definitions/models.ActivityLevel'
@@ -392,9 +377,6 @@ definitions:
         type: string
       speaker:
         example: John Doe
-        type: string
-      standalone_slug:
-        example: workshop-go-2024
         type: string
       start_time:
         example: "2024-10-15T14:00:00Z"
@@ -427,9 +409,6 @@ definitions:
       is_mandatory:
         example: false
         type: boolean
-      is_standalone:
-        example: false
-        type: boolean
       level:
         allOf:
         - $ref: '#/definitions/models.ActivityLevel'
@@ -448,9 +427,6 @@ definitions:
         type: string
       speaker:
         example: John Doe
-        type: string
-      standalone_slug:
-        example: workshop-go-2024
         type: string
       start_time:
         example: "2024-10-15T14:00:00Z"
@@ -1539,54 +1515,6 @@ paths:
       summary: Register to an activity
       tags:
       - activities
-  /events/{slug}/activity/register-standalone:
-    post:
-      consumes:
-      - application/json
-      description: Registers the authenticated user to a standalone activity without
-        requiring event registration
-      parameters:
-      - description: Bearer {access_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Bearer {refresh_token}
-        in: header
-        name: Refresh
-        required: true
-        type: string
-      - description: Event slug
-        in: path
-        name: slug
-        required: true
-        type: string
-      - description: Activity registration info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.ActivityRegistrationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.NoDataSuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
-      security:
-      - Bearer: []
-      summary: Register to a standalone activity
-      tags:
-      - activities
   /events/{slug}/activity/registrations/{id}:
     get:
       consumes:
@@ -1742,53 +1670,6 @@ paths:
       security:
       - Bearer: []
       summary: Unregister from an activity
-      tags:
-      - activities
-  /events/{slug}/activity/unregister-standalone:
-    post:
-      consumes:
-      - application/json
-      description: Unregisters the authenticated user from a standalone activity
-      parameters:
-      - description: Bearer {access_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Bearer {refresh_token}
-        in: header
-        name: Refresh
-        required: true
-        type: string
-      - description: Event slug
-        in: path
-        name: slug
-        required: true
-        type: string
-      - description: Activity registration info
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.ActivityRegistrationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.NoDataSuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.ActivityStandardErrorResponse'
-      security:
-      - Bearer: []
-      summary: Unregister from a standalone activity
       tags:
       - activities
   /events/{slug}/demote:

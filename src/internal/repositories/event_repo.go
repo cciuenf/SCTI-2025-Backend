@@ -283,3 +283,28 @@ func (r *EventRepo) GetEventBoughtProductsIDs(eventID string) ([]string, error) 
 
 	return purchasedProductsIDs, nil
 }
+
+func (r *EventRepo) GetAllActivitiesFromEvent(eventID string) ([]models.Activity, error) {
+	var activities []models.Activity
+	if err := r.DB.Where("event_id = ? AND is_hidden = ?", eventID, false).Find(&activities).Error; err != nil {
+		return nil, err
+	}
+	return activities, nil
+}
+
+func (r *EventRepo) RegisterUserToActivity(registration *models.ActivityRegistration) error {
+	var count int64
+	err := r.DB.Model(&models.ActivityRegistration{}).
+		Where("activity_id = ? AND user_id = ?", registration.ActivityID, registration.UserID).
+		Count(&count).Error
+
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return errors.New("user already registered to this activity")
+	}
+
+	return r.DB.Create(registration).Error
+}

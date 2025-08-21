@@ -98,10 +98,8 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("POST /events/{slug}/activity/register", authMiddleware(http.HandlerFunc(activityHandler.RegisterUserToActivity)))
 	mux.Handle("POST /events/{slug}/activity/unregister", authMiddleware(http.HandlerFunc(activityHandler.UnregisterUserFromActivity)))
 	mux.Handle("GET /events/{slug}/activity/registrations/{id}", authMiddleware(http.HandlerFunc(activityHandler.GetActivityRegistrations)))
-	mux.Handle("POST /events/{slug}/activity/attend", authMiddleware(http.HandlerFunc(activityHandler.AttendActivity)))                                      // Only for admins to mark attendance
-	mux.Handle("POST /events/{slug}/activity/unattend", authMiddleware(http.HandlerFunc(activityHandler.UnattendActivity)))                                  // Only for master admins and above to mark unattendance
-	mux.Handle("POST /events/{slug}/activity/register-standalone", authMiddleware(http.HandlerFunc(activityHandler.RegisterUserToStandaloneActivity)))       // Only if the user is not registered to the event that contains the activity
-	mux.Handle("POST /events/{slug}/activity/unregister-standalone", authMiddleware(http.HandlerFunc(activityHandler.UnregisterUserFromStandaloneActivity))) // Only if the user is not registered to the event that contains the activity
+	mux.Handle("POST /events/{slug}/activity/attend", authMiddleware(http.HandlerFunc(activityHandler.AttendActivity)))     // Only for admins to mark attendance
+	mux.Handle("POST /events/{slug}/activity/unattend", authMiddleware(http.HandlerFunc(activityHandler.UnattendActivity))) // Only for master admins and above to mark unattendance
 	mux.Handle("GET /events/{slug}/activity/attendants/{id}", authMiddleware(http.HandlerFunc(activityHandler.GetActivityAttendants)))
 
 	// Event Product routes accessed by event slug

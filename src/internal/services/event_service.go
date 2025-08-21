@@ -154,13 +154,38 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 		RegisteredAt: time.Now(),
 	}
 
-	err = s.SendRegistrationEmail(&user, event)
-	if err != nil {
-		return err
-	}
+	go func() {
+		if err := s.SendRegistrationEmail(&user, event); err != nil {
+			fmt.Printf("Failed to send registration email: %v\n", err)
+		}
+	}()
 
 	event.ParticipantCount++
 	s.EventRepo.UpdateEvent(event)
+
+	go func() {
+		activities, err := s.EventRepo.GetAllActivitiesFromEvent(event.ID)
+		if err != nil {
+			fmt.Printf("Failed to get activities for event %s: %v\n", event.ID, err)
+			return
+		}
+
+		for _, activity := range activities {
+			if activity.IsMandatory {
+				activityRegistration := models.ActivityRegistration{
+					ActivityID:   activity.ID,
+					UserID:       user.ID,
+					RegisteredAt: time.Now(),
+					AccessMethod: "event",
+				}
+
+				if err := s.EventRepo.RegisterUserToActivity(&activityRegistration); err != nil {
+					fmt.Printf("Failed to register user %s to mandatory activity %s: %v\n",
+						user.ID, activity.ID, err)
+				}
+			}
+		}
+	}()
 
 	return s.EventRepo.CreateEventRegistration(&registration)
 }
