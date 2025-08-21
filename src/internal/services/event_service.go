@@ -125,7 +125,14 @@ func (s *EventService) DeleteEvent(user models.User, slug string) error {
 		return errors.New("event has products that were bought, cannot delete")
 	}
 
-	// TODO: Prohibit deletion if any user attended any activity from the event
+	attencances, err := s.GetAllAttendances(user, slug)
+	if err != nil {
+		return err
+	}
+
+	if len(attencances) > 0 {
+		return errors.New("cannot delete the event if it has activities that have been attended")
+	}
 
 	return s.EventRepo.DeleteEvent(slug)
 }
@@ -277,9 +284,25 @@ func (s *EventService) UnregisterUserFromEvent(user models.User, slug string) er
 		return errors.New("user is not registered to this event")
 	}
 
-	// TODO: Prohibit unregistration if the user paid for any product from the event
+	productsRelation, err := s.EventRepo.GetUserProductsRelation(user.ID)
+	if err != nil {
+		return err
+	}
+	products, err := s.EventRepo.GetProductsFromUserProducts(productsRelation)
+	if err != nil {
+		return err
+	}
+	if len(products) > 0 {
+		return errors.New("cannot unregister from event where you bought products")
+	}
 
-	// TODO: Prohibit unregistration if the user attended any activity from the event
+	actvities, err := s.EventRepo.GetUserAttendedActivities(user.ID)
+	if err != nil {
+		return err
+	}
+	if len(actvities) > 0 {
+		return errors.New("cannot unregister from event where you attended activities")
+	}
 
 	if event.ParticipantCount > 0 {
 		event.ParticipantCount--
@@ -434,4 +457,26 @@ func (s *EventService) GetEventsCreatedByUser(user models.User) ([]models.Event,
 
 func (s *EventService) GetUserEvents(user models.User) ([]models.Event, error) {
 	return s.EventRepo.GetUserEvents(user.ID)
+}
+
+func (s *EventService) GetAllAttendances(admin models.User, eventSlug string) ([]models.ActivityRegistration, error) {
+	event, err := s.EventRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	// Check admin permissions
+	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
+		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return nil, errors.New("unauthorized: only admins can get all attendances")
+		}
+	}
+
+	attendances, err := s.EventRepo.GetAllAttendancesFromEvent(event.ID)
+	if err != nil {
+		return nil, errors.New("failed to retrieve all attendances: " + err.Error())
+	}
+
+	return attendances, nil
 }

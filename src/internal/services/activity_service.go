@@ -590,3 +590,25 @@ func (s *ActivityService) GetUserAttendedActivities(user models.User) ([]models.
 
 	return userActivities, nil
 }
+
+func (s *ActivityService) GetAllAttendances(admin models.User, eventSlug string) ([]models.ActivityRegistration, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	// Check admin permissions
+	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
+		adminStatus, err := s.ActivityRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return nil, errors.New("unauthorized: only admins can get all attendances")
+		}
+	}
+
+	attendances, err := s.ActivityRepo.GetAllAttendancesFromEvent(event.ID)
+	if err != nil {
+		return nil, errors.New("failed to retrieve all attendances: " + err.Error())
+	}
+
+	return attendances, nil
+}

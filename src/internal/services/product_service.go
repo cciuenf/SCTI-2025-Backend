@@ -25,8 +25,6 @@ func NewProductService(repo *repos.ProductRepo) *ProductService {
 	}
 }
 
-// TODO: Integrate bundled products
-// TODO: Event access target should give access to all activities in the event
 func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -134,7 +132,6 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 	return &product, nil
 }
 
-// TODO: Integrate bundled products
 func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, productID string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -328,7 +325,6 @@ func (s *ProductService) GetUserPurchases(user models.User) ([]models.Purchase, 
 	return s.ProductRepo.GetUserPurchases(user.ID)
 }
 
-// TODO: Integrate bundled products
 func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
 	if req.IsGift {
 		if req.GiftedToEmail == nil {

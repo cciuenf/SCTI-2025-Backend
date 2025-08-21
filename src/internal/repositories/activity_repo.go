@@ -334,3 +334,18 @@ func (r *ActivityRepo) GetUserAttendedActivities(userID string) ([]models.Activi
 
 	return activities, nil
 }
+
+func (r *ActivityRepo) GetAllAttendancesFromEvent(eventID string) ([]models.ActivityRegistration, error) {
+	var attendances []models.ActivityRegistration
+
+	err := r.DB.
+		Joins("JOIN activities ON activity_registrations.activity_id = activities.id").
+		Where("activities.event_id = ? AND activity_registrations.attended_at IS NOT NULL", eventID).
+		Find(&attendances).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return attendances, nil
+}

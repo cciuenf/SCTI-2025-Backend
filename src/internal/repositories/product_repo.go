@@ -164,6 +164,29 @@ func (r *ProductRepo) GetUserProductsRelation(userID string) ([]models.UserProdu
 	return userProducts, nil
 }
 
+func (r *ProductRepo) GetProductsFromUserProducts(userProducts []models.UserProduct) ([]models.Product, error) {
+	if len(userProducts) == 0 {
+		return []models.Product{}, nil
+	}
+
+	productIDMap := make(map[string]bool)
+	var productIDs []string
+
+	for _, userProduct := range userProducts {
+		if !productIDMap[userProduct.ProductID] {
+			productIDMap[userProduct.ProductID] = true
+			productIDs = append(productIDs, userProduct.ProductID)
+		}
+	}
+
+	products, err := r.GetProductsByIDs(productIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
 func (r *ProductRepo) GetUserTokens(userID string) ([]models.UserToken, error) {
 	var userTokens []models.UserToken
 	if err := r.DB.Where("user_id = ?", userID).Find(&userTokens).Error; err != nil {
@@ -172,7 +195,6 @@ func (r *ProductRepo) GetUserTokens(userID string) ([]models.UserToken, error) {
 	return userTokens, nil
 }
 
-// TODO: Think very carefully about this but for now, just do the basic proccess as I think it should be done
 func (r *ProductRepo) PurchaseProduct(user models.User, event *models.Event, product *models.Product, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
 	tx := r.DB.Begin()
 	if tx.Error != nil {
@@ -541,7 +563,7 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 		}
 	}
 
-	// TODO: Fix if AccessTarget is EventTarget
+	// TODO: Access target logic needs to be rethinked for EventAccess entirely
 	for _, access := range product.AccessTargets {
 		if !access.IsEvent {
 			registration := &models.ActivityRegistration{
