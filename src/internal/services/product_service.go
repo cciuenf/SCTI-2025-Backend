@@ -89,7 +89,7 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 			if err != nil {
 				return nil, errors.New("invalid access target, couldn't find activity")
 			}
-			if activity.EventID != nil && target.EventID != nil && *activity.EventID != *target.EventID {
+			if target.EventID != nil && activity.EventID != *target.EventID {
 				return nil, errors.New("invalid access target: targeting inexistent activity")
 			}
 		}
@@ -218,7 +218,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 			if err != nil {
 				return nil, errors.New("invalid access target, couldn't find activity")
 			}
-			if activity.EventID != nil && target.EventID != nil && *activity.EventID != *target.EventID {
+			if target.EventID != nil && activity.EventID != *target.EventID {
 				return nil, errors.New("invalid access target: targeting inexistent activity")
 			}
 		}
