@@ -430,7 +430,6 @@ func (r *ProductRepo) DeletePixPurchase(purchaseID int) error {
 	return r.DB.Where("purchase_id = ?", purchaseID).Delete(&models.PixPurchase{}).Error
 }
 
-// TODO: Refun user in case of missing item
 func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error {
 	user, err := r.GetUserByID(pixPurchase.UserID)
 	if err != nil {
@@ -542,41 +541,99 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 		}
 	}
 
-	// TODO Fix if AccessTarget is EventTarget
+	// TODO: Fix if AccessTarget is EventTarget
 	for _, access := range product.AccessTargets {
-		registration := &models.ActivityRegistration{
-			ActivityID:   access.TargetID,
-			ProductID:    &product.ID,
-			AccessMethod: string(models.AccessMethodProduct),
-			UserID:       userProduct.UserID,
-		}
-		var count int64
-		err = tx.Model(&models.ActivityRegistration{}).
-			Where("activity_id = ? AND user_id = ?", registration.ActivityID, registration.UserID).
-			Count(&count).Error
+		if !access.IsEvent {
+			registration := &models.ActivityRegistration{
+				ActivityID:   access.TargetID,
+				ProductID:    &product.ID,
+				AccessMethod: string(models.AccessMethodProduct),
+				UserID:       userProduct.UserID,
+			}
+			var count int64
+			err = tx.Model(&models.ActivityRegistration{}).
+				Where("activity_id = ? AND user_id = ?", registration.ActivityID, registration.UserID).
+				Count(&count).Error
 
-		if err != nil && err != gorm.ErrRecordNotFound {
-			tx.Rollback()
-			log.Println("Error 10")
-			return errors.New("failed to get activity registration: " + err.Error())
-		}
+			if err != nil && err != gorm.ErrRecordNotFound {
+				tx.Rollback()
+				log.Println("Error 10")
+				return errors.New("failed to get activity registration: " + err.Error())
+			}
 
-		if count > 0 {
-			continue
-		}
+			if count > 0 {
+				continue
+			}
 
-		err = tx.Create(registration).Error
-		if err != nil {
-			tx.Rollback()
-			log.Println("Error 11")
-			return errors.New("failed to create activity registration: " + err.Error())
-		}
+			err = tx.Create(registration).Error
+			if err != nil {
+				tx.Rollback()
+				log.Println("Error 11")
+				return errors.New("failed to create activity registration: " + err.Error())
+			}
+		} else {
+			if access.EventID == nil {
+				tx.Rollback()
+				log.Println("error 12")
+				return errors.New("event access should not have nil event id: " + err.Error())
+			}
+			activities, err := r.GetAllActivitiesFromEvent(*access.EventID)
+			if err != nil {
+				tx.Rollback()
+				log.Println("error 13")
+				return errors.New("error getting activities: " + err.Error())
+			}
+			for _, activity := range activities {
+				shouldRegister := activity.IsMandatory || (!activity.HasFee)
 
-		if err := tx.Commit().Error; err != nil {
-			tx.Rollback()
-			log.Println("Error 12")
-			return errors.New("failed to create activity registration: " + err.Error())
+				if shouldRegister {
+					registration := models.ActivityRegistration{
+						ActivityID:   activity.ID,
+						UserID:       user.ID,
+						RegisteredAt: time.Now(),
+						AccessMethod: string(models.AccessMethodProduct),
+					}
+
+					var count int64
+					err = tx.Model(&models.ActivityRegistration{}).
+						Where("activity_id = ? AND user_id = ?", registration.ActivityID, registration.UserID).
+						Count(&count).Error
+					if err != nil && err != gorm.ErrRecordNotFound {
+						tx.Rollback()
+						log.Println("Error 14")
+						return errors.New("failed to get activity registration: " + err.Error())
+					}
+
+					// Skip if already registered
+					if count > 0 {
+						continue
+					}
+
+					// Create the registration
+					err = tx.Create(&registration).Error
+					if err != nil {
+						tx.Rollback()
+						log.Println("Error 15")
+						return errors.New("failed to create activity registration: " + err.Error())
+					}
+				}
+			}
 		}
 	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		log.Println("Error 16")
+		return errors.New("failed to create activity registration: " + err.Error())
+	}
+
 	return nil
+}
+
+func (r *ProductRepo) GetAllActivitiesFromEvent(eventID string) ([]models.Activity, error) {
+	var activities []models.Activity
+	if err := r.DB.Where("event_id = ? AND is_hidden = ?", eventID, false).Find(&activities).Error; err != nil {
+		return nil, err
+	}
+	return activities, nil
 }
