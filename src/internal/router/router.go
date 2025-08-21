@@ -113,6 +113,12 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("GET /user-tokens", authMiddleware(http.HandlerFunc(productHandler.GetUserTokens)))
 	mux.Handle("GET /user-purchases", authMiddleware(http.HandlerFunc(productHandler.GetUserPurchases)))
 
+	// Payment Only Route
+	mux.Handle("POST /events/{slug}/forced-pix", authMiddleware(http.HandlerFunc(productHandler.ForcedPix)))
+
+	// Webhook routes
+	mux.HandleFunc("POST /webhook/mp", productHandler.MPWebhook)
+
 	loggingMux := mw.WithLogging(mux, logsDir)
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // change to localhost:PORT of frontend

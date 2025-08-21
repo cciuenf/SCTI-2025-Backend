@@ -408,3 +408,175 @@ func (r *ProductRepo) storeFailedTransaction(resource *order.Response, user mode
 
 	// Send alerts to administrators
 }
+
+func (r *ProductRepo) CreatePixPurchase(user models.User, product *models.Product, purchaseID int, req models.PurchaseRequest) error {
+	var pp models.PixPurchase
+	pp.UserID = user.ID
+	pp.ProductID = product.ID
+	pp.PurchaseID = purchaseID
+	pp.Quantity = req.Quantity
+	return r.DB.Create(&pp).Error
+}
+
+func (r *ProductRepo) GetPixPurchase(purchaseID int) (*models.PixPurchase, error) {
+	var purchase models.PixPurchase
+	if err := r.DB.Where("purchase_id = ?", purchaseID).First(&purchase).Error; err != nil {
+		return nil, err
+	}
+	return &purchase, nil
+}
+
+func (r *ProductRepo) DeletePixPurchase(purchaseID int) error {
+	return r.DB.Where("purchase_id = ?", purchaseID).Delete(&models.PixPurchase{}).Error
+}
+
+// TODO: Refun user in case of missing item
+func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error {
+	user, err := r.GetUserByID(pixPurchase.UserID)
+	if err != nil {
+		log.Println("Error 1")
+		return errors.New("UHM FUCK")
+	}
+
+	product, err := r.GetProductByID(pixPurchase.ProductID)
+	if err != nil {
+		log.Println("Error 2")
+		return errors.New("UHM FUCK")
+	}
+
+	tx := r.DB.Begin()
+	if tx.Error != nil {
+		log.Println("Error 3")
+		return errors.New("failed to begin transaction: " + tx.Error.Error())
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Query for existing user product
+	purchaseID := uuid.New().String()
+	purchase := &models.Purchase{
+		ID:            purchaseID,
+		UserID:        user.ID,
+		ProductID:     product.ID,
+		Quantity:      pixPurchase.Quantity,
+		IsGift:        pixPurchase.IsGift,
+		GiftedToEmail: pixPurchase.GiftedToEmail,
+	}
+
+	err = tx.Create(purchase).Error
+	if err != nil {
+		tx.Rollback()
+		log.Println("Error 4")
+		return errors.New("failed to create purchase: " + err.Error())
+	}
+
+	if !product.HasUnlimitedQuantity {
+		product.Quantity -= pixPurchase.Quantity
+		err = tx.Save(product).Error
+		if err != nil {
+			tx.Rollback()
+			log.Println("Error 5")
+			return errors.New("failed to update product quantity: " + err.Error())
+		}
+	}
+
+	userProduct := &models.UserProduct{
+		ID:         uuid.New().String(),
+		PurchaseID: purchaseID,
+		ProductID:  product.ID,
+		Quantity:   pixPurchase.Quantity,
+	}
+
+	if pixPurchase.IsGift {
+		if pixPurchase.GiftedToEmail == nil {
+			tx.Rollback()
+			log.Println("Error 6")
+			return errors.New("can't gift to nil email")
+		}
+		giftedUser, err := r.GetUserByEmail(*pixPurchase.GiftedToEmail)
+		if err != nil {
+			tx.Rollback()
+			log.Println("Error 7")
+			return errors.New("failed to retrieve user for gifting")
+		}
+		userProduct.ReceivedAsGift = true
+		userProduct.GiftedFromID = &user.ID
+		userProduct.UserID = giftedUser.ID
+	} else {
+		userProduct.ReceivedAsGift = false
+		userProduct.GiftedFromID = nil
+		userProduct.UserID = user.ID
+	}
+
+	err = tx.Create(userProduct).Error
+	if err != nil {
+		tx.Rollback()
+		log.Println("Error 8")
+		return errors.New("failed to create user product: " + err.Error())
+	}
+
+	userTokens := make([]models.UserToken, product.TokenQuantity)
+	if product.IsActivityToken {
+		for i := 0; i < product.TokenQuantity; i++ {
+			token := &models.UserToken{
+				ID:            uuid.New().String(),
+				EventID:       product.EventID,
+				UserID:        userProduct.UserID,
+				UserProductID: userProduct.ID,
+				ProductID:     product.ID,
+				IsUsed:        false,
+				UsedAt:        nil,
+				UsedForID:     nil,
+			}
+
+			err = tx.Create(token).Error
+			if err != nil {
+				tx.Rollback()
+				log.Println("Error 9")
+				return errors.New("failed to create user token: " + err.Error())
+			}
+			userTokens[i] = *token
+		}
+	}
+
+	// TODO Fix if AccessTarget is EventTarget
+	for _, access := range product.AccessTargets {
+		registration := &models.ActivityRegistration{
+			ActivityID:   access.TargetID,
+			ProductID:    &product.ID,
+			AccessMethod: string(models.AccessMethodProduct),
+			UserID:       userProduct.UserID,
+		}
+		var count int64
+		err = tx.Model(&models.ActivityRegistration{}).
+			Where("activity_id = ? AND user_id = ?", registration.ActivityID, registration.UserID).
+			Count(&count).Error
+
+		if err != nil && err != gorm.ErrRecordNotFound {
+			tx.Rollback()
+			log.Println("Error 10")
+			return errors.New("failed to get activity registration: " + err.Error())
+		}
+
+		if count > 0 {
+			continue
+		}
+
+		err = tx.Create(registration).Error
+		if err != nil {
+			tx.Rollback()
+			log.Println("Error 11")
+			return errors.New("failed to create activity registration: " + err.Error())
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			tx.Rollback()
+			log.Println("Error 12")
+			return errors.New("failed to create activity registration: " + err.Error())
+		}
+	}
+	return nil
+}

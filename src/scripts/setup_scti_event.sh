@@ -143,8 +143,8 @@ create_event() {
     
     local event_data='{
         "name": "Semana de Ciência e Tecnologia da Informação",
-        "slug": "scti-2025",
-        "description": "Bem vindos à SCTI! Uma semana repleta de palestras, workshops e atividades sobre tecnologia da informação.",
+        "slug": "scti",
+        "description": "Bem vindos à SCTI! Uma semana repleta de palestras, minicursos e atividades sobre tecnologia da informação.",
         "location": "UENF - Universidade Estadual do Norte Fluminense",
         "start_date": "2025-09-01T00:00:00Z",
         "end_date": "2025-09-05T23:59:59Z",
@@ -245,7 +245,7 @@ create_activity() {
         echo
     fi
     
-    local response=$(curl -s -X POST "$BASE_URL/events/scti-2025/activity" \
+    local response=$(curl -s -X POST "$BASE_URL/events/scti/activity" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H "Refresh: Bearer $REFRESH_TOKEN" \
@@ -280,43 +280,67 @@ create_all_activities() {
     local total_count=0
     
     # Day 1 - September 1, 2025
-    create_activity "Abertura da SCTI 2025" "Cerimônia de abertura com autoridades e apresentação da programação da semana" "Comissão Organizadora" "Auditório Principal" "palestra" "2025-09-01T09:00:00Z" "2025-09-01T10:30:00Z" true 0 true false && ((success_count++))
+    create_activity "Abertura da Semana Acadêmica" "Cerimônia de abertura com autoridades e apresentação da semana" "PROGRAD" "Auditório Principal" "palestra" "2025-09-01T09:00:00Z" "2025-09-01T12:00:00Z" true 0 true false && ((success_count++))
     ((total_count++))
     
-    create_activity "Inteligência Artificial na Educação" "Como a IA está transformando o ensino e aprendizagem" "Dr. Maria Silva" "Sala 101" "palestra" "2025-09-01T14:00:00Z" "2025-09-01T15:30:00Z" false 50 false true && ((success_count++))
+    create_activity "Mesa redonda sobre estágios" "Conectar estudantes de Ciência da Computação com o mercado de trabalho através de experiências reais de estágio." "Estagiários de Computação" "Cine Darcy" "palestra" "2025-09-01T14:00:00Z" "2025-09-01T15:30:00Z" true 0 true false && ((success_count++))
     ((total_count++))
     
-    create_activity "Workshop de Python para Iniciantes" "Aprenda os fundamentos de Python com exercícios práticos" "Prof. João Santos" "Laboratório de Informática 1" "minicurso" "2025-09-01T16:00:00Z" "2025-09-01T18:00:00Z" false 25 false true && ((success_count++))
+    create_activity "Hackathon" "SEM DESCRIÇÂO" "Comissão SCTI" "Cine Darcy" "2025-09-01T16:00:00Z" "2025-09-01T18:00:00Z" true 0 true false && ((success_count++))
     ((total_count++))
     
     # Day 2 - September 2, 2025
-    create_activity "Cibersegurança: Desafios e Soluções" "Panorama atual da segurança cibernética e tendências futuras" "Dr. Carlos Oliveira" "Auditório Principal" "palestra" "2025-09-02T09:00:00Z" "2025-09-02T10:30:00Z" true 0 false false && ((success_count++))
+    create_activity "Curso Prático de Pentest usando Kali Linux" "TEMP DESC" "Prof. Vinicius Barcelos" "INF-1" "minicurso" "2025-09-02T08:30:00Z" "2025-09-02T12:00:00Z" false 25 false true && ((success_count++))
     ((total_count++))
     
-    create_activity "Desenvolvimento Web com React" "Criando aplicações web modernas com React e TypeScript" "Eng. Ana Costa" "Sala 102" "minicurso" "2025-09-02T14:00:00Z" "2025-09-02T17:00:00Z" false 30 false true && ((success_count++))
+    create_activity "MovieTracker: Criando um app com React Native" "TEMP DESC" "Renan Souza Oliveira" "INF-2" "minicurso" "2025-09-02T08:30:00Z" "2025-09-02T12:00:00Z" false 25 false true && ((success_count++))
     ((total_count++))
     
+    create_activity "Desburocratizando o mercado de trabalho" "TEMP DESC" "Patrick Pereira" "Cine Darcy" "palestra" "2025-09-02T14:00:00Z" "2025-09-02T15:30:00Z" true 0 true false  && ((success_count++)) 
+    ((total_count++))
+
+    create_activity "Como avaliar um modelo de machine learning e seus desafios." "TEMP DESC" "Clébio Júnior" "Cine Darcy" "palestra" "2025-09-02T16:00:00Z" "2025-09-02T18:00:00Z" true 0 true false  && ((success_count++)) 
+    ((total_count++))
+
     # Day 3 - September 3, 2025
-    create_activity "Machine Learning na Prática" "Implementando algoritmos de ML em projetos reais" "Dr. Pedro Almeida" "Auditório Principal" "palestra" "2025-09-03T09:00:00Z" "2025-09-03T10:30:00Z" true 0 false false && ((success_count++))
+    create_activity "Engenharia e Ciência de Dados com Big Data: Prática com PySpark no Databricks" "TEMP DESC" "João Paulo Seixas" "INF-1" "minicurso" "2025-09-03T08:30:00Z" "2025-09-03T12:00:00Z" false 25 false true && ((success_count++))
     ((total_count++))
     
-    create_activity "Hackathon SCTI 2025" "Competição de desenvolvimento com prêmios para os melhores projetos" "Comissão Organizadora" "Laboratório de Informática 2" "minicurso" "2025-09-03T14:00:00Z" "2025-09-03T20:00:00Z" false 40 false true && ((success_count++))
+    create_activity "Dia a dia de desenvolvimento web: Entendo como funciona na pratica" "TEMP DESC" "Jhulian Pereira Manhães" "INF-2" "minicurso" "2025-09-03T08:30:00Z" "2025-09-03T12:00:00Z" false 25 false true && ((success_count++))
     ((total_count++))
     
+    create_activity "Inteligência Artificial no Trabalho: Aplicações em Ambientes Cloud" "TEMP DESC" "João Paulo Seixas" "Cine Darcy" "palestra" "2025-09-03T14:00:00Z" "2025-09-03T15:30:00Z" true 0 true false && ((success_count++))
+    ((total_count++))
+
+    create_activity "Matemática Aplicada no Ofício" "TEMP DESC" "Prof. João Luiz" "Cine Darcy" "palestra" "2025-09-03T16:00:00Z" "2025-09-03T18:00:00Z" true 0 true false && ((success_count++))
+    ((total_count++))
+
     # Day 4 - September 4, 2025
-    create_activity "Blockchain e Criptomoedas" "Entendendo a tecnologia por trás das criptomoedas" "Dr. Fernando Lima" "Sala 103" "palestra" "2025-09-04T09:00:00Z" "2025-09-04T10:30:00Z" false 60 false false && ((success_count++))
+    create_activity "Introdução à UX com IA" "TEMP DESC" "Diana de Sales" "INF-2" "minicurso" "2025-09-04T08:30:00Z" "2025-09-04T12:00:00Z" false 25 false true && ((success_count++))
     ((total_count++))
     
-    create_activity "Workshop de Git e GitHub" "Controle de versão e colaboração em projetos de software" "Prof. Roberta Ferreira" "Laboratório de Informática 1" "minicurso" "2025-09-04T14:00:00Z" "2025-09-04T16:00:00Z" false 35 false true && ((success_count++))
+    create_activity "Montagem e Desmontagem de PC" "TEMP DESC" "Prof. Luiz Ramirez" "INF-1" "minicurso" "2025-09-04T08:30:00Z" "2025-09-04T12:00:00Z" false 25 false true && ((success_count++))
     ((total_count++))
     
+    create_activity "Erlang, MCP e Kubernetes: Lições de um Sistema Distribuído em Produção" "TEMP DESC" "Zoey de Souza" "Cine Darcy" "palestra" "2025-09-04T14:00:00Z" "2025-09-04T15:30:00Z" true 0 true false && ((success_count++))
+    ((total_count++))
+    
+    create_activity "Palestra do Mano Deyvin" "TEMP DESC" "Mano Deyvin" "Cine Darcy" "palestra" "2025-09-04T16:00:00Z" "2025-09-04T18:00:00Z" true 0 true false && ((success_count++))
+    ((total_count++))
+
     # Day 5 - September 5, 2025
-    create_activity "Futuro da Computação Quântica" "Perspectivas e aplicações da computação quântica" "Dr. Luiza Santos" "Auditório Principal" "palestra" "2025-09-05T09:00:00Z" "2025-09-05T10:30:00Z" true 0 false false && ((success_count++))
+    create_activity "DevOps Desmistificado: Construindo sua Pipeline do Zero" "TEMP DESC" "Zoey de Souza" "INF-1" "minicurso" "2025-09-05T08:30:00Z" "2025-09-05T12:00:00Z" false 25 false true && ((success_count++))
     ((total_count++))
     
-    create_activity "Encerramento e Premiação" "Cerimônia de encerramento com premiação dos melhores trabalhos" "Comissão Organizadora" "Auditório Principal" "palestra" "2025-09-05T16:00:00Z" "2025-09-05T18:00:00Z" true 0 true false && ((success_count++))
+    create_activity "Autenticação de APIs e Controle de Acesso com Keycloak: Introdução ao RBAC" "TEMP DESC" "Brandon Carvalho" "INF-2" "minicurso" "2025-09-05T08:30:00Z" "2025-09-05T12:00:00Z" false 25 false true && ((success_count++))
+    ((total_count++))
+
+    create_activity "Fechamento do Hackathon" "TEMP DESC" "Comissão SCTI" "Cine Darcy" "palestra" "2025-09-05T14:00:00Z" "2025-09-05T15:30:00Z" true 0 true false && ((success_count++))
     ((total_count++))
     
+    create_activity "Mercado Trabalho Exterior - Programador e Fundador da Operação Código de Ouro" "TEMP DESC" "Lucas Siqueira" "Cine Darcy" "palestra" "2025-09-05T16:00:00Z" "2025-09-05T18:00:00Z" true 0 true false && ((success_count++))
+    ((total_count++)) 
+
     log_success "Created $success_count out of $total_count activities"
     return $([ $success_count -eq $total_count ] && echo 0 || echo 1)
 }
@@ -354,7 +378,7 @@ main() {
     
     echo
     log_success "🎉 SCTI Event setup completed!"
-    log_info "Event Slug: scti-2025"
+    log_info "Event Slug: scti"
 }
 
 # Run the main function
