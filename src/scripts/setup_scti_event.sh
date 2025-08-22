@@ -202,7 +202,6 @@ create_activity() {
     local has_fee="${11}"
     local level="${12}"
     local requirements="${13}"
-
     log_info "Creating: $name"
 
     # Generate a simple slug from the name
