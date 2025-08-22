@@ -41,8 +41,8 @@ func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string
 		return nil, errors.New("activity must be scheduled within event timeframe")
 	}
 
-	if req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
-		return nil, errors.New("activity must have valid level (\"easy\", \"medium\", \"hard\")")
+	if req.Level != models.ActivityNone && req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
+		return nil, errors.New("activity must have valid level (\"none\", \"easy\", \"medium\", \"hard\")")
 	}
 
 	activity := models.Activity{
@@ -116,8 +116,8 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 		return nil, errors.New("activity must be scheduled within event timeframe")
 	}
 
-	if req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
-		return nil, errors.New("activity must have valid level (\"easy\", \"medium\", \"hard\")")
+	if req.Level != models.ActivityNone && req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
+		return nil, errors.New("activity must have valid level (\"none\", \"easy\", \"medium\", \"hard\")")
 	}
 
 	activity.Name = req.Name

@@ -9,6 +9,7 @@ import (
 type ActivityLevel string
 
 const (
+	ActivityNone   ActivityLevel = "none"
 	ActivityEasy   ActivityLevel = "easy"
 	ActivityMedium ActivityLevel = "medium"
 	ActivityHard   ActivityLevel = "hard"

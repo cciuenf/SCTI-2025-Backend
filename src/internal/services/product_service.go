@@ -236,7 +236,6 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 	return product, nil
 }
 
-// TODO: Can't delete a product if it has been purchased
 func (s *ProductService) DeleteEventProduct(user models.User, eventSlug string, productID string) error {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
