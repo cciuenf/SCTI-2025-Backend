@@ -9,17 +9,16 @@ import (
 type ActivityLevel string
 
 const (
+	ActivityNone   ActivityLevel = "none"
 	ActivityEasy   ActivityLevel = "easy"
 	ActivityMedium ActivityLevel = "medium"
 	ActivityHard   ActivityLevel = "hard"
 )
 
-// Activity represents a scheduled activity that can be part of an event or standalone
 type Activity struct {
 	ID string `gorm:"type:varchar(36);primaryKey" example:"550e8400-e29b-41d4-a716-446655440000"`
 
-	// Event relationship - nullable for standalone activities
-	EventID *string `gorm:"type:varchar(36);index" json:"event_id" example:"550e8400-e29b-41d4-a716-446655440001"`
+	EventID string `gorm:"type:varchar(36);index" json:"event_id" example:"550e8400-e29b-41d4-a716-446655440001"`
 
 	Name         string        `gorm:"type:varchar(100);not null" json:"name" example:"Workshop de Go"`
 	Description  string        `json:"description" example:"Workshop introdutório sobre a linguagem Go"`
@@ -39,16 +38,12 @@ type Activity struct {
 
 	// Access control
 	IsMandatory bool `gorm:"default:false" json:"is_mandatory" example:"true"` // If users need to be registered automatically
-	HasFee      bool `gorm:"default:false" json:"has_fee" example:"true"`      // If an event ticket or standalone ticket is required
+	HasFee      bool `gorm:"default:false" json:"has_fee" example:"true"`      // If an event ticket or token is required
 	NeedsToken  bool `gorm:"default:false" json:"needs_token" example:"true"`  // If a token is required for this activity
 
 	// Visibility and blocking
 	IsHidden  bool `gorm:"default:false" json:"is_hidden" example:"false"`  // Whether the activity is hidden from search/listings
 	IsBlocked bool `gorm:"default:false" json:"is_blocked" example:"false"` // Whether the activity is blocked from interactions
-
-	// Standalone properties
-	IsStandalone   bool   `gorm:"default:false" json:"is_standalone" example:"false"`                              // If it can be registered for independently
-	StandaloneSlug string `gorm:"type:varchar(100);unique;default:null" json:"standalone_slug" example:"scti-wkg"` // Used when standalone
 
 	// Relationships
 	Registrants []User `gorm:"many2many:activity_registrations;constraint:OnDelete:CASCADE" json:"-"`
@@ -66,10 +61,8 @@ type ActivityRegistration struct {
 	ActivityID string `gorm:"type:varchar(36);primaryKey" json:"activity_id"`
 	UserID     string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
 
-	// Is this from an event or standalone
-	IsStandaloneRegistration bool       `gorm:"default:false" json:"is_standalone_registration"`
-	RegisteredAt             time.Time  `gorm:"autoCreateTime" json:"registered_at"`
-	AttendedAt               *time.Time `json:"attended_at"` // Time of attendance, null if not attended yet
+	RegisteredAt time.Time  `gorm:"autoCreateTime" json:"registered_at"`
+	AttendedAt   *time.Time `json:"attended_at"` // Time of attendance, null if not attended yet
 
 	// Access method tracking
 	AccessMethod string  `gorm:"type:varchar(20)" json:"access_method"` // "event", "product", "token", or "direct"
@@ -116,8 +109,6 @@ type CreateActivityRequest struct {
 	MaxCapacity          int           `json:"max_capacity" example:"30"`
 	IsMandatory          bool          `json:"is_mandatory" example:"false"`
 	HasFee               bool          `json:"has_fee" example:"false"`
-	IsStandalone         bool          `json:"is_standalone" example:"false"`
-	StandaloneSlug       string        `json:"standalone_slug" example:"workshop-go-2024"`
 	IsHidden             bool          `json:"is_hidden" example:"false"`
 	IsBlocked            bool          `json:"is_blocked" example:"false"`
 	Level                ActivityLevel `json:"level" example:"easy"`
@@ -137,8 +128,6 @@ type ActivityUpdateRequest struct {
 	MaxCapacity          int           `json:"max_capacity" example:"30"`
 	IsMandatory          bool          `json:"is_mandatory" example:"false"`
 	HasFee               bool          `json:"has_fee" example:"false"`
-	IsStandalone         bool          `json:"is_standalone" example:"false"`
-	StandaloneSlug       string        `json:"standalone_slug" example:"workshop-go-2024"`
 	IsHidden             bool          `json:"is_hidden" example:"false"`
 	IsBlocked            bool          `json:"is_blocked" example:"false"`
 	Level                ActivityLevel `json:"level" example:"easy"`

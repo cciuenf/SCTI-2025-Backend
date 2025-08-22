@@ -4,7 +4,6 @@ import (
 	"errors"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,13 +41,13 @@ func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string
 		return nil, errors.New("activity must be scheduled within event timeframe")
 	}
 
-	if req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
-		return nil, errors.New("activity must have valid level (\"easy\", \"medium\", \"hard\")")
+	if req.Level != models.ActivityNone && req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
+		return nil, errors.New("activity must have valid level (\"none\", \"easy\", \"medium\", \"hard\")")
 	}
 
 	activity := models.Activity{
 		ID:                   uuid.New().String(),
-		EventID:              &event.ID,
+		EventID:              event.ID,
 		Name:                 req.Name,
 		Description:          req.Description,
 		Speaker:              req.Speaker,
@@ -60,18 +59,10 @@ func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string
 		MaxCapacity:          req.MaxCapacity,
 		IsMandatory:          req.IsMandatory,
 		HasFee:               req.HasFee,
-		IsStandalone:         req.IsStandalone,
 		IsHidden:             req.IsHidden,
 		IsBlocked:            req.IsBlocked,
 		Level:                req.Level,
 		Requirements:         req.Requirements,
-	}
-
-	if req.IsStandalone {
-		if req.StandaloneSlug == "" {
-			return nil, errors.New("standalone activities must have a slug")
-		}
-		activity.StandaloneSlug = strings.ToLower(req.StandaloneSlug)
 	}
 
 	if err := s.ActivityRepo.CreateActivity(&activity); err != nil {
@@ -106,7 +97,7 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 		return nil, errors.New("activity not found: " + err.Error())
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return nil, errors.New("activity does not belong to this event")
 	}
 
@@ -125,8 +116,8 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 		return nil, errors.New("activity must be scheduled within event timeframe")
 	}
 
-	if req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
-		return nil, errors.New("activity must have valid level (\"easy\", \"medium\", \"hard\")")
+	if req.Level != models.ActivityNone && req.Level != models.ActivityEasy && req.Level != models.ActivityMedium && req.Level != models.ActivityHard {
+		return nil, errors.New("activity must have valid level (\"none\", \"easy\", \"medium\", \"hard\")")
 	}
 
 	activity.Name = req.Name
@@ -144,17 +135,6 @@ func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string
 	activity.IsBlocked = req.IsBlocked
 	activity.Level = req.Level
 	activity.Requirements = req.Requirements
-
-	if req.IsStandalone {
-		if req.StandaloneSlug == "" {
-			return nil, errors.New("standalone activities must have a slug")
-		}
-		activity.IsStandalone = true
-		activity.StandaloneSlug = strings.ToLower(req.StandaloneSlug)
-	} else {
-		activity.IsStandalone = false
-		activity.StandaloneSlug = ""
-	}
 
 	if err := s.ActivityRepo.UpdateActivity(activity); err != nil {
 		return nil, errors.New("failed to update activity: " + err.Error())
@@ -174,7 +154,7 @@ func (s *ActivityService) DeleteEventActivity(user models.User, eventSlug string
 		return errors.New("activity not found: " + err.Error())
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
 
@@ -220,7 +200,7 @@ func (s *ActivityService) RegisterUserToActivity(user models.User, eventSlug str
 		return errors.New("activity is currently blocked")
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
 
@@ -333,7 +313,7 @@ func (s *ActivityService) UnregisterUserFromActivity(user models.User, eventSlug
 		return errors.New("activity is currently blocked")
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
 
@@ -408,120 +388,6 @@ func (s *ActivityService) UnregisterUserFromActivity(user models.User, eventSlug
 	return nil
 }
 
-// so when that logic is implemented, we can remove the need to call this function and delete it
-func (s *ActivityService) RegisterUserToStandaloneActivity(user models.User, eventSlug string, activityID string) error {
-	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
-	if err != nil {
-		return errors.New("event not found: " + err.Error())
-	}
-
-	activity, err := s.ActivityRepo.GetActivityByID(activityID)
-	if err != nil {
-		return errors.New("activity not found: " + err.Error())
-	}
-
-	if activity.IsBlocked {
-		return errors.New("activity is currently blocked")
-	}
-
-	if activity.EventID == nil || *activity.EventID != event.ID {
-		return errors.New("activity does not belong to this event")
-	}
-
-	if !activity.IsStandalone {
-		return errors.New("this activity does not support standalone registration")
-	}
-
-	if !activity.HasUnlimitedCapacity {
-		currentRegistrations, maxCapacity, err := s.ActivityRepo.GetActivityCapacity(activityID)
-		if err != nil {
-			return errors.New("error checking activity capacity: " + err.Error())
-		}
-
-		if currentRegistrations >= maxCapacity {
-			return errors.New("activity has reached maximum capacity")
-		}
-	}
-
-	now := time.Now()
-	if activity.EndTime.Before(now) {
-		return errors.New("activity has already ended")
-	}
-
-	registration := &models.ActivityRegistration{
-		ActivityID:               activityID,
-		UserID:                   user.ID,
-		IsStandaloneRegistration: true,
-		AccessMethod:             string(models.AccessMethodDirect), // Direct registration without event registration
-	}
-
-	if err := s.ActivityRepo.RegisterUserToActivity(registration); err != nil {
-		return errors.New("failed to register to activity: " + err.Error())
-	}
-
-	return nil
-}
-
-func (s *ActivityService) UnregisterUserFromStandaloneActivity(user models.User, eventSlug string, activityID string) error {
-	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
-	if err != nil {
-		return errors.New("event not found: " + err.Error())
-	}
-
-	activity, err := s.ActivityRepo.GetActivityByID(activityID)
-	if err != nil {
-		return errors.New("activity not found: " + err.Error())
-	}
-
-	if activity.EventID == nil || *activity.EventID != event.ID {
-		return errors.New("activity does not belong to this event")
-	}
-
-	if !activity.IsStandalone {
-		return errors.New("this activity does not support standalone registration")
-	}
-
-	isRegistered, registration, err := s.ActivityRepo.IsUserRegisteredToActivity(activityID, user.ID)
-	if err != nil {
-		return errors.New("error checking activity registration: " + err.Error())
-	}
-
-	if !isRegistered {
-		return errors.New("user is not registered to this activity")
-	}
-
-	if registration.AttendedAt != nil {
-		return errors.New("user has already attended this activity")
-	}
-
-	userAccesses, err := s.ActivityRepo.GetUserAccesses(user.ID)
-	if err != nil {
-		return errors.New("error checking user accesses: " + err.Error())
-	}
-
-	var hasAccess bool
-	for _, access := range userAccesses {
-		if access.TargetID == activityID {
-			hasAccess = true
-			break
-		}
-	}
-
-	if hasAccess {
-		return errors.New("user has direct paid access to this activity")
-	}
-
-	if activity.IsBlocked {
-		return errors.New("activity is currently blocked")
-	}
-
-	if err := s.ActivityRepo.UnregisterUserFromActivity(activityID, user.ID); err != nil {
-		return errors.New("failed to unregister from activity: " + err.Error())
-	}
-
-	return nil
-}
-
 func (s *ActivityService) AttendActivity(admin models.User, eventSlug string, activityID string, userID string) error {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -533,7 +399,7 @@ func (s *ActivityService) AttendActivity(admin models.User, eventSlug string, ac
 		return errors.New("activity not found: " + err.Error())
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
 
@@ -575,7 +441,7 @@ func (s *ActivityService) UnattendActivity(admin models.User, eventSlug string, 
 		return errors.New("activity not found: " + err.Error())
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return errors.New("activity does not belong to this event")
 	}
 
@@ -617,7 +483,7 @@ func (s *ActivityService) GetActivityRegistrations(admin models.User, eventSlug 
 		return nil, errors.New("activity not found: " + err.Error())
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return nil, errors.New("activity does not belong to this event")
 	}
 
@@ -671,10 +537,8 @@ func (s *ActivityService) GetUserActivitiesFromEvent(user models.User, eventSlug
 
 	var activities []models.Activity
 	for _, activity := range userActivities {
-		if activity.EventID != nil {
-			if *activity.EventID == event.ID {
-				activities = append(activities, activity)
-			}
+		if activity.EventID == event.ID {
+			activities = append(activities, activity)
 		}
 	}
 
@@ -692,7 +556,7 @@ func (s *ActivityService) GetActivityAttendants(admin models.User, eventSlug str
 		return nil, errors.New("activity not found: " + err.Error())
 	}
 
-	if activity.EventID == nil || *activity.EventID != event.ID {
+	if activity.EventID != event.ID {
 		return nil, errors.New("activity does not belong to this event")
 	}
 
@@ -725,4 +589,26 @@ func (s *ActivityService) GetUserAttendedActivities(user models.User) ([]models.
 	}
 
 	return userActivities, nil
+}
+
+func (s *ActivityService) GetAllAttendances(admin models.User, eventSlug string) ([]models.ActivityRegistration, error) {
+	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	// Check admin permissions
+	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
+		adminStatus, err := s.ActivityRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return nil, errors.New("unauthorized: only admins can get all attendances")
+		}
+	}
+
+	attendances, err := s.ActivityRepo.GetAllAttendancesFromEvent(event.ID)
+	if err != nil {
+		return nil, errors.New("failed to retrieve all attendances: " + err.Error())
+	}
+
+	return attendances, nil
 }

@@ -52,7 +52,7 @@ log_warn() {
 # Load environment variables from .env file
 load_env() {
     log_info "Loading environment variables..."
-    
+
     if [ ! -f "../.env" ]; then
         log_error ".env file not found in src directory"
         log_warn "Please create a .env file with your credentials:"
@@ -60,7 +60,7 @@ load_env() {
         log_info "MASTER_USER_PASS=your_password"
         exit 1
     fi
-    
+
     # Source the .env file, properly handling comments and quotes
     while IFS= read -r line; do
         # Skip empty lines and comments
@@ -76,21 +76,21 @@ load_env() {
             fi
         fi
     done < "../.env"
-    
+
     # Validate required variables
     if [ -z "$SCTI_EMAIL" ] || [ -z "$MASTER_USER_PASS" ]; then
         log_error "Missing required environment variables"
         log_warn "Required: SCTI_EMAIL, MASTER_USER_PASS"
         exit 1
     fi
-    
+
     log_success "Environment variables loaded successfully"
 }
 
 # Login to get access token
 login() {
     log_info "Logging in..."
-    
+
     # Create proper JSON payload using jq to avoid any quoting issues
     local login_data=$(jq -n \
         --arg email "$SCTI_EMAIL" \
@@ -99,7 +99,7 @@ login() {
             email: $email,
             password: $password
         }')
-    
+
     # Show request body if flag is enabled
     if [ "$SHOW_REQUEST_BODIES" = true ]; then
         log_info "Login request body (raw):"
@@ -109,11 +109,11 @@ login() {
         echo "$login_data" | jq . 2>/dev/null || echo "jq failed, raw data above"
         echo
     fi
-    
+
     local response=$(curl -s -X POST "$BASE_URL/login" \
         -H "Content-Type: application/json" \
         -d "$login_data")
-    
+
     if [ $? -eq 0 ]; then
         local success=$(echo "$response" | jq -r '.success')
         if [ "$success" = "true" ]; then
@@ -140,7 +140,7 @@ login() {
 # Create SCTI Event
 create_event() {
     log_info "Creating SCTI Event..."
-    
+
     local event_data='{
         "name": "Semana de Ciência e Tecnologia da Informação",
         "slug": "scti",
@@ -152,20 +152,20 @@ create_event() {
         "is_blocked": false,
         "max_tokens_per_user": 5
     }'
-    
+
     # Show request body if flag is enabled
     if [ "$SHOW_REQUEST_BODIES" = true ]; then
         log_info "Event creation request body:"
         echo "$event_data" | jq .
         echo
     fi
-    
+
     local response=$(curl -s -X POST "$BASE_URL/events" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H "Refresh: Bearer $REFRESH_TOKEN" \
         -d "$event_data")
-    
+
     if [ $? -eq 0 ]; then
         local success=$(echo "$response" | jq -r '.success')
         if [ "$success" = "true" ]; then
@@ -202,12 +202,11 @@ create_activity() {
     local has_fee="${11}"
     local level="${12}"
     local requirements="${13}"
-    
     log_info "Creating: $name"
-    
+
     # Generate a simple slug from the name
     local slug=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
-    
+
     # Use jq to properly escape JSON strings and avoid quoting issues
     local activity_data=$(jq -n \
         --arg name "$name" \
@@ -243,20 +242,20 @@ create_activity() {
             requirements: $requirements,
             is_blocked: false
         }')
-    
+
     # Show request body if flag is enabled
     if [ "$SHOW_REQUEST_BODIES" = true ]; then
         log_info "Activity creation request body for '$name':"
         echo "$activity_data" | jq .
         echo
     fi
-    
+
     local response=$(curl -s -X POST "$BASE_URL/events/scti/activity" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H "Refresh: Bearer $REFRESH_TOKEN" \
         -d "$activity_data")
-    
+
     if [ $? -eq 0 ]; then
         local success=$(echo "$response" | jq -r '.success')
         if [ "$success" = "true" ]; then
@@ -281,40 +280,40 @@ create_activity() {
 # Create all activities
 create_all_activities() {
     log_info "Creating activities..."
-    
+
     local success_count=0
     local total_count=0
-    
+
     # Day 1 - September 1, 2025
     create_activity "Abertura da Semana Acadêmica" "Cerimônia de abertura com autoridades e apresentação da semana" "PROGRAD" "Auditório Principal" "palestra" "2025-09-01T09:00:00Z" "2025-09-01T12:00:00Z" true 0 true false "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Mesa redonda sobre estágios" "Conectar estudantes de Ciência da Computação com o mercado de trabalho através de experiências reais de estágio." "Estagiários de Computação" "Cine Darcy" "palestra" "2025-09-01T14:00:00Z" "2025-09-01T15:30:00Z" true 0 true false "easy" "123" && ((success_count++))
     ((total_count++))
-    
-    create_activity "Hackathon" "SEM DESCRIÇÂO" "Comissão SCTI" "Cine Darcy" "2025-09-01T16:00:00Z" "2025-09-01T18:00:00Z" true 0 true false "easy" "123" && ((success_count++))
+
+    create_activity "Hackathon" "SEM DESCRIÇÂO" "Comissão SCTI" "Cine Darcy" "palestra" "2025-09-01T16:00:00Z" "2025-09-01T18:00:00Z" true 0 true false "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     # Day 2 - September 2, 2025
     create_activity "Curso Prático de Pentest usando Kali Linux" "TEMP DESC" "Prof. Vinicius Barcelos" "INF-1" "minicurso" "2025-09-02T08:30:00Z" "2025-09-02T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "MovieTracker: Criando um app com React Native" "TEMP DESC" "Renan Souza Oliveira" "INF-2" "minicurso" "2025-09-02T08:30:00Z" "2025-09-02T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
-    
-    create_activity "Desburocratizando o mercado de trabalho" "TEMP DESC" "Patrick Pereira" "Cine Darcy" "palestra" "2025-09-02T14:00:00Z" "2025-09-02T15:30:00Z" true 0 true false  "easy" "123" && ((success_count++)) 
+
+    create_activity "Desburocratizando o mercado de trabalho" "TEMP DESC" "Patrick Pereira" "Cine Darcy" "palestra" "2025-09-02T14:00:00Z" "2025-09-02T15:30:00Z" true 0 true false  "easy" "123" && ((success_count++))
     ((total_count++))
 
-    create_activity "Como avaliar um modelo de machine learning e seus desafios." "TEMP DESC" "Clébio Júnior" "Cine Darcy" "palestra" "2025-09-02T16:00:00Z" "2025-09-02T18:00:00Z" true 0 true false "easy" "123"  && ((success_count++)) 
+    create_activity "Como avaliar um modelo de machine learning e seus desafios." "TEMP DESC" "Clébio Júnior" "Cine Darcy" "palestra" "2025-09-02T16:00:00Z" "2025-09-02T18:00:00Z" true 0 true false "easy" "123"  && ((success_count++))
     ((total_count++))
 
     # Day 3 - September 3, 2025
     create_activity "Engenharia e Ciência de Dados com Big Data: Prática com PySpark no Databricks" "TEMP DESC" "João Paulo Seixas" "INF-1" "minicurso" "2025-09-03T08:30:00Z" "2025-09-03T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Dia a dia de desenvolvimento web: Entendo como funciona na pratica" "TEMP DESC" "Jhulian Pereira Manhães" "INF-2" "minicurso" "2025-09-03T08:30:00Z" "2025-09-03T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Inteligência Artificial no Trabalho: Aplicações em Ambientes Cloud" "TEMP DESC" "João Paulo Seixas" "Cine Darcy" "palestra" "2025-09-03T14:00:00Z" "2025-09-03T15:30:00Z" true 0 true false "easy" "123" && ((success_count++))
     ((total_count++))
 
@@ -324,28 +323,28 @@ create_all_activities() {
     # Day 4 - September 4, 2025
     create_activity "Introdução à UX com IA" "TEMP DESC" "Diana de Sales" "INF-2" "minicurso" "2025-09-04T08:30:00Z" "2025-09-04T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Montagem e Desmontagem de PC" "TEMP DESC" "Prof. Luiz Ramirez" "INF-1" "minicurso" "2025-09-04T08:30:00Z" "2025-09-04T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Erlang, MCP e Kubernetes: Lições de um Sistema Distribuído em Produção" "TEMP DESC" "Zoey de Souza" "Cine Darcy" "palestra" "2025-09-04T14:00:00Z" "2025-09-04T15:30:00Z" true 0 true false "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Palestra do Mano Deyvin" "TEMP DESC" "Mano Deyvin" "Cine Darcy" "palestra" "2025-09-04T16:00:00Z" "2025-09-04T18:00:00Z" true 0 true false "easy" "123" && ((success_count++))
     ((total_count++))
 
     # Day 5 - September 5, 2025
     create_activity "DevOps Desmistificado: Construindo sua Pipeline do Zero" "TEMP DESC" "Zoey de Souza" "INF-1" "minicurso" "2025-09-05T08:30:00Z" "2025-09-05T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Autenticação de APIs e Controle de Acesso com Keycloak: Introdução ao RBAC" "TEMP DESC" "Brandon Carvalho" "INF-2" "minicurso" "2025-09-05T08:30:00Z" "2025-09-05T12:00:00Z" false 25 false true "easy" "123" && ((success_count++))
     ((total_count++))
 
     create_activity "Fechamento do Hackathon" "TEMP DESC" "Comissão SCTI" "Cine Darcy" "palestra" "2025-09-05T14:00:00Z" "2025-09-05T15:30:00Z" true 0 true false "easy" "123" && ((success_count++))
     ((total_count++))
-    
+
     create_activity "Mercado Trabalho Exterior - Programador e Fundador da Operação Código de Ouro" "TEMP DESC" "Lucas Siqueira" "Cine Darcy" "palestra" "2025-09-05T16:00:00Z" "2025-09-05T18:00:00Z" true 0 true false "easy" "123" && ((success_count++))
-    ((total_count++)) 
+    ((total_count++))
 
     log_success "Created $success_count out of $total_count activities"
     return $([ $success_count -eq $total_count ] && echo 0 || echo 1)
@@ -356,24 +355,24 @@ main() {
     log_success "Starting SCTI Event Creation Script..."
     log_info "Server: $BASE_URL"
     echo
-    
+
     # Step 1: Load environment variables
     load_env
-    
+
     # Step 2: Login
     log_info "1️⃣ Logging in..."
     if ! login; then
         log_error "Login failed. Exiting."
         exit 1
     fi
-    
+
     # Step 3: Create SCTI Event
     log_info "2️⃣ Creating SCTI Event..."
     if ! create_event; then
         log_error "Event creation failed. Exiting."
         exit 1
     fi
-    
+
     # Step 4: Create Activities
     log_info "3️⃣ Creating activities..."
     if create_all_activities; then
@@ -381,7 +380,7 @@ main() {
     else
         log_warn "Some activities failed to create."
     fi
-    
+
     echo
     log_success "🎉 SCTI Event setup completed!"
     log_info "Event Slug: scti"

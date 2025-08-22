@@ -1210,78 +1210,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/events/{slug}/activity/register-standalone": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Registers the authenticated user to a standalone activity without requiring event registration",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "activities"
-                ],
-                "summary": "Register to a standalone activity",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {access_token}",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer {refresh_token}",
-                        "name": "Refresh",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Event slug",
-                        "name": "slug",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Activity registration info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/events/{slug}/activity/registrations/{id}": {
             "get": {
                 "security": [
@@ -1469,78 +1397,6 @@ const docTemplate = `{
                     "activities"
                 ],
                 "summary": "Unregister from an activity",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {access_token}",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer {refresh_token}",
-                        "name": "Refresh",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Event slug",
-                        "name": "slug",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Activity registration info",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ActivityRegistrationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.NoDataSuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ActivityStandardErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/events/{slug}/activity/unregister-standalone": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Unregisters the authenticated user from a standalone activity",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "activities"
-                ],
-                "summary": "Unregister from a standalone activity",
                 "parameters": [
                     {
                         "type": "string",
@@ -3953,12 +3809,11 @@ const docTemplate = `{
                     "example": "2024-10-15T16:00:00Z"
                 },
                 "event_id": {
-                    "description": "Event relationship - nullable for standalone activities",
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440001"
                 },
                 "has_fee": {
-                    "description": "If an event ticket or standalone ticket is required",
+                    "description": "If an event ticket or token is required",
                     "type": "boolean",
                     "example": true
                 },
@@ -3985,11 +3840,6 @@ const docTemplate = `{
                     "description": "Access control",
                     "type": "boolean",
                     "example": true
-                },
-                "is_standalone": {
-                    "description": "Standalone properties",
-                    "type": "boolean",
-                    "example": false
                 },
                 "level": {
                     "$ref": "#/definitions/models.ActivityLevel"
@@ -4018,11 +3868,6 @@ const docTemplate = `{
                 "speaker": {
                     "type": "string",
                     "example": "John Doe"
-                },
-                "standalone_slug": {
-                    "description": "Used when standalone",
-                    "type": "string",
-                    "example": "scti-wkg"
                 },
                 "start_time": {
                     "type": "string",
@@ -4083,10 +3928,6 @@ const docTemplate = `{
                 },
                 "deleted_at": {
                     "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "is_standalone_registration": {
-                    "description": "Is this from an event or standalone",
-                    "type": "boolean"
                 },
                 "product_id": {
                     "description": "Which product was used (if applicable)",
@@ -4169,10 +4010,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
-                "is_standalone": {
-                    "type": "boolean",
-                    "example": false
-                },
                 "level": {
                     "allOf": [
                         {
@@ -4200,10 +4037,6 @@ const docTemplate = `{
                 "speaker": {
                     "type": "string",
                     "example": "John Doe"
-                },
-                "standalone_slug": {
-                    "type": "string",
-                    "example": "workshop-go-2024"
                 },
                 "start_time": {
                     "type": "string",
@@ -4250,10 +4083,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
-                "is_standalone": {
-                    "type": "boolean",
-                    "example": false
-                },
                 "level": {
                     "allOf": [
                         {
@@ -4281,10 +4110,6 @@ const docTemplate = `{
                 "speaker": {
                     "type": "string",
                     "example": "John Doe"
-                },
-                "standalone_slug": {
-                    "type": "string",
-                    "example": "workshop-go-2024"
                 },
                 "start_time": {
                     "type": "string",

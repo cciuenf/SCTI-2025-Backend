@@ -28,14 +28,6 @@ func (r *ActivityRepo) GetActivityByID(id string) (*models.Activity, error) {
 	return &activity, nil
 }
 
-func (r *ActivityRepo) GetActivityByStandaloneSlug(slug string) (*models.Activity, error) {
-	var activity models.Activity
-	if err := r.DB.Where("standalone_slug = ? AND is_standalone = ? AND is_hidden = ?", slug, true, false).First(&activity).Error; err != nil {
-		return nil, err
-	}
-	return &activity, nil
-}
-
 func (r *ActivityRepo) GetAllActivitiesFromEvent(eventID string) ([]models.Activity, error) {
 	var activities []models.Activity
 	if err := r.DB.Where("event_id = ? AND is_hidden = ?", eventID, false).Find(&activities).Error; err != nil {
@@ -156,12 +148,12 @@ func (r *ActivityRepo) GetEventByActivityID(activityID string) (*models.Event, e
 		return nil, err
 	}
 
-	if activity.EventID == nil {
+	if activity.EventID == "" {
 		return nil, errors.New("activity does not belong to any event")
 	}
 
 	var event models.Event
-	if err := r.DB.Where("id = ?", *activity.EventID).First(&event).Error; err != nil {
+	if err := r.DB.Where("id = ?", activity.EventID).First(&event).Error; err != nil {
 		return nil, err
 	}
 
@@ -341,4 +333,19 @@ func (r *ActivityRepo) GetUserAttendedActivities(userID string) ([]models.Activi
 	}
 
 	return activities, nil
+}
+
+func (r *ActivityRepo) GetAllAttendancesFromEvent(eventID string) ([]models.ActivityRegistration, error) {
+	var attendances []models.ActivityRegistration
+
+	err := r.DB.
+		Joins("JOIN activities ON activity_registrations.activity_id = activities.id").
+		Where("activities.event_id = ? AND activity_registrations.attended_at IS NOT NULL", eventID).
+		Find(&attendances).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return attendances, nil
 }

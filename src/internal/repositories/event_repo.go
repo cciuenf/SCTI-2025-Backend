@@ -283,3 +283,108 @@ func (r *EventRepo) GetEventBoughtProductsIDs(eventID string) ([]string, error) 
 
 	return purchasedProductsIDs, nil
 }
+
+func (r *EventRepo) GetAllActivitiesFromEvent(eventID string) ([]models.Activity, error) {
+	var activities []models.Activity
+	if err := r.DB.Where("event_id = ? AND is_hidden = ?", eventID, false).Find(&activities).Error; err != nil {
+		return nil, err
+	}
+	return activities, nil
+}
+
+func (r *EventRepo) RegisterUserToActivity(registration *models.ActivityRegistration) error {
+	var count int64
+	err := r.DB.Model(&models.ActivityRegistration{}).
+		Where("activity_id = ? AND user_id = ?", registration.ActivityID, registration.UserID).
+		Count(&count).Error
+
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return errors.New("user already registered to this activity")
+	}
+
+	return r.DB.Create(registration).Error
+}
+
+func (r *EventRepo) GetAllAttendancesFromEvent(eventID string) ([]models.ActivityRegistration, error) {
+	var attendances []models.ActivityRegistration
+
+	err := r.DB.
+		Joins("JOIN activities ON activity_registrations.activity_id = activities.id").
+		Where("activities.event_id = ? AND activity_registrations.attended_at IS NOT NULL", eventID).
+		Find(&attendances).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return attendances, nil
+}
+
+func (r *EventRepo) GetUserAttendedActivities(userID string) ([]models.Activity, error) {
+	var activitiesRegistrations []models.ActivityRegistration
+	if err := r.DB.Where("user_id = ? AND attended_at IS NOT NULL", userID).Find(&activitiesRegistrations).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return []models.Activity{}, nil
+		}
+		return nil, err
+	}
+
+	if len(activitiesRegistrations) == 0 {
+		return []models.Activity{}, nil
+	}
+
+	var activityIDs []string
+	for _, activityRegistration := range activitiesRegistrations {
+		activityIDs = append(activityIDs, activityRegistration.ActivityID)
+	}
+
+	var activities []models.Activity
+	if err := r.DB.Where("id IN ?", activityIDs).Find(&activities).Error; err != nil {
+		return nil, err
+	}
+
+	return activities, nil
+}
+
+func (r *EventRepo) GetUserProductsRelation(userID string) ([]models.UserProduct, error) {
+	var userProducts []models.UserProduct
+	if err := r.DB.Where("user_id = ?", userID).Find(&userProducts).Error; err != nil {
+		return nil, err
+	}
+	return userProducts, nil
+}
+
+func (r *EventRepo) GetProductsByIDs(ids []string) ([]models.Product, error) {
+	var products []models.Product
+	if err := r.DB.Preload("AccessTargets").Where("id IN ?", ids).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
+func (r *EventRepo) GetProductsFromUserProducts(userProducts []models.UserProduct) ([]models.Product, error) {
+	if len(userProducts) == 0 {
+		return []models.Product{}, nil
+	}
+
+	productIDMap := make(map[string]bool)
+	var productIDs []string
+
+	for _, userProduct := range userProducts {
+		if !productIDMap[userProduct.ProductID] {
+			productIDMap[userProduct.ProductID] = true
+			productIDs = append(productIDs, userProduct.ProductID)
+		}
+	}
+
+	products, err := r.GetProductsByIDs(productIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}

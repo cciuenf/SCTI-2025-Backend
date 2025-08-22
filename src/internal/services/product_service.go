@@ -25,8 +25,6 @@ func NewProductService(repo *repos.ProductRepo) *ProductService {
 	}
 }
 
-// TODO: Integrate bundled products
-// TODO: Event access target should give access to all activities in the event
 func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -89,7 +87,7 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 			if err != nil {
 				return nil, errors.New("invalid access target, couldn't find activity")
 			}
-			if activity.EventID != nil && target.EventID != nil && *activity.EventID != *target.EventID {
+			if target.EventID != nil && activity.EventID != *target.EventID {
 				return nil, errors.New("invalid access target: targeting inexistent activity")
 			}
 		}
@@ -134,7 +132,6 @@ func (s *ProductService) CreateEventProduct(user models.User, eventSlug string, 
 	return &product, nil
 }
 
-// TODO: Integrate bundled products
 func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, productID string, req models.ProductRequest) (*models.Product, error) {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -218,7 +215,7 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 			if err != nil {
 				return nil, errors.New("invalid access target, couldn't find activity")
 			}
-			if activity.EventID != nil && target.EventID != nil && *activity.EventID != *target.EventID {
+			if target.EventID != nil && activity.EventID != *target.EventID {
 				return nil, errors.New("invalid access target: targeting inexistent activity")
 			}
 		}
@@ -239,7 +236,6 @@ func (s *ProductService) UpdateEventProduct(user models.User, eventSlug string, 
 	return product, nil
 }
 
-// TODO: Can't delete a product if it has been purchased
 func (s *ProductService) DeleteEventProduct(user models.User, eventSlug string, productID string) error {
 	event, err := s.ProductRepo.GetEventBySlug(eventSlug)
 	if err != nil {
@@ -268,7 +264,16 @@ func (s *ProductService) DeleteEventProduct(user models.User, eventSlug string, 
 		}
 	}
 
-	// TODO: Check if product has been purchased before deletion
+	relation, err := s.ProductRepo.GetUserProducts()
+	if err != nil {
+		return errors.New("failed to retrive bought products info for deletion safety")
+	}
+
+	for _, product := range relation {
+		if product.ProductID == productID {
+			return errors.New("cannot delete a product that has been purchased by someone")
+		}
+	}
 
 	err = s.ProductRepo.DeleteProduct(productID)
 	if err != nil {
@@ -328,7 +333,6 @@ func (s *ProductService) GetUserPurchases(user models.User) ([]models.Purchase, 
 	return s.ProductRepo.GetUserPurchases(user.ID)
 }
 
-// TODO: Integrate bundled products
 func (s *ProductService) PurchaseProducts(user models.User, eventSlug string, req models.PurchaseRequest, w http.ResponseWriter) (*models.PurchaseResponse, error) {
 	if req.IsGift {
 		if req.GiftedToEmail == nil {

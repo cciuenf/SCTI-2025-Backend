@@ -150,7 +150,6 @@ func (h *ActivityHandler) UpdateEventActivity(w http.ResponseWriter, r *http.Req
 	handleSuccess(w, activity, "", http.StatusOK)
 }
 
-// TODO: Prohibit deleting activities that have paid participants
 // DeleteEventActivity godoc
 // @Summary      Delete an activity
 // @Description  Deletes an existing activity from the specified event
@@ -316,100 +315,6 @@ func (h *ActivityHandler) UnregisterUserFromActivity(w http.ResponseWriter, r *h
 	}
 
 	handleSuccess(w, nil, "unregistered from activity successfully", http.StatusOK)
-}
-
-// RegisterUserToStandaloneActivity godoc
-// @Summary      Register to a standalone activity
-// @Description  Registers the authenticated user to a standalone activity without requiring event registration
-// @Tags         activities
-// @Accept       json
-// @Produce      json
-// @Security     Bearer
-// @Param        Authorization header string true "Bearer {access_token}"
-// @Param        Refresh header string true "Bearer {refresh_token}"
-// @Param        slug path string true "Event slug"
-// @Param        request body models.ActivityRegistrationRequest true "Activity registration info"
-// @Success      200  {object}  NoDataSuccessResponse
-// @Failure      400  {object}  ActivityStandardErrorResponse
-// @Failure      401  {object}  ActivityStandardErrorResponse
-// @Router       /events/{slug}/activity/register-standalone [post]
-func (h *ActivityHandler) RegisterUserToStandaloneActivity(w http.ResponseWriter, r *http.Request) {
-	slug, err := extractSlugAndValidate(r)
-	if err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
-
-	var reqBody models.ActivityRegistrationRequest
-	if err := decodeRequestBody(r, &reqBody); err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
-
-	if reqBody.ActivityID == "" {
-		BadRequestError(w, NewErr("activity ID is required"), "activity")
-		return
-	}
-
-	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
-	if err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
-
-	if err := h.ActivityService.RegisterUserToStandaloneActivity(user, slug, reqBody.ActivityID); err != nil {
-		HandleErrMsg("error registering to standalone activity", err, w).Stack("activity").BadRequest()
-		return
-	}
-
-	handleSuccess(w, nil, "registered to standalone activity successfully", http.StatusOK)
-}
-
-// UnregisterUserFromStandaloneActivity godoc
-// @Summary      Unregister from a standalone activity
-// @Description  Unregisters the authenticated user from a standalone activity
-// @Tags         activities
-// @Accept       json
-// @Produce      json
-// @Security     Bearer
-// @Param        Authorization header string true "Bearer {access_token}"
-// @Param        Refresh header string true "Bearer {refresh_token}"
-// @Param        slug path string true "Event slug"
-// @Param        request body models.ActivityRegistrationRequest true "Activity registration info"
-// @Success      200  {object}  NoDataSuccessResponse
-// @Failure      400  {object}  ActivityStandardErrorResponse
-// @Failure      401  {object}  ActivityStandardErrorResponse
-// @Router       /events/{slug}/activity/unregister-standalone [post]
-func (h *ActivityHandler) UnregisterUserFromStandaloneActivity(w http.ResponseWriter, r *http.Request) {
-	slug, err := extractSlugAndValidate(r)
-	if err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
-
-	var reqBody models.ActivityRegistrationRequest
-	if err := decodeRequestBody(r, &reqBody); err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
-
-	if reqBody.ActivityID == "" {
-		BadRequestError(w, NewErr("activity ID is required"), "activity")
-		return
-	}
-
-	user, err := getUserFromContext(h.ActivityService.ActivityRepo.GetUserByID, r)
-	if err != nil {
-		BadRequestError(w, err, "activity")
-		return
-	}
-
-	if err := h.ActivityService.UnregisterUserFromStandaloneActivity(user, slug, reqBody.ActivityID); err != nil {
-		HandleErrMsg("error unregistering from standalone activity", err, w).Stack("activity").BadRequest()
-		return
-	}
-
-	handleSuccess(w, nil, "unregistered from standalone activity successfully", http.StatusOK)
 }
 
 // AttendActivity godoc
