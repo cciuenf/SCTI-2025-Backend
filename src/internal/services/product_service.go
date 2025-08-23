@@ -9,6 +9,7 @@ import (
 	"scti/config"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -323,7 +324,9 @@ func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, er
 
 	productIDs := make([]string, len(userProducts))
 	for i, product := range userProducts {
-		productIDs[i] = product.ProductID
+		if !slices.Contains(productIDs, product.ProductID) {
+			productIDs[i] = product.ProductID
+		}
 	}
 
 	products, err := s.ProductRepo.GetProductsByIDs(productIDs)
