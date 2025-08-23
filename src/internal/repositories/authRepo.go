@@ -51,12 +51,18 @@ func (r *AuthRepo) DeleteUserVerification(userID string) error {
 }
 
 func (r *AuthRepo) UpdateUserVerification(userID string, verificationNumber int) error {
-	return r.DB.Model(&models.UserVerification{}).
+	err := r.DB.Model(&models.UserVerification{}).
 		Where("id = ?", userID).
 		Updates(map[string]interface{}{
 			"verification_number": verificationNumber,
 			"expires_at":          time.Now().Add(time.Minute * 15),
 		}).Error
+
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return r.CreateUserVerification(userID, verificationNumber)
+	}
+
+	return nil
 }
 
 func (r *AuthRepo) CreateSuperUser() {
