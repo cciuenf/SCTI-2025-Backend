@@ -324,7 +324,7 @@ create_all_activities() {
     create_activity "Introdução à UX com IA" "Aprenda sobre design da experiência de usuário e crie um produto digital pro seu portfólio com ajuda de IA." "Diana de Sales" "INF-2" "minicurso" "2025-09-04T08:30:00-03:00" "2025-09-04T12:00:00-03:00" false 25 false true "easy" "Conta no Figma" && ((success_count++))
     ((total_count++))
 
-    create_activity "Manutenção de Hardware" "TEMP DESC" "SEM PALESTRANTE" "INF-1" "minicurso" "2025-09-04T08:30:00-03:00" "2025-09-04T12:00:00-03:00" false 25 false true "easy" "" && ((success_count++))
+    create_activity "Manutenção de Hardware" "TEMP DESC" "Daniel Vasconcelos" "INF-1" "minicurso" "2025-09-04T08:30:00-03:00" "2025-09-04T12:00:00-03:00" false 25 false true "easy" "" && ((success_count++))
     ((total_count++))
 
     create_activity "Erlang, MCP e Kubernetes: Lições de um Sistema Distribuído em Produção" "Uma jornada pelos desafios reais de construir sistemas distribuídos a fim de criar um assistente financeiro inteligente com LLM. Explorando como a BEAM/Erlang se integra com protocolo de modelo contextual (MCP) para criar clusters escaláveis, enfrentando questões de consistência eventual via delta CRDTs e a complexa integração entre Kubernetes e a máquina virtual do Erlang (BEAM). Um mergulho técnico com reviravoltas sobre como teoria encontra prática em sistemas de produção" "Zoey de Souza" "Cine Darcy" "palestra" "2025-09-04T14:00:00-03:00" "2025-09-04T15:30:00-03:00" true 0 true false "hard" "" && ((success_count++))
