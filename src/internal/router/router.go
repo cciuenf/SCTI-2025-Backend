@@ -110,7 +110,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("GET /events/{slug}/products", authMiddleware(http.HandlerFunc(productHandler.GetAllProductsFromEvent)))
 	mux.Handle("POST /events/{slug}/purchase", verifiedOnly(http.HandlerFunc(productHandler.PurchaseProducts)))
 	mux.Handle("GET /user-products-relation", verifiedOnly(http.HandlerFunc(productHandler.GetUserProductsRelation)))
-	mux.Handle("GET /all-user-products-relation", verifiedOnly(http.HandlerFunc(productHandler.GetAllUserProductsRelation)))
+	mux.HandleFunc("GET /all-user-products-relation", productHandler.GetAllUserProductsRelation)
 	mux.Handle("GET /user-products", verifiedOnly(http.HandlerFunc(productHandler.GetUserProducts)))
 	mux.Handle("GET /user-tokens", verifiedOnly(http.HandlerFunc(productHandler.GetUserTokens)))
 	mux.Handle("GET /user-purchases", verifiedOnly(http.HandlerFunc(productHandler.GetUserPurchases)))
