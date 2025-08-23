@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: database-layer
+    environment:
+      POSTGRES_DB: ${DATABASE}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASS}
+    ports:
+      - "${DATABASE_PORT}:${DATABASE_PORT}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./create.sh:/docker-entrypoint-initdb.d/create.sh
+
+  app:
+    build: .
+    container_name: scti-backend
+    volumes:
+      - .:/app
+      - ~/.cache/go-build:/root/.cache/go-build
+      - ~/go/pkg/mod:/go/pkg/mod
+    working_dir: /app
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - db
+    environment:
+      - HOST=${HOST}
+      - PORT=${PORT}
+      - DATABASE=${DATABASE}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASS=${DATABASE_PASS}
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DB_HOST=db
+      - JWT_SECRET=${JWT_SECRET}
+      - SCTI_EMAIL=${SCTI_EMAIL}
+      - SCTI_APP_PASSWORD=${SCTI_APP_PASSWORD}
+    command: air -c .air.toml
+
+volumes:
+  postgres_data:

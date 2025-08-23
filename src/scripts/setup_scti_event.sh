@@ -285,65 +285,65 @@ create_all_activities() {
     local total_count=0
 
     # Day 1 - September 1, 2025
-    create_activity "Abertura da Semana Acadêmica" "Cerimônia de abertura com autoridades e apresentação da semana" "PROGRAD" "Auditório Principal" "palestra" "2025-09-01T09:00:00-03:00" "2025-09-01T12:00:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Abertura da Semana Acadêmica" "Cerimônia de abertura com autoridades e apresentação da semana" "PROGRAD" "Auditório Principal" "palestra" "2025-09-01T09:00:00-03:00" "2025-09-01T12:00:00-03:00" true 0 true false "none" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Mesa redonda sobre estágios" "Conectar estudantes de Ciência da Computação com o mercado de trabalho através de experiências reais de estágio." "Estagiários de Computação" "Cine Darcy" "palestra" "2025-09-01T14:00:00-03:00" "2025-09-01T15:30:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Mesa redonda sobre estágios" "Conectar estudantes de Ciência da Computação com o mercado de trabalho através de experiências reais de estágio." "Estagiários de Computação" "Cine Darcy" "palestra" "2025-09-01T14:00:00-03:00" "2025-09-01T15:30:00-03:00" true 0 true false "none" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Hackathon" "SEM DESCRIÇÂO" "Comissão SCTI" "Cine Darcy" "palestra" "2025-09-01T16:00:00-03:00" "2025-09-01T18:00:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Hackathon" "SEM DESCRIÇÂO" "Comissão SCTI" "Cine Darcy" "palestra" "2025-09-01T16:00:00-03:00" "2025-09-01T18:00:00-03:00" true 0 true false "none" "" && ((success_count++))
     ((total_count++))
 
     # Day 2 - September 2, 2025
-    create_activity "Curso Prático de Pentest usando Kali Linux" "TEMP DESC" "Prof. Vinicius Barcelos" "INF-1" "minicurso" "2025-09-02T08:30:00-03:00" "2025-09-02T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "Curso Prático de Pentest usando Kali Linux" "Em um mundo cada vez mais digital, a segurança da informação tornou-se uma prioridade essencial para empresas, governos e indivíduos. A crescente sofisticação dos ataques cibernéticos exige profissionais cada vez mais capacitados para identificar, mitigar e prevenir vulnerabilidades em sistemas e redes. Nesse contexto, o objetivo deste minicurso é proporcionar aos participantes uma introdução prática em Pentest, capacitando-os a compreender o funcionamento de ataques e a aplicar procedimentos de defesa, contribuindo diretamente para a construção de ambientes digitais mais seguros." "Prof. Vinicius Barcelos" "INF-1" "minicurso" "2025-09-02T08:30:00-03:00" "2025-09-02T12:00:00-03:00" false 25 false true "easy" "Virtual box com Kali" && ((success_count++))
     ((total_count++))
 
-    create_activity "MovieTracker: Criando um app com React Native" "TEMP DESC" "Renan Souza Oliveira" "INF-2" "minicurso" "2025-09-02T08:30:00-03:00" "2025-09-02T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "MovieTracker: Criando um app com React Native" "Nesse minicurso vamos aprender a fazer um aplicativo em React Native com Expo! Ao final da atividade cada participante terá a sua própria versão do Movie Tracker, um aplicativo que consome uma API pública de filmes e permite interações com os títulos. " "Renan Souza Oliveira" "INF-2" "minicurso" "2025-09-02T08:30:00-03:00" "2025-09-02T12:00:00-03:00" false 25 false true "easy" "NodeJS, NPM/Yarn, Escolha um:, Android Studio e JDK24, Expo GO e um celular" && ((success_count++))
     ((total_count++))
 
-    create_activity "Desburocratizando o mercado de trabalho" "TEMP DESC" "Patrick Pereira" "Cine Darcy" "palestra" "2025-09-02T14:00:00-03:00" "2025-09-02T15:30:00-03:00" true 0 true false  "easy" "123" && ((success_count++))
+    create_activity "Desburocratizando o mercado de trabalho" "Nessa palestra veremos de forma detalhada as diferentes maneiras de ingressar no mercado de trabalho, porém, numa perspectiva mais ampla e geral, não se restringindo somente aos profissionais de computação. O intuito da atividade é que todos os participantes possam distinguir as modalidades de contratação e identificar qual é a que mais se enquadra no seu atual momento." "Patrick Pereira" "Cine Darcy" "palestra" "2025-09-02T14:00:00-03:00" "2025-09-02T15:30:00-03:00" true 0 true false  "easy" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Como avaliar um modelo de machine learning e seus desafios." "TEMP DESC" "Clébio Júnior" "Cine Darcy" "palestra" "2025-09-02T16:00:00-03:00" "2025-09-02T18:00:00-03:00" true 0 true false "easy" "123"  && ((success_count++))
+    create_activity "Como avaliar um modelo de machine learning e seus desafios." "Desafios e métodos para avaliação de uma modelo de previsão de crédito." "Clébio Júnior" "Cine Darcy" "palestra" "2025-09-02T16:00:00-03:00" "2025-09-02T18:00:00-03:00" true 0 true false "easy" ""  && ((success_count++))
     ((total_count++))
 
     # Day 3 - September 3, 2025
-    create_activity "Engenharia e Ciência de Dados com Big Data: Prática com PySpark no Databricks" "TEMP DESC" "João Paulo Seixas" "INF-1" "minicurso" "2025-09-03T08:30:00-03:00" "2025-09-03T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "Engenharia e Ciência de Dados com Big Data: Prática com PySpark no Databricks" "Este minicurso prático introduz Engenharia e Ciência de Dados com big data, usando PySpark no Databricks Community Edition. Os alunos criarão pipelines ETL e análises em datasets massivos no laboratório, simulando fluxos do Azure Databricks. Inclui visão do mercado, destacando habilidades e oportunidades com PySpark." "João Paulo Seixas" "INF-1" "minicurso" "2025-09-03T08:30:00-03:00" "2025-09-03T12:00:00-03:00" false 25 false true "easy" "Python3" && ((success_count++))
+    ((total_count++))   
+
+    create_activity "Dia a dia de desenvolvimento web: Entendo como funciona na pratica" "Partiremos de um projeto já pronto, um mini-sistema corporativo de Agendamento de Salas de Reunião (ASP.NET Core Web API + JavaScript puro), simulando um produto real. A proposta é mostrar o dia a dia de trabalho pegando duas tarefas: uma feature (busca e paginação no CRUD de salas/reservas, com regras simples) e um bug (depuração e resolução do problema). Durante a execução, apresentarei o fluxo com issues, branch, commits e PRs, além de práticas de validação e tratamento de erros — objetivo: um exemplo conciso, prático e replicável." "Jhulian Pereira Manhães" "INF-2" "minicurso" "2025-09-03T08:30:00-03:00" "2025-09-03T12:00:00-03:00" false 25 false true "easy" "Git, Visual Studio/VSCode" && ((success_count++))
     ((total_count++))
 
-    create_activity "Dia a dia de desenvolvimento web: Entendo como funciona na pratica" "TEMP DESC" "Jhulian Pereira Manhães" "INF-2" "minicurso" "2025-09-03T08:30:00-03:00" "2025-09-03T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "Inteligência Artificial no Trabalho: Aplicações em Ambientes Cloud" "Esta palestra explora o impacto da IA no mercado, apresentando exemplos práticos de desenvolvimento de algoritmos e ciência de dados em ambientes cloud. Casos reais, como chatbots e análises preditivas, são destacados, junto a fundamentos de planejamento e criação de IA escalável. Ideal para quem quer entender como a IA transforma negócios em larga escala." "João Paulo Seixas" "Cine Darcy" "palestra" "2025-09-03T14:00:00-03:00" "2025-09-03T15:30:00-03:00" true 0 true false "easy" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Inteligência Artificial no Trabalho: Aplicações em Ambientes Cloud" "TEMP DESC" "João Paulo Seixas" "Cine Darcy" "palestra" "2025-09-03T14:00:00-03:00" "2025-09-03T15:30:00-03:00" true 0 true false "easy" "123" && ((success_count++))
-    ((total_count++))
-
-    create_activity "Matemática Aplicada no Ofício" "TEMP DESC" "Prof. João Luiz" "Cine Darcy" "palestra" "2025-09-03T16:00:00-03:00" "2025-09-03T18:00:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Matemática Aplicada no Ofício" "Nessa palestra entenderemos como toda a base matemática do curso se aplica de fato no dia a dia de um cientista da computação, com exemplos palpáveis de como essa fundamentação está presente nas mais diversas áreas do universo tecnológico." "Prof. João Luiz" "Cine Darcy" "palestra" "2025-09-03T16:00:00-03:00" "2025-09-03T18:00:00-03:00" true 0 true false "easy" "" && ((success_count++))
     ((total_count++))
 
     # Day 4 - September 4, 2025
-    create_activity "Introdução à UX com IA" "TEMP DESC" "Diana de Sales" "INF-2" "minicurso" "2025-09-04T08:30:00-03:00" "2025-09-04T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "Introdução à UX com IA" "Aprenda sobre design da experiência de usuário e crie um produto digital pro seu portfólio com ajuda de IA." "Diana de Sales" "INF-2" "minicurso" "2025-09-04T08:30:00-03:00" "2025-09-04T12:00:00-03:00" false 25 false true "easy" "Conta no Figma" && ((success_count++))
     ((total_count++))
 
-    create_activity "Montagem e Desmontagem de PC" "TEMP DESC" "Prof. Luiz Ramirez" "INF-1" "minicurso" "2025-09-04T08:30:00-03:00" "2025-09-04T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "Montagem e Desmontagem de PC" "TEMP DESC" "Prof. Luiz Ramirez" "INF-1" "minicurso" "2025-09-04T08:30:00-03:00" "2025-09-04T12:00:00-03:00" false 25 false true "easy" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Erlang, MCP e Kubernetes: Lições de um Sistema Distribuído em Produção" "TEMP DESC" "Zoey de Souza" "Cine Darcy" "palestra" "2025-09-04T14:00:00-03:00" "2025-09-04T15:30:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Erlang, MCP e Kubernetes: Lições de um Sistema Distribuído em Produção" "Uma jornada pelos desafios reais de construir sistemas distribuídos a fim de criar um assistente financeiro inteligente com LLM. Explorando como a BEAM/Erlang se integra com protocolo de modelo contextual (MCP) para criar clusters escaláveis, enfrentando questões de consistência eventual via delta CRDTs e a complexa integração entre Kubernetes e a máquina virtual do Erlang (BEAM). Um mergulho técnico com reviravoltas sobre como teoria encontra prática em sistemas de produção" "Zoey de Souza" "Cine Darcy" "palestra" "2025-09-04T14:00:00-03:00" "2025-09-04T15:30:00-03:00" true 0 true false "medium" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Palestra do Mano Deyvin" "TEMP DESC" "Mano Deyvin" "Cine Darcy" "palestra" "2025-09-04T16:00:00-03:00" "2025-09-04T18:00:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Palestra do Mano Deyvin" "SEM DESCRIÇÃO" "Mano Deyvin" "Cine Darcy" "palestra" "2025-09-04T16:00:00-03:00" "2025-09-04T18:00:00-03:00" true 0 true false "easy" "" && ((success_count++))
     ((total_count++))
 
     # Day 5 - September 5, 2025
-    create_activity "DevOps Desmistificado: Construindo sua Pipeline do Zero" "TEMP DESC" "Zoey de Souza" "INF-1" "minicurso" "2025-09-05T08:30:00-03:00" "2025-09-05T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "DevOps Desmistificado: Construindo sua Pipeline do Zero" "Minicurso que guia os participantes desde os fundamentos do terminal até a construção de pipelines de integração contínua (CI) e entrega contínua (CD). Através de exemplos e exercícios, exploraremos Docker, automação de deploy e boas práticas de DevOps, revelando como conceitos aparentemente simples se conectam para formar sistemas complexos de automação" "Zoey de Souza" "INF-1" "minicurso" "2025-09-05T08:30:00-03:00" "2025-09-05T12:00:00-03:00" false 25 false true "medium" "Linux/WSL, Docker, VSCode" && ((success_count++))
     ((total_count++))
 
-    create_activity "Autenticação de APIs e Controle de Acesso com Keycloak: Introdução ao RBAC" "TEMP DESC" "Brandon Carvalho" "INF-2" "minicurso" "2025-09-05T08:30:00-03:00" "2025-09-05T12:00:00-03:00" false 25 false true "easy" "123" && ((success_count++))
+    create_activity "Autenticação de APIs e Controle de Acesso com Keycloak: Introdução ao RBAC" "Neste minicurso, vamos explorar os fundamentos da autenticação e autorização em APIs modernas, com foco em boas práticas de segurança e gerenciamento de acesso baseado em funções (RBAC). Você aprenderá o que são tokens, roles, escopos, a diferença entre autenticação e autorização, e como integrar o Keycloak — uma poderosa ferramenta de identidade e acesso — com aplicações backend. Ao final, cada participante terá implementado uma API protegida com Keycloak, utilizando tokens JWT e controle de acesso por funções." "Brandon Carvalho" "INF-2" "minicurso" "2025-09-05T08:30:00-03:00" "2025-09-05T12:00:00-03:00" false 25 false true "easy" "Docker, Docker-compose, VSCode, Postman" && ((success_count++))
     ((total_count++))
 
-    create_activity "Fechamento do Hackathon" "TEMP DESC" "Comissão SCTI" "Cine Darcy" "palestra" "2025-09-05T14:00:00-03:00" "2025-09-05T15:30:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Fechamento do Hackathon" "TEMP DESC" "Comissão SCTI" "Cine Darcy" "palestra" "2025-09-05T14:00:00-03:00" "2025-09-05T15:30:00-03:00" true 0 true false "none" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Mercado Trabalho Exterior - Programador e Fundador da Operação Código de Ouro" "TEMP DESC" "Lucas Siqueira" "Cine Darcy" "palestra" "2025-09-05T16:00:00-03:00" "2025-09-05T18:00:00-03:00" true 0 true false "easy" "123" && ((success_count++))
+    create_activity "Mercado Trabalho Exterior - Programador e Fundador da Operação Código de Ouro" "Programador com 6 anos de carreira, sendo 4 deles trabalhando para empresas do Mercado Internacional, hoje Lucas atua como Software Engineer na Medely, é Especialista em Internacionalização de carreira, alocando Devs do Brasil inteiro em empresas internacionais e BigTechs como Meta, SAP, Santander, Itaú, Ifood, etc. 26 anos, se formou no Instituto Federal Fluminense em Campos - Rio de Janeiro e hoje ajuda múltiplas centenas de Devs a conseguirem a vaga internacional." "Lucas Siqueira" "Cine Darcy" "palestra" "2025-09-05T16:00:00-03:00" "2025-09-05T18:00:00-03:00" true 0 true false "easy" "" && ((success_count++))
     ((total_count++))
 
     log_success "Created $success_count out of $total_count activities"
