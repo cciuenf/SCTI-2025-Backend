@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -91,10 +92,11 @@ func (s *AuthService) Register(email, password, name, last_name string, isUenf b
 		return err
 	}
 
-	err = s.SendVerificationEmail(user, verificationNumber)
-	if err != nil {
-		return err
-	}
+	go func() {
+		if err := s.SendVerificationEmail(user, verificationNumber); err != nil {
+			log.Printf("Failed to send verification email to %s: %v", user.Email, err)
+		}
+	}()
 
 	return nil
 }
@@ -448,7 +450,13 @@ func (s *AuthService) InitiatePasswordReset(email string) error {
 		return err
 	}
 
-	return s.SendPasswordResetEmail(&user, resetToken)
+	go func() {
+		if err := s.SendPasswordResetEmail(&user, resetToken); err != nil {
+			log.Printf("Failed to send password reset email to %s: %v", user.Email, err)
+		}
+	}()
+
+	return nil
 }
 
 func (s *AuthService) ChangePassword(userID string, newPassword string) error {
@@ -505,5 +513,12 @@ func (s *AuthService) ResendVerificationCode(user *models.User) error {
 	if err := s.AuthRepo.UpdateUserVerification(user.ID, verificationNumber); err != nil {
 		return err
 	}
-	return s.SendVerificationEmail(user, verificationNumber)
+
+	go func() {
+		if err := s.SendVerificationEmail(user, verificationNumber); err != nil {
+			log.Printf("Failed to resend verification email to %s: %v", user.Email, err)
+		}
+	}()
+
+	return nil
 }
