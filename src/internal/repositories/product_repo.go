@@ -358,6 +358,12 @@ func (r *ProductRepo) PurchaseProduct(user models.User, event *models.Event, pro
 		Payer: &order.PayerRequest{
 			Email: user.Email,
 		},
+		Config: &order.ConfigRequest{
+			Online: &order.OnlineConfigRequest{
+				SuccessURL:  "https://sctiuenf.com.br/events/scti",
+				CallbackURL: "https://sctiuenf.com.br/events/scti",
+			},
+		},
 	}
 
 	resource, err := client.Create(context.Background(), request)
