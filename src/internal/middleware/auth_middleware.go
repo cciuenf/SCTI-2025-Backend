@@ -101,7 +101,7 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			}
 
 			if accessToken != nil && accessToken.Valid {
-				ctx := context.WithValue(r.Context(), "user", accessClaims)
+				ctx := context.WithValue(r.Context(), models.UserContextValue, accessClaims)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
@@ -138,7 +138,7 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			w.Header().Set("X-New-Access-Token", newAccessToken)
 			w.Header().Set("X-New-Refresh-Token", newRefreshToken)
 
-			ctx := context.WithValue(r.Context(), "user", newAccessClaims)
+			ctx := context.WithValue(r.Context(), models.UserContextValue, newAccessClaims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
