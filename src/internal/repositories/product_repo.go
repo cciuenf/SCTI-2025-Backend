@@ -156,6 +156,14 @@ func (r *ProductRepo) GetUserProductByUserIDAndProductID(userID string, productI
 	return userProducts, nil
 }
 
+func (r *ProductRepo) GetUserProducts() ([]models.UserProduct, error) {
+	var userProducts []models.UserProduct
+	if err := r.DB.Find(&userProducts).Error; err != nil {
+		return nil, err
+	}
+	return userProducts, nil
+}
+
 func (r *ProductRepo) GetUserProductsRelation(userID string) ([]models.UserProduct, error) {
 	var userProducts []models.UserProduct
 	if err := r.DB.Where("user_id = ?", userID).Find(&userProducts).Error; err != nil {

@@ -264,7 +264,16 @@ func (s *ProductService) DeleteEventProduct(user models.User, eventSlug string, 
 		}
 	}
 
-	// TODO: Check if product has been purchased before deletion
+	relation, err := s.ProductRepo.GetUserProducts()
+	if err != nil {
+		return errors.New("failed to retrive bought products info for deletion safety")
+	}
+
+	for _, product := range relation {
+		if product.ProductID == productID {
+			return errors.New("cannot delete a product that has been purchased by someone")
+		}
+	}
 
 	err = s.ProductRepo.DeleteProduct(productID)
 	if err != nil {
