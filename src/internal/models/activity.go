@@ -15,6 +15,20 @@ const (
 	ActivityHard   ActivityLevel = "hard"
 )
 
+type ActivityWithSlotsDTO struct {
+	Activity       Activity           `json:"activity"`
+	AvailableSlots AvailableSlotsInfo `json:"available_slots"`
+}
+
+type AvailableSlotsInfo struct {
+	ID                string `json:"id"`                  // Activity ID
+	TotalCapacity     int    `json:"total_capacity"`      // Total capacity (0 if unlimited)
+	CurrentOccupancy  int    `json:"current_occupancy"`   // Current number of registrations
+	AvailableSlots    int    `json:"available_slots"`     // Available slots (-1 if unlimited)
+	HasUnlimitedSlots bool   `json:"has_unlimited_slots"` // Whether activity has unlimited capacity
+	IsFull            bool   `json:"is_full"`             // Whether activity is at capacity
+}
+
 type Activity struct {
 	ID string `gorm:"type:varchar(36);primaryKey" example:"550e8400-e29b-41d4-a716-446655440000"`
 
