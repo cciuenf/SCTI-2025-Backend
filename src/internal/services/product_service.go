@@ -514,6 +514,7 @@ func (s *ProductService) ForcedPix(user models.User, eventSlug string, req model
 		Payer: &payment.PayerRequest{
 			Email: user.Email,
 		},
+		CallbackURL: "https://sctiuenf.com.br/events/scti",
 	}
 	resource, err := paymentClient.Create(context.Background(), request)
 	if err != nil {
