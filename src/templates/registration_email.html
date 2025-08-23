@@ -1,85 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Registration Confirmation</title>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <title>Confirmação de Inscrição</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 5px 5px 0 0;
-        }
-        .content {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 0 0 5px 5px;
-        }
-        .event-details {
-            background-color: white;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-            border-left: 4px solid #4CAF50;
-        }
-        .qr-section {
-            text-align: center;
-            margin: 20px 0;
-            padding: 20px;
-            background-color: white;
-            border-radius: 5px;
-            border: 2px dashed #4CAF50;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-            font-size: 12px;
-        }
+      body { margin:0 !important; padding:0 !important; background:#f3f4f6; font-family:Arial, Helvetica, sans-serif; }
+      img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; display:block; }
+      .container { max-width:600px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
+      .header { background:#0f2a4d; padding:24px 16px; color:#ffffff; text-align:center; border-radius:12px 12px 0 0; }
+      .header h1 { font-size:36px; line-height:40px; font-weight:bold; margin:0 0 8px 0; }
+      .header p { font-size:16px; line-height:22px; margin:0; opacity:0.9; }
+      .section { padding:24px 20px; text-align:center; }
+      .section h2 { font-size:20px; font-weight:600; margin:0; color:#111827; }
+      .section p { font-size:14px; color:#6b7280; margin:8px 0 0; }
+      .details { background:#f9fafb; border:1px solid #e5e7eb; margin:0 20px 16px; padding:16px; border-radius:8px; }
+      .details h3 { font-size:18px; font-weight:600; margin:0 0 12px; color:#111827; }
+      .row { display:flex; justify-content:space-between; align-items:flex-start; font-size:14px; padding:6px 0; }
+      .row .label { font-weight:600; color:#111827; width:35%; text-align:left; }
+      .row .value { color:#6b7280; width:65%; text-align:left; }
+      .qrcode { text-align:center; padding:12px 20px; }
+      .qrcode h3 { font-size:18px; font-weight:600; margin-bottom:8px; color:#111827; }
+      .qrcode div { display:inline-block; border:2px solid #f59e0b; padding:12px; border-radius:8px; }
+      .qrcode p { font-size:12px; color:#6b7280; margin-top:10px; }
+      .instructions { background:#fff7ed; border-left:5px solid #f59e0b; margin:0 20px 24px; padding:14px 16px; border-radius:8px; }
+      .instructions h3 { font-size:16px; font-weight:600; margin:0 0 6px; color:#0f172a; }
+      .instructions ul { margin:0; padding-left:18px; font-size:13px; color:#6b7280; }
+      .footer { background:#153a66; padding:16px; text-align:center; color:#ffffff; border-radius:0 0 12px 12px; }
+      .footer p { margin:0; }
+      .footer .muted { opacity:.75; }
     </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🎉 Event Registration Confirmed!</h1>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>Inscrição Confirmada!</h1>
+        <p>Sua inscrição foi realizada com sucesso</p>
+      </div>
+
+      <!-- Saudação -->
+      <div class="section">
+        <h2>Olá, {{ .User.Name }} {{ .User.LastName }}!</h2>
+        <p>Estamos felizes em confirmar sua participação no evento.</p>
+      </div>
+
+      <!-- Detalhes do evento -->
+      <div class="details">
+        <h3>Detalhes do Evento</h3>
+        <div class="row"><span class="label">Evento:</span><span class="value">{{ .Event.Name }}</span></div>
+        <div class="row"><span class="label">Descrição:</span><span class="value">{{ .Event.Description }}</span></div>
+        <div class="row"><span class="label">Data de Início:</span><span class="value">{{ .Event.StartDate.Format "02/01/2006 - 15:04" }}</span></div>
+        <div class="row"><span class="label">Data de Término:</span><span class="value">{{ .Event.EndDate.Format "02/01/2006 - 15:04" }}</span></div>
+        <div class="row"><span class="label">Local:</span><span class="value">{{ .Event.Location }}</span></div>
+      </div>
+
+      <!-- QR Code -->
+      <div class="qrcode">
+        <h3>Seu QR Code de Acesso</h3>
+        <div>
+          <img src="cid:{{ .Filename }}" width="128" height="128" alt="QR Code do Evento" />
+        </div>
+        <p>Apresente este QR Code no dia do evento para fazer seu check-in.</p>
+      </div>
+
+      <!-- Instruções -->
+      <div class="instructions">
+        <h3>Instruções Importantes</h3>
+        <ul>
+          <li>Chegue com pelo menos 10 minutos de antecedência.</li>
+          <li>Traga um documento de identificação válido.</li>
+          <li>Guarde este e-mail para consulta futura.</li>
+          <li>Em caso de dúvidas, entre em contato conosco.</li>
+        </ul>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>Obrigado por se inscrever! Nos vemos no evento.</p>
+        <p class="muted">© 2025 SCTI. Todos os direitos reservados.</p>
+      </div>
     </div>
-    
-    <div class="content">
-        <p>Hello <strong>{{ .User.Name }} {{ .User.LastName }}</strong>,</p>
-        
-        <p>Your registration to the event has been confirmed successfully!</p>
-        
-        <div class="event-details">
-            <h3>Event Details:</h3>
-            <p><strong>Event Name:</strong> {{ .Event.Name }}</p>
-            <p><strong>Description:</strong> {{ .Event.Description }}</p>
-            <p><strong>Location:</strong> {{ .Event.Location }}</p>
-            <p><strong>Start Date:</strong> {{ .Event.StartDate.Format "January 2, 2006 at 3:04 PM" }}</p>
-            <p><strong>End Date:</strong> {{ .Event.EndDate.Format "January 2, 2006 at 11:59 PM" }}</p>
-        </div>
-        
-        <div class="qr-section">
-            <h3>📱 Your Event QR Code</h3>
-            <p>Please save this QR code. You'll need it for event check-in:</p>
-            <img src="cid:{{ .Filename }}" alt="Event QR Code" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
-            <p><small>Scan this QR code at the event entrance</small></p>
-        </div>
-        
-        <p>We look forward to seeing you at the event!</p>
-        
-        <div class="footer">
-            <p>If you have any questions, please contact our support team.</p>
-            <p>Thank you for registering!</p>
-        </div>
-    </div>
-</body>
+  </body>
 </html>
