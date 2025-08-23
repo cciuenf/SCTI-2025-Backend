@@ -55,7 +55,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	// Users routes
 	mux.Handle("POST /users/create-event-creator", authMiddleware(http.HandlerFunc(userHandler.CreateEventCreator)))
 	mux.HandleFunc("GET /users/{id}", userHandler.GetUserInfoFromID)
-	mux.Handle("POST /users/batch", authMiddleware(http.HandlerFunc(userHandler.GetUserInfoBatched)))
+	mux.HandleFunc("POST /users/batch", userHandler.GetUserInfoBatched)
 
 	// Authentication routes
 	mux.HandleFunc("POST /register", authHandler.Register)
