@@ -421,6 +421,28 @@ func (h *ProductHandler) GetUserProductsRelation(w http.ResponseWriter, r *http.
 }
 
 // GetUserProducts godoc
+// @Summary      Get all bought user products
+// @Description  Returns a list of all products for the authenticated user
+// @Tags         products
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Product}
+// @Failure      400  {object}  ProductStandardErrorResponse
+// @Failure      401  {object}  ProductStandardErrorResponse
+// @Router       /user-products-relation [get]
+func (h *ProductHandler) GetAllUserProductsRelation(w http.ResponseWriter, r *http.Request) {
+	products, err := h.ProductService.GetAllUserProductsRelation()
+	if err != nil {
+		HandleErrMsg("error getting products", err, w).Stack("product").BadRequest()
+		return
+	}
+
+	handleSuccess(w, products, "", http.StatusOK)
+}
+
+// GetUserProducts godoc
 // @Summary      Get user products
 // @Description  Returns a list of all products for the authenticated user
 // @Tags         products

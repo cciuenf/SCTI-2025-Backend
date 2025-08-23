@@ -54,7 +54,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 
 	// Users routes
 	mux.Handle("POST /users/create-event-creator", authMiddleware(http.HandlerFunc(userHandler.CreateEventCreator)))
-	mux.Handle("GET /users/{id}", authMiddleware(http.HandlerFunc(userHandler.GetUserInfoFromID)))
+	mux.HandleFunc("GET /users/{id}", userHandler.GetUserInfoFromID)
 	mux.Handle("POST /users/batch", authMiddleware(http.HandlerFunc(userHandler.GetUserInfoBatched)))
 
 	// Authentication routes
@@ -110,6 +110,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("GET /events/{slug}/products", authMiddleware(http.HandlerFunc(productHandler.GetAllProductsFromEvent)))
 	mux.Handle("POST /events/{slug}/purchase", verifiedOnly(http.HandlerFunc(productHandler.PurchaseProducts)))
 	mux.Handle("GET /user-products-relation", verifiedOnly(http.HandlerFunc(productHandler.GetUserProductsRelation)))
+	mux.Handle("GET /all-user-products-relation", verifiedOnly(http.HandlerFunc(productHandler.GetAllUserProductsRelation)))
 	mux.Handle("GET /user-products", verifiedOnly(http.HandlerFunc(productHandler.GetUserProducts)))
 	mux.Handle("GET /user-tokens", verifiedOnly(http.HandlerFunc(productHandler.GetUserTokens)))
 	mux.Handle("GET /user-purchases", verifiedOnly(http.HandlerFunc(productHandler.GetUserPurchases)))

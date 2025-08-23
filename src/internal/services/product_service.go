@@ -306,6 +306,15 @@ func (s *ProductService) GetUserProductsRelation(user models.User) ([]models.Use
 	return products, nil
 }
 
+func (s *ProductService) GetAllUserProductsRelation() ([]models.UserProduct, error) {
+	products, err := s.ProductRepo.GetAllUserProductsRelation()
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	return products, nil
+}
+
 func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, error) {
 	userProducts, err := s.ProductRepo.GetUserProductsRelation(user.ID)
 	if err != nil {
