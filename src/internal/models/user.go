@@ -126,6 +126,10 @@ func (QRCode) TableName() string {
 	return "qr_codes"
 }
 
+type UserContext string
+
+const UserContextValue UserContext = "user"
+
 type AdminType string
 
 const (
