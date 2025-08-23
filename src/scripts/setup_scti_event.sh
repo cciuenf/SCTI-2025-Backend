@@ -330,7 +330,7 @@ create_all_activities() {
     create_activity "Erlang, MCP e Kubernetes: Lições de um Sistema Distribuído em Produção" "Uma jornada pelos desafios reais de construir sistemas distribuídos a fim de criar um assistente financeiro inteligente com LLM. Explorando como a BEAM/Erlang se integra com protocolo de modelo contextual (MCP) para criar clusters escaláveis, enfrentando questões de consistência eventual via delta CRDTs e a complexa integração entre Kubernetes e a máquina virtual do Erlang (BEAM). Um mergulho técnico com reviravoltas sobre como teoria encontra prática em sistemas de produção" "Zoey de Souza" "Cine Darcy" "palestra" "2025-09-04T14:00:00-03:00" "2025-09-04T15:30:00-03:00" true 0 true false "medium" "" && ((success_count++))
     ((total_count++))
 
-    create_activity "Palestra do Mano Deyvin" "SEM DESCRIÇÃO" "Mano Deyvin" "Cine Darcy" "palestra" "2025-09-04T16:00:00-03:00" "2025-09-04T18:00:00-03:00" true 0 true false "easy" "" && ((success_count++))
+    create_activity "Guia de Sobrevivência no Mercado Tech" "O mercado de tecnologia mudou e não, não é apenas culpa da IA. Se antes parecia fácil entrar e crescer, hoje a concorrência está mais acirrada e a realidade das empresas é bem diferente do que se vende em redes sociais e cursos milagrosos. Nesta palestra, compartilho quase 20 anos de experiência para alinhar expectativas de quem está começando ou tentando se recolocar." "Mano Deyvin" "Cine Darcy" "palestra" "2025-09-04T16:00:00-03:00" "2025-09-04T18:00:00-03:00" true 0 true false "easy" "" && ((success_count++))
     ((total_count++))
 
     # Day 5 - September 5, 2025
