@@ -53,7 +53,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.HandleFunc("/swagger/", httpSwagger.Handler(httpSwagger.URL("http://localhost:"+cfg.PORT+"/swagger/doc.json")))
 
 	// Users routes
-	mux.Handle("POST /users/create-event-creator", authMiddleware(http.HandlerFunc(userHandler.CreateEventCreator)))
+	mux.Handle("POST /users/create-event-creator", verifiedOnly(http.HandlerFunc(userHandler.CreateEventCreator)))
 	mux.HandleFunc("GET /users/{id}", userHandler.GetUserInfoFromID)
 	mux.HandleFunc("POST /users/batch", userHandler.GetUserInfoBatched)
 
