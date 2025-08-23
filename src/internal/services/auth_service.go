@@ -396,7 +396,7 @@ func (s *AuthService) SendPasswordResetEmail(user *models.User, resetToken strin
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 
-	resetLink := fmt.Sprintf("http://%s/change-password?token=%s", config.GetSiteURL(), resetToken)
+	resetLink := fmt.Sprintf("%s/change-password?token=%s", config.GetSiteURL(), resetToken)
 
 	templatePath := filepath.Join("templates", "password_reset_email.html")
 	file, err := os.Open(templatePath)
