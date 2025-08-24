@@ -552,3 +552,130 @@ func (h *AuthHandler) ResendVerificationCode(w http.ResponseWriter, r *http.Requ
 
 	handleSuccess(w, nil, "verification code resent", http.StatusOK)
 }
+
+// ForceReAuth godoc
+// @Summary      Forcefully reauthenticates you if already authenticated
+// @Description  Generates a new token pair and resends it to the user
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        X-Force-ReAuth header string true "{force reauth key}"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  AuthStandardErrorResponse
+// @Failure      401  {object}  AuthStandardErrorResponse
+// @Router       /force-reauth [post]
+func (h *AuthHandler) ForceReAuth(w http.ResponseWriter, r *http.Request) {
+	secretKey := config.GetJWTSecret()
+
+	xForceReAuth := r.Header.Get("X-Force-ReAuth")
+	if xForceReAuth == "" {
+		HandleErrMsg("error reauthenticating", errors.New("missing X-Force-ReAuth header"), w).Stack("auth").BadRequest()
+		return
+	}
+
+	if xForceReAuth != config.GetForceReAuthKey() {
+		HandleErrMsg("error reauthenticating", errors.New("X-Force-ReAuth has wrong key"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	accessHeader := r.Header.Get("Authorization")
+	if accessHeader == "" {
+		HandleErrMsg("error reauthenticating", errors.New("authorization header is required"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	if !strings.HasPrefix(accessHeader, "Bearer ") {
+		HandleErrMsg("error reauthenticating", errors.New("authorization header format must be Bearer {token}"), w).Stack("auth").Unauthorized()
+		return
+	}
+	accessTokenString := strings.TrimPrefix(accessHeader, "Bearer ")
+
+	refreshHeader := r.Header.Get("Refresh")
+	if refreshHeader == "" {
+		HandleErrMsg("error reauthenticating", errors.New("refresh token required for access"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	if !strings.HasPrefix(refreshHeader, "Bearer ") {
+		HandleErrMsg("error reauthenticating", errors.New("refresh header format must be \"Bearer {token}\""), w).Stack("auth").Unauthorized()
+		return
+	}
+	refreshTokenString := strings.TrimPrefix(refreshHeader, "Bearer ")
+
+	_, accessTokenErr := jwt.ParseWithClaims(accessTokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(secretKey), nil
+	})
+
+	refreshToken, refreshErr := jwt.ParseWithClaims(refreshTokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(secretKey), nil
+	})
+
+	if accessTokenErr != nil && !strings.Contains(accessTokenErr.Error(), "token is expired") {
+		HandleErrMsg("error reauthenticating", errors.New("invalid access token: "+accessTokenErr.Error()), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	if refreshErr != nil {
+		HandleErrMsg("error reauthenticating", errors.New("invalid refresh token: "+refreshErr.Error()), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	if !refreshToken.Valid {
+		HandleErrMsg("error reauthenticating", errors.New("refresh token is expired or invalid"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	refreshClaims, ok := refreshToken.Claims.(*jwt.MapClaims)
+	if !ok {
+		HandleErrMsg("error reauthenticating", errors.New("invalid refresh token claims"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	userID, ok := (*refreshClaims)["id"].(string)
+	if !ok {
+		HandleErrMsg("error reauthenticating", errors.New("invalid user_id in refresh token"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	storedToken, err := h.AuthService.FindRefreshToken(userID, refreshTokenString)
+	if err != nil || storedToken == nil {
+		HandleErrMsg("error reauthenticating", errors.New("refresh token not found or revoked"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	user, err := h.AuthService.AuthRepo.FindUserByID(userID)
+	if err != nil {
+		HandleErrMsg("error reauthenticating", errors.New("request user not found"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	newAccessToken, err := h.AuthService.GenerateAcessToken(user)
+	if err != nil {
+		HandleErrMsg("error reauthenticating", errors.New("failed to generate new access token"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	newRefreshToken, err := h.AuthService.GenerateRefreshToken(user.ID, r)
+	if err != nil {
+		HandleErrMsg("error reauthenticating", errors.New("failed to generate new refresh token"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	if err := h.AuthService.AuthRepo.UpdateRefreshToken(user.ID, refreshTokenString, newRefreshToken); err != nil {
+		HandleErrMsg("error reauthenticating", errors.New("failed to update refresh token"), w).Stack("auth").Unauthorized()
+		return
+	}
+
+	w.Header().Set("X-New-Access-Token", newAccessToken)
+	w.Header().Set("X-New-Refresh-Token", newRefreshToken)
+	handleSuccess(w, nil, "", http.StatusOK)
+}
