@@ -86,6 +86,18 @@ func (r *ProductRepo) GetUserByID(userID string) (models.User, error) {
 	return user, nil
 }
 
+func (r *ProductRepo) UserExists(email string) (bool, error) {
+	var user models.User
+	err := r.DB.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func (r *ProductRepo) GetUserByEmail(userEmail string) (models.User, error) {
 	lemail := strings.TrimSpace(strings.ToLower(userEmail))
 	var user models.User

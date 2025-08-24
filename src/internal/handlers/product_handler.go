@@ -525,3 +525,32 @@ func (h *ProductHandler) GetUserPurchases(w http.ResponseWriter, r *http.Request
 
 	handleSuccess(w, purchases, "", http.StatusOK)
 }
+
+// CanGift godoc
+// @Summary      Checks if you can gift to that user
+// @Description  checks all things about a user that you want to gift to
+// @Tags         products
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body models.CanGiftRequest true "recipient info"
+// @Success      200  {object}  NoMessageSuccessResponse
+// @Failure      400  {object}  ProductStandardErrorResponse
+// @Failure      401  {object}  ProductStandardErrorResponse
+// @Router       /can-gift [get]
+func (h *ProductHandler) CanGift(w http.ResponseWriter, r *http.Request) {
+	var reqBody models.CanGiftRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
+	res, err := h.ProductService.CanGift(reqBody)
+	if err != nil {
+		HandleErrMsg("error getting user info", err, w).Stack("product").BadRequest()
+		return
+	}
+
+	handleSuccess(w, res, "", http.StatusOK)
+}

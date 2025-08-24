@@ -536,3 +536,58 @@ func (s *ProductService) ForcedPix(user models.User, eventSlug string, req model
 
 	return resource, nil
 }
+
+func (s *ProductService) CanGift(req models.CanGiftRequest) (bool, error) {
+	user, err := s.ProductRepo.GetUserByEmail(req.Email)
+	if err != nil {
+		return false, errors.New("could not find user to gift")
+	}
+
+	product, err := s.ProductRepo.GetProductByID(req.ProductID)
+	if err != nil {
+		return false, errors.New("could not retrieve product for gifiting")
+	}
+
+	event, err := s.ProductRepo.GetEventByID(product.EventID)
+	if err != nil {
+		return false, errors.New("coudl not retrieve event of product for gifting")
+	}
+
+	state, err := s.ProductRepo.IsUserRegisteredToEvent(user.ID, event.ID)
+	if err != nil {
+		return false, errors.New("could not check if the user is registered to the event of the product")
+	}
+
+	if !state {
+		return false, errors.New("user is not registered to the event of the product")
+	}
+
+	if !product.HasUnlimitedQuantity {
+		if product.Quantity < req.Quantity {
+			return false, fmt.Errorf("not enough quantity available, want %v have %v", req.Quantity, product.Quantity)
+		}
+	}
+
+	if req.Quantity > product.MaxOwnableQuantity {
+		return false, fmt.Errorf("requested quantity exceeds max ownable quantity by: %d", req.Quantity-product.MaxOwnableQuantity)
+	}
+
+	ownedUserProducts, err := s.ProductRepo.GetUserProductByUserIDAndProductID(user.ID, product.ID)
+	if err != nil {
+		return false, errors.New("failed to get user product: " + err.Error())
+	}
+
+	var ownedQuantity int
+	if len(ownedUserProducts) > 0 {
+		for _, userProduct := range ownedUserProducts {
+			ownedQuantity += userProduct.Quantity
+		}
+	}
+
+	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
+		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
+		return false, errors.New(text)
+	}
+
+	return true, nil
+}

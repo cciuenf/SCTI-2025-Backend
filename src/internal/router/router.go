@@ -114,6 +114,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("GET /user-products", verifiedOnly(http.HandlerFunc(productHandler.GetUserProducts)))
 	mux.Handle("GET /user-tokens", verifiedOnly(http.HandlerFunc(productHandler.GetUserTokens)))
 	mux.Handle("GET /user-purchases", verifiedOnly(http.HandlerFunc(productHandler.GetUserPurchases)))
+	mux.Handle("POST /can-gift", verifiedOnly(http.HandlerFunc(productHandler.CanGift)))
 
 	// Payment Only Route
 	mux.Handle("POST /events/{slug}/forced-pix", verifiedOnly(http.HandlerFunc(productHandler.ForcedPix)))
