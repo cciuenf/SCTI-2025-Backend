@@ -200,7 +200,7 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 
 	tokenInt, err := strconv.Atoi(token)
 	if err != nil {
-		return err
+		return errors.New("Couldn't parse verification token: " + err.Error())
 	}
 
 	if storedToken.VerificationNumber != tokenInt {
@@ -331,12 +331,12 @@ func (s *AuthService) GenerateAcessToken(user models.User) (string, error) {
 	if os.Getenv("TEST_MODE") == "true" {
 		refreshExpireTime, err = strconv.Atoi(os.Getenv("TEST_REFRESH_EXPIRE_TIME"))
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("coudln't parse TEST_REFRESH_EXIRE_TIME: " + err.Error())
 		}
 	} else {
 		refreshExpireTime, err = strconv.Atoi(os.Getenv("REFRESH_EXPIRE_TIME"))
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("coudln't parse REFRESH_EXIRE_TIME: " + err.Error())
 		}
 	}
 
