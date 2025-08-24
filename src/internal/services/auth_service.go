@@ -357,9 +357,11 @@ func (s *AuthService) GenerateAcessToken(user models.User) (string, error) {
 
 func (s *AuthService) GenerateRefreshToken(userID string, r *http.Request) (string, error) {
 	userAgent := r.UserAgent()
+
 	// Se o server estiver atrás de um proxy, use o seguinte:
-	// ipAddress = r.Header.Get("X-Forwarded-For")
-	ipAddress := r.RemoteAddr
+	ipAddress := r.Header.Get("X-Forwarded-For")
+
+	// ipAddress := r.RemoteAddr
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":         userID,
