@@ -144,7 +144,7 @@ create_event() {
     local event_data='{
         "name": "Semana de Ciência e Tecnologia da Informação",
         "slug": "scti",
-        "description": "Bem vindos à SCTI! Uma semana repleta de palestras, minicursos e atividades sobre tecnologia da informação.",
+        "description": "A Semana de Ciência e Tecnologia da Informação (SCTI 2025) é um evento acadêmico organizado por estudantes da UENF que reúne, ao longo de cinco dias, palestras, minicursos, mesas-redondas e competições voltadas para o universo da computação e tecnologia. Com atividades que vão desde introduções práticas em segurança da informação, desenvolvimento de aplicativos, ciência de dados e inteligência artificial até discussões sobre mercado de trabalho e experiências internacionais, a SCTI busca integrar teoria e prática, aproximar estudantes do mercado e fomentar a troca de conhecimentos em um ambiente colaborativo e dinâmico.",
         "location": "UENF - Universidade Estadual do Norte Fluminense",
         "start_date": "2025-09-01T00:00:00-03:00",
         "end_date": "2025-09-05T23:59:59-03:00",
