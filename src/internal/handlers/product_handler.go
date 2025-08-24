@@ -540,13 +540,19 @@ func (h *ProductHandler) GetUserPurchases(w http.ResponseWriter, r *http.Request
 // @Failure      401  {object}  ProductStandardErrorResponse
 // @Router       /can-gift [get]
 func (h *ProductHandler) CanGift(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.ProductService.ProductRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
 	var reqBody models.CanGiftRequest
 	if err := decodeRequestBody(r, &reqBody); err != nil {
 		BadRequestError(w, err, "product")
 		return
 	}
 
-	res, err := h.ProductService.CanGift(reqBody)
+	res, err := h.ProductService.CanGift(user, reqBody)
 	if err != nil {
 		HandleErrMsg("error getting user info", err, w).Stack("product").BadRequest()
 		return

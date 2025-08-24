@@ -471,6 +471,8 @@ func (r *ProductRepo) CreatePixPurchase(user models.User, product *models.Produc
 	pp.ProductID = product.ID
 	pp.PurchaseID = purchaseID
 	pp.Quantity = req.Quantity
+	pp.IsGift = req.IsGift
+	pp.GiftedToEmail = req.GiftedToEmail
 	return r.DB.Create(&pp).Error
 }
 
@@ -545,8 +547,6 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 		Quantity:   pixPurchase.Quantity,
 	}
 
-	log.Printf("Is Product gift: %v", pixPurchase.IsGift)
-	log.Printf("Pix Purchase: %v", pixPurchase)
 	if pixPurchase.IsGift {
 		if pixPurchase.GiftedToEmail == nil {
 			tx.Rollback()
@@ -554,7 +554,6 @@ func (r *ProductRepo) FinalizePixPurchase(pixPurchase models.PixPurchase) error 
 			return errors.New("can't gift to nil email")
 		}
 		giftedUser, err := r.GetUserByEmail(*pixPurchase.GiftedToEmail)
-		log.Println("User to receive gift: " + giftedUser.Name)
 		if err != nil {
 			tx.Rollback()
 			log.Println("Error 7")

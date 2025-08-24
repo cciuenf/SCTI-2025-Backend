@@ -537,10 +537,14 @@ func (s *ProductService) ForcedPix(user models.User, eventSlug string, req model
 	return resource, nil
 }
 
-func (s *ProductService) CanGift(req models.CanGiftRequest) (bool, error) {
+func (s *ProductService) CanGift(reqUser models.User, req models.CanGiftRequest) (bool, error) {
 	user, err := s.ProductRepo.GetUserByEmail(req.Email)
 	if err != nil {
 		return false, errors.New("could not find user to gift")
+	}
+
+	if user.ID == reqUser.ID {
+		return false, errors.New("cannot gift yourself")
 	}
 
 	product, err := s.ProductRepo.GetProductByID(req.ProductID)
