@@ -421,6 +421,28 @@ func (h *ProductHandler) GetUserProductsRelation(w http.ResponseWriter, r *http.
 }
 
 // GetUserProducts godoc
+// @Summary      Get all bought user products
+// @Description  Returns a list of all products for the authenticated user
+// @Tags         products
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Product}
+// @Failure      400  {object}  ProductStandardErrorResponse
+// @Failure      401  {object}  ProductStandardErrorResponse
+// @Router       /user-products-relation [get]
+func (h *ProductHandler) GetAllUserProductsRelation(w http.ResponseWriter, r *http.Request) {
+	products, err := h.ProductService.GetAllUserProductsRelation()
+	if err != nil {
+		HandleErrMsg("error getting products", err, w).Stack("product").BadRequest()
+		return
+	}
+
+	handleSuccess(w, products, "", http.StatusOK)
+}
+
+// GetUserProducts godoc
 // @Summary      Get user products
 // @Description  Returns a list of all products for the authenticated user
 // @Tags         products
@@ -502,4 +524,39 @@ func (h *ProductHandler) GetUserPurchases(w http.ResponseWriter, r *http.Request
 	}
 
 	handleSuccess(w, purchases, "", http.StatusOK)
+}
+
+// CanGift godoc
+// @Summary      Checks if you can gift to that user
+// @Description  checks all things about a user that you want to gift to
+// @Tags         products
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body models.CanGiftRequest true "recipient info"
+// @Success      200  {object}  NoMessageSuccessResponse
+// @Failure      400  {object}  ProductStandardErrorResponse
+// @Failure      401  {object}  ProductStandardErrorResponse
+// @Router       /can-gift [get]
+func (h *ProductHandler) CanGift(w http.ResponseWriter, r *http.Request) {
+	user, err := getUserFromContext(h.ProductService.ProductRepo.GetUserByID, r)
+	if err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
+	var reqBody models.CanGiftRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		BadRequestError(w, err, "product")
+		return
+	}
+
+	res, err := h.ProductService.CanGift(user, reqBody)
+	if err != nil {
+		HandleErrMsg("error getting user info", err, w).Stack("product").BadRequest()
+		return
+	}
+
+	handleSuccess(w, res, "", http.StatusOK)
 }

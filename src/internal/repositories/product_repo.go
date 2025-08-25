@@ -86,6 +86,18 @@ func (r *ProductRepo) GetUserByID(userID string) (models.User, error) {
 	return user, nil
 }
 
+func (r *ProductRepo) UserExists(email string) (bool, error) {
+	var user models.User
+	err := r.DB.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func (r *ProductRepo) GetUserByEmail(userEmail string) (models.User, error) {
 	lemail := strings.TrimSpace(strings.ToLower(userEmail))
 	var user models.User
@@ -167,6 +179,14 @@ func (r *ProductRepo) GetUserProducts() ([]models.UserProduct, error) {
 func (r *ProductRepo) GetUserProductsRelation(userID string) ([]models.UserProduct, error) {
 	var userProducts []models.UserProduct
 	if err := r.DB.Where("user_id = ?", userID).Find(&userProducts).Error; err != nil {
+		return nil, err
+	}
+	return userProducts, nil
+}
+
+func (r *ProductRepo) GetAllUserProductsRelation() ([]models.UserProduct, error) {
+	var userProducts []models.UserProduct
+	if err := r.DB.Find(&userProducts).Error; err != nil {
 		return nil, err
 	}
 	return userProducts, nil
@@ -350,6 +370,12 @@ func (r *ProductRepo) PurchaseProduct(user models.User, event *models.Event, pro
 		Payer: &order.PayerRequest{
 			Email: user.Email,
 		},
+		Config: &order.ConfigRequest{
+			Online: &order.OnlineConfigRequest{
+				SuccessURL:  "https://sctiuenf.com.br/events/scti",
+				CallbackURL: "https://sctiuenf.com.br/events/scti",
+			},
+		},
 	}
 
 	resource, err := client.Create(context.Background(), request)
@@ -445,6 +471,8 @@ func (r *ProductRepo) CreatePixPurchase(user models.User, product *models.Produc
 	pp.ProductID = product.ID
 	pp.PurchaseID = purchaseID
 	pp.Quantity = req.Quantity
+	pp.IsGift = req.IsGift
+	pp.GiftedToEmail = req.GiftedToEmail
 	return r.DB.Create(&pp).Error
 }
 

@@ -9,6 +9,7 @@ import (
 	"scti/config"
 	"scti/internal/models"
 	repos "scti/internal/repositories"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -306,6 +307,15 @@ func (s *ProductService) GetUserProductsRelation(user models.User) ([]models.Use
 	return products, nil
 }
 
+func (s *ProductService) GetAllUserProductsRelation() ([]models.UserProduct, error) {
+	products, err := s.ProductRepo.GetAllUserProductsRelation()
+	if err != nil {
+		return nil, errors.New("failed to get products: " + err.Error())
+	}
+
+	return products, nil
+}
+
 func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, error) {
 	userProducts, err := s.ProductRepo.GetUserProductsRelation(user.ID)
 	if err != nil {
@@ -314,7 +324,9 @@ func (s *ProductService) GetUserProducts(user models.User) ([]models.Product, er
 
 	productIDs := make([]string, len(userProducts))
 	for i, product := range userProducts {
-		productIDs[i] = product.ProductID
+		if !slices.Contains(productIDs, product.ProductID) {
+			productIDs[i] = product.ProductID
+		}
 	}
 
 	products, err := s.ProductRepo.GetProductsByIDs(productIDs)
@@ -505,6 +517,7 @@ func (s *ProductService) ForcedPix(user models.User, eventSlug string, req model
 		Payer: &payment.PayerRequest{
 			Email: user.Email,
 		},
+		CallbackURL: "https://sctiuenf.com.br/events/scti",
 	}
 	resource, err := paymentClient.Create(context.Background(), request)
 	if err != nil {
@@ -522,4 +535,63 @@ func (s *ProductService) ForcedPix(user models.User, eventSlug string, req model
 	}
 
 	return resource, nil
+}
+
+func (s *ProductService) CanGift(reqUser models.User, req models.CanGiftRequest) (bool, error) {
+	user, err := s.ProductRepo.GetUserByEmail(req.Email)
+	if err != nil {
+		return false, errors.New("could not find user to gift")
+	}
+
+	if user.ID == reqUser.ID {
+		return false, errors.New("cannot gift yourself")
+	}
+
+	product, err := s.ProductRepo.GetProductByID(req.ProductID)
+	if err != nil {
+		return false, errors.New("could not retrieve product for gifiting")
+	}
+
+	event, err := s.ProductRepo.GetEventByID(product.EventID)
+	if err != nil {
+		return false, errors.New("coudl not retrieve event of product for gifting")
+	}
+
+	state, err := s.ProductRepo.IsUserRegisteredToEvent(user.ID, event.ID)
+	if err != nil {
+		return false, errors.New("could not check if the user is registered to the event of the product")
+	}
+
+	if !state {
+		return false, errors.New("user is not registered to the event of the product")
+	}
+
+	if !product.HasUnlimitedQuantity {
+		if product.Quantity < req.Quantity {
+			return false, fmt.Errorf("not enough quantity available, want %v have %v", req.Quantity, product.Quantity)
+		}
+	}
+
+	if req.Quantity > product.MaxOwnableQuantity {
+		return false, fmt.Errorf("requested quantity exceeds max ownable quantity by: %d", req.Quantity-product.MaxOwnableQuantity)
+	}
+
+	ownedUserProducts, err := s.ProductRepo.GetUserProductByUserIDAndProductID(user.ID, product.ID)
+	if err != nil {
+		return false, errors.New("failed to get user product: " + err.Error())
+	}
+
+	var ownedQuantity int
+	if len(ownedUserProducts) > 0 {
+		for _, userProduct := range ownedUserProducts {
+			ownedQuantity += userProduct.Quantity
+		}
+	}
+
+	if ownedQuantity+req.Quantity > product.MaxOwnableQuantity {
+		text := fmt.Sprintf("user with %d of this product is trying to buy %d, max ownable quantity is %d, this exceeds it by %d", ownedQuantity, req.Quantity, product.MaxOwnableQuantity, ownedQuantity+req.Quantity-product.MaxOwnableQuantity)
+		return false, errors.New(text)
+	}
+
+	return true, nil
 }

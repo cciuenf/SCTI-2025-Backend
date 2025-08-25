@@ -7,7 +7,7 @@ import (
 )
 
 func GetUserFromContext(ctx context.Context) *models.UserClaims {
-	claims, ok := ctx.Value("user").(*models.UserClaims)
+	claims, ok := ctx.Value(models.UserContextValue).(*models.UserClaims)
 	if !ok {
 		return nil
 	}

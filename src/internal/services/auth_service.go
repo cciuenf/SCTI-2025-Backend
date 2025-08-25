@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -91,10 +92,11 @@ func (s *AuthService) Register(email, password, name, last_name string, isUenf b
 		return err
 	}
 
-	err = s.SendVerificationEmail(user, verificationNumber)
-	if err != nil {
-		return err
-	}
+	go func() {
+		if err := s.SendVerificationEmail(user, verificationNumber); err != nil {
+			log.Printf("Failed to send verification email to %s: %v", user.Email, err)
+		}
+	}()
 
 	return nil
 }
@@ -198,7 +200,7 @@ func (s *AuthService) VerifyUser(user *models.User, token string) error {
 
 	tokenInt, err := strconv.Atoi(token)
 	if err != nil {
-		return err
+		return errors.New("Couldn't parse verification token: " + err.Error())
 	}
 
 	if storedToken.VerificationNumber != tokenInt {
@@ -329,12 +331,12 @@ func (s *AuthService) GenerateAcessToken(user models.User) (string, error) {
 	if os.Getenv("TEST_MODE") == "true" {
 		refreshExpireTime, err = strconv.Atoi(os.Getenv("TEST_REFRESH_EXPIRE_TIME"))
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("coudln't parse TEST_REFRESH_EXIRE_TIME: " + err.Error())
 		}
 	} else {
 		refreshExpireTime, err = strconv.Atoi(os.Getenv("REFRESH_EXPIRE_TIME"))
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("coudln't parse REFRESH_EXIRE_TIME: " + err.Error())
 		}
 	}
 
@@ -355,9 +357,11 @@ func (s *AuthService) GenerateAcessToken(user models.User) (string, error) {
 
 func (s *AuthService) GenerateRefreshToken(userID string, r *http.Request) (string, error) {
 	userAgent := r.UserAgent()
+
 	// Se o server estiver atrás de um proxy, use o seguinte:
-	// ipAddress = r.Header.Get("X-Forwarded-For")
-	ipAddress := r.RemoteAddr
+	ipAddress := r.Header.Get("X-Forwarded-For")
+
+	// ipAddress := r.RemoteAddr
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":         userID,
@@ -394,7 +398,7 @@ func (s *AuthService) SendPasswordResetEmail(user *models.User, resetToken strin
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 
-	resetLink := fmt.Sprintf("http://%s/change-password?token=%s", config.GetSiteURL(), resetToken)
+	resetLink := fmt.Sprintf("%s/change-password?token=%s", config.GetSiteURL(), resetToken)
 
 	templatePath := filepath.Join("templates", "password_reset_email.html")
 	file, err := os.Open(templatePath)
@@ -448,7 +452,13 @@ func (s *AuthService) InitiatePasswordReset(email string) error {
 		return err
 	}
 
-	return s.SendPasswordResetEmail(&user, resetToken)
+	go func() {
+		if err := s.SendPasswordResetEmail(&user, resetToken); err != nil {
+			log.Printf("Failed to send password reset email to %s: %v", user.Email, err)
+		}
+	}()
+
+	return nil
 }
 
 func (s *AuthService) ChangePassword(userID string, newPassword string) error {
@@ -505,5 +515,12 @@ func (s *AuthService) ResendVerificationCode(user *models.User) error {
 	if err := s.AuthRepo.UpdateUserVerification(user.ID, verificationNumber); err != nil {
 		return err
 	}
-	return s.SendVerificationEmail(user, verificationNumber)
+
+	go func() {
+		if err := s.SendVerificationEmail(user, verificationNumber); err != nil {
+			log.Printf("Failed to resend verification email to %s: %v", user.Email, err)
+		}
+	}()
+
+	return nil
 }

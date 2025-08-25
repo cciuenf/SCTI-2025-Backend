@@ -254,3 +254,9 @@ type UserToken struct {
 func (UserToken) TableName() string {
 	return "user_tokens"
 }
+
+type CanGiftRequest struct {
+	Email     string `json:"email"`
+	ProductID string `json:"product_id"`
+	Quantity  int    `json:"quantity"`
+}
