@@ -451,6 +451,11 @@ func (s *ActivityService) AttendActivity(admin models.User, eventSlug string, ac
 		return errors.New("activity does not belong to this event")
 	}
 
+	now := time.Now()
+	if activity.EndTime.Before(now) {
+		return errors.New("activity has already ended")
+	}
+
 	if !admin.IsSuperUser && event.CreatedBy != admin.ID {
 		adminStatus, err := s.ActivityRepo.GetUserAdminStatusBySlug(admin.ID, eventSlug)
 		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
