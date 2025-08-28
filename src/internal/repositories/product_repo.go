@@ -696,7 +696,7 @@ func (r *ProductRepo) GetAllActivitiesFromEvent(eventID string) ([]models.Activi
 	return activities, nil
 }
 
-func (r *ProductRepo) GetGlobalUserProductsFromID(id string) ([]models.UserProduct) {
+func (r *ProductRepo) GetGlobalUserProductsFromID(id string) ([]models.UserProduct, error) {
 	var userProducts []models.UserProduct
 	if err := r.DB.Where("product_id = ?", id).Find(&userProducts).Error; err != nil {
 		return nil, err
