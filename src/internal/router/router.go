@@ -88,6 +88,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("POST /v1/events/{slug}/unregister", verifiedOnly(http.HandlerFunc(eventHandler.UnregisterFromEvent)))
 	mux.Handle("POST /v1/events/{slug}/promote", verifiedOnly(http.HandlerFunc(eventHandler.PromoteUserOfEventBySlug)))
 	mux.Handle("POST /v1/events/{slug}/demote", verifiedOnly(http.HandlerFunc(eventHandler.DemoteUserOfEventBySlug)))
+	mux.Handle("POST /v1/events/{slug}/is-paid", verifiedOnly(http.HandlerFunc(eventHandler.IsUserPaid)))
 
 	// Event Activity routes accessed by event slug
 	mux.HandleFunc("GET /v1/events/{slug}/activities", activityHandler.GetAllActivitiesFromEvent)

@@ -388,3 +388,11 @@ func (r *EventRepo) GetProductsFromUserProducts(userProducts []models.UserProduc
 
 	return products, nil
 }
+
+func (r *EventRepo) GetUserProductByUserIDAndProductID(userID string, productID string) ([]models.UserProduct, error) {
+	var userProducts []models.UserProduct
+	if err := r.DB.Where("user_id = ? AND product_id = ?", userID, productID).Find(&userProducts).Error; err != nil {
+		return nil, err
+	}
+	return userProducts, nil
+}

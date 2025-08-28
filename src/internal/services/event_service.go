@@ -480,3 +480,35 @@ func (s *EventService) GetAllAttendances(admin models.User, eventSlug string) ([
 
 	return attendances, nil
 }
+
+func (s *EventService) IsUserPaid(user models.User, slug string, paidUserId string) (bool, error) {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return false, errors.New("event not found: " + err.Error())
+	}
+
+	if !user.IsSuperUser && event.CreatedBy != user.ID {
+		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return false, errors.New("unauthorized: only admins can get is-paid status")
+		}
+	}
+
+	registered, err := s.EventRepo.IsUserRegisteredToEvent(paidUserId, slug)
+	if err != nil {
+		return false, errors.New("error checking if user is registered to event")
+	}
+	if !registered {
+		return false, errors.New("user is not registered to event")
+	}
+
+	const ticketId = "ac225eb9-b41a-4f62-b717-676b43aa2d88"
+	products, err := s.EventRepo.GetUserProductByUserIDAndProductID(paidUserId, ticketId)
+	if err != nil {
+		return false, errors.New("error checking if user has event ticket")
+	}
+	if len(products) > 0 {
+		return true, nil
+	}
+	return false, errors.New("user doesnt have event ticket")
+}

@@ -421,3 +421,44 @@ func (h *EventHandler) GetUserEvents(w http.ResponseWriter, r *http.Request) {
 
 	handleSuccess(w, events, "", http.StatusOK)
 }
+
+// IsUserPaid godoc
+// @Summary      Tells if the user paid for the event or not
+// @Description  Returns a boolean indicating if the user is a paid attendant
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body models.IsUserPaidRequest true "User to check status"
+// @Success      200  {object}  NoMessageSuccessResponse{data=bool}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/is-paid [get]
+func (h *EventHandler) IsUserPaid(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var reqBody models.IsUserPaidRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	hasTicket, err := h.EventService.IsUserPaid(user, slug, reqBody.ID)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, hasTicket, "", http.StatusOK)
+}

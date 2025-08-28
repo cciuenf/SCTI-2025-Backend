@@ -89,3 +89,7 @@ type UpdateEventRequest struct {
 	IsHidden  bool `json:"is_hidden" example:"true"`
 	IsBlocked bool `json:"is_blocked" example:"false"`
 }
+
+type IsUserPaidRequest struct {
+	ID string `json:"id" example:"550e8400-e29b-41d4-a716-446655440001"`
+}
