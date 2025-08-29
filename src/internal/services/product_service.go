@@ -595,3 +595,7 @@ func (s *ProductService) CanGift(reqUser models.User, req models.CanGiftRequest)
 
 	return true, nil
 }
+
+func (s *ProductService) GetGlobalUserProductsFromID(id string) ([]models.UserProduct, error) {
+	return s.ProductRepo.GetGlobalUserProductsFromID(id)
+}

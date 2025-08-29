@@ -2,6 +2,8 @@ services:
   db:
     image: postgres:latest
     container_name: database-layer
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${DATABASE}
       POSTGRES_USER: ${DATABASE_USER}

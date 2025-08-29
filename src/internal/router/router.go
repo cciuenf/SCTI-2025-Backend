@@ -88,6 +88,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("POST /v1/events/{slug}/unregister", verifiedOnly(http.HandlerFunc(eventHandler.UnregisterFromEvent)))
 	mux.Handle("POST /v1/events/{slug}/promote", verifiedOnly(http.HandlerFunc(eventHandler.PromoteUserOfEventBySlug)))
 	mux.Handle("POST /v1/events/{slug}/demote", verifiedOnly(http.HandlerFunc(eventHandler.DemoteUserOfEventBySlug)))
+	mux.Handle("POST /v1/events/{slug}/is-paid", verifiedOnly(http.HandlerFunc(eventHandler.IsUserPaid)))
 
 	// Event Activity routes accessed by event slug
 	mux.HandleFunc("GET /v1/events/{slug}/activities", activityHandler.GetAllActivitiesFromEvent)
@@ -112,6 +113,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("POST /v1/events/{slug}/purchase", verifiedOnly(http.HandlerFunc(productHandler.PurchaseProducts)))
 	mux.Handle("GET /v1/user-products-relation", verifiedOnly(http.HandlerFunc(productHandler.GetUserProductsRelation)))
 	mux.HandleFunc("GET /v1/all-user-products-relation", productHandler.GetAllUserProductsRelation)
+	mux.HandleFunc("GET /v1/user-products-global/{id}", productHandler.GetGlobalUserProductsFromID)
 	mux.Handle("GET /v1/user-products", verifiedOnly(http.HandlerFunc(productHandler.GetUserProducts)))
 	mux.Handle("GET /v1/user-tokens", verifiedOnly(http.HandlerFunc(productHandler.GetUserTokens)))
 	mux.Handle("GET /v1/user-purchases", verifiedOnly(http.HandlerFunc(productHandler.GetUserPurchases)))
