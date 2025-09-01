@@ -396,3 +396,33 @@ func (r *EventRepo) GetUserProductByUserIDAndProductID(userID string, productID 
 	}
 	return userProducts, nil
 }
+
+func (r *EventRepo) CreateCoffee(event *models.CoffeeBreak) error {
+	return r.DB.Create(event).Error
+}
+
+func (r *EventRepo) GetCoffeeByID(coffee_id string) (*models.CoffeeBreak, error) {
+	var coffee models.CoffeeBreak
+	if err := r.DB.Where("id = ?", coffee_id).Find(&coffee).Error; err != nil {
+		return nil, err
+	}
+	return &coffee, nil
+}
+
+func (r *EventRepo) GetAllCoffees(event_id string) ([]models.CoffeeBreak, error) {
+	var coffee []models.CoffeeBreak
+	if err := r.DB.Where("event_id = ?", event_id).Find(&coffee).Error; err != nil {
+		return nil, err
+	}
+	return coffee, nil
+}
+
+func (r *EventRepo) UpdateCoffee(event *models.CoffeeBreak) error {
+	return r.DB.Save(event).Error
+}
+
+func (r *EventRepo) DeleteCoffee(coffee_id string) error {
+	return r.DB.Where("id = ?", coffee_id).Delete(&models.CoffeeBreak{}).Error
+}
+
+

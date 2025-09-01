@@ -512,3 +512,96 @@ func (s *EventService) IsUserPaid(user models.User, slug string, paidUserId stri
 	}
 	return false, errors.New("user doesnt have event ticket")
 }
+
+func (s *EventService) CreateCoffee(user models.User, slug string, body models.CreateCoffeeRequest) (*models.CoffeeBreak, error) {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	if !user.IsSuperUser && event.CreatedBy != user.ID {
+		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return nil, errors.New("unauthorized: only admins can create coffee breaks")
+		}
+	}
+
+	if body.EndDate.Before(body.StartDate) {
+		return nil, errors.New("event end can't be before event start")
+	}
+
+	var coffee models.CoffeeBreak
+	coffee.StartDate = body.StartDate
+	coffee.EndDate = body.EndDate
+	coffee.ID = uuid.New().String()
+	coffee.EventID = event.ID
+
+	err = s.EventRepo.CreateCoffee(&coffee)
+	return &coffee, err
+}
+
+func (s *EventService) GetAllCoffees(slug string) ([]models.CoffeeBreak, error) {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	return s.EventRepo.GetAllCoffees(event.ID)
+}
+
+func (s *EventService) UpdateCoffee(user models.User, slug string, newData *models.UpdateCoffeeRequest) (*models.CoffeeBreak, error) {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+
+	orig, err := s.EventRepo.GetCoffeeByID(newData.ID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.New("couldn't find coffee")
+		}
+    return nil, err
+	}
+
+	if orig.ID != newData.ID {
+		return nil, errors.New("mismatched coffee IDs")
+	}
+
+	if !user.IsSuperUser && event.CreatedBy != user.ID {
+		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return nil, errors.New("unauthorized: only admins can update coffee breaks")
+		}
+	}
+
+	if newData.EndDate.Before(newData.StartDate) {
+		return nil, errors.New("event end can't be before event start")
+	}
+
+	var coffee models.CoffeeBreak
+	coffee.StartDate = newData.StartDate
+	coffee.EndDate = newData.EndDate
+
+	err = s.EventRepo.UpdateCoffee(&coffee)
+	return &coffee, err
+}
+
+func (s *EventService) DeleteCoffee(user models.User, slug string, body models.DeleteCoffeeRequest) error {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return err
+	}
+
+	if body.ID == "" {
+		return errors.New("id cannot be empty")
+	}
+
+	if !user.IsSuperUser && event.CreatedBy != user.ID {
+		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return errors.New("unauthorized: only admins can delete coffee breaks")
+		}
+	}
+
+	return s.EventRepo.DeleteCoffee(body.ID)
+}

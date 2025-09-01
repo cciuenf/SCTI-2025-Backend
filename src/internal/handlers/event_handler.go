@@ -462,3 +462,155 @@ func (h *EventHandler) IsUserPaid(w http.ResponseWriter, r *http.Request) {
 
 	handleSuccess(w, hasTicket, "", http.StatusOK)
 }
+
+// CreateEvent godoc
+// @Summary      Create a new event
+// @Description  Creates a new event. Only master users can create events
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        request body models.CreateEventRequest true "Event creation info"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.Event}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Failure      403  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee [post]
+func (h *EventHandler) CreateCoffee(w http.ResponseWriter, r *http.Request) {
+	var reqBody models.CreateCoffeeRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	coffee, err := h.EventService.CreateCoffee(user, slug, reqBody)
+	if err != nil {
+		handleError(w, errors.New("error creating coffee break: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, coffee, "", http.StatusOK)
+}
+
+// GetAllEvents godoc
+// @Summary      Get all events
+// @Description  Returns a list of all events
+// @Tags         events
+// @Produce      json
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Event}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee [get]
+func (h *EventHandler) GetAllCoffees(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	coffees, err := h.EventService.GetAllCoffees(slug)
+	if err != nil {
+		handleError(w, errors.New("error getting all coffees: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, coffees, "", http.StatusOK)
+}
+
+// UpdateEvent godoc
+// @Summary      Update an event by slug
+// @Description  Updates an existing event using its slug. Only master users can update events
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Param        request body models.UpdateEventRequest true "Event update info"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.Event}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Failure      403  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee [patch]
+func (h *EventHandler) UpdateCoffee(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var reqBody models.UpdateCoffeeRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	updatedCoffee, err := h.EventService.UpdateCoffee(user, slug, &reqBody)
+	if err != nil {
+		handleError(w, errors.New("error updating coffee break: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, updatedCoffee, "", http.StatusOK)
+}
+
+// DeleteEvent godoc
+// @Summary      Delete an event by slug
+// @Description  Deletes an existing event using its slug. Only master users can delete events
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Failure      403  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee [delete]
+func (h *EventHandler) DeleteCoffee(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var reqBody models.DeleteCoffeeRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.EventService.DeleteCoffee(user, slug, reqBody); err != nil {
+		handleError(w, errors.New("error deleting event: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, nil, "deleted event", http.StatusOK)
+}
