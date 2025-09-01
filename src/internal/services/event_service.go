@@ -564,7 +564,7 @@ func (s *EventService) UpdateCoffee(user models.User, slug string, newData *mode
 		if err == gorm.ErrRecordNotFound {
 			return nil, errors.New("couldn't find coffee")
 		}
-    return nil, err
+		return nil, err
 	}
 
 	if orig.ID != newData.ID {
