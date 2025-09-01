@@ -425,4 +425,19 @@ func (r *EventRepo) DeleteCoffee(coffee_id string) error {
 	return r.DB.Where("id = ?", coffee_id).Delete(&models.CoffeeBreak{}).Error
 }
 
+func (r *EventRepo) IsUserRegisteredToCoffee(userID string, coffee_id string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&models.CoffeeRegistration{}).
+		Where("user_id = ? AND event_id = ?", userID, coffee_id).
+		Count(&count).Error
 
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (r *EventRepo) CreateCoffeeRegistration(registration *models.CoffeeRegistration) error {
+	return r.DB.Create(registration).Error
+}

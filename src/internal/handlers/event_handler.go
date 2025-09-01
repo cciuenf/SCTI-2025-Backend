@@ -614,3 +614,44 @@ func (h *EventHandler) DeleteCoffee(w http.ResponseWriter, r *http.Request) {
 
 	handleSuccess(w, nil, "deleted event", http.StatusOK)
 }
+
+// Saving the qr code as a png file in the server
+// RegisterToEvent godoc
+// @Summary      Register to an event
+// @Description  Registers the authenticated user to an event by its slug
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee/register [post]
+func (h *EventHandler) RegisterToCoffee(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var reqBody models.RegisterToCoffeeRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.EventService.RegisterUserToCoffee(user, slug, reqBody.ID); err != nil {
+		handleError(w, errors.New("error registering to coffee: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, nil, "registered to coffee", http.StatusOK)
+}

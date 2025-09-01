@@ -81,6 +81,11 @@ type DeleteCoffeeRequest struct {
 	ID          string    `gorm:"type:varchar(36);primaryKey" json:"id"`
 }
 
+
+type RegisterToCoffeeRequest struct {
+	ID          string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+}
+
 type CoffeeRegistration struct {
 	CoffeeID string `gorm:"type:varchar(36);primaryKey" json:"coffee_id"`
   UserID   string `gorm:"type:varchar(36);primaryKey" json:"user_id"`

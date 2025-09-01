@@ -168,7 +168,9 @@ func (s *EventService) RegisterUserToEvent(user models.User, slug string) error 
 	}()
 
 	event.ParticipantCount++
-	s.EventRepo.UpdateEvent(event)
+	if err := s.EventRepo.UpdateEvent(event); err != nil {
+		return errors.New("could not update the event")
+	}
 
 	go func() {
 		activities, err := s.EventRepo.GetAllActivitiesFromEvent(event.ID)
@@ -306,7 +308,9 @@ func (s *EventService) UnregisterUserFromEvent(user models.User, slug string) er
 
 	if event.ParticipantCount > 0 {
 		event.ParticipantCount--
-		s.EventRepo.UpdateEvent(event)
+		if err := s.EventRepo.UpdateEvent(event); err != nil {
+			return errors.New("could not update the event")
+		}
 	}
 
 	return s.EventRepo.DeleteEventRegistration(user.ID, event.ID)
@@ -604,4 +608,32 @@ func (s *EventService) DeleteCoffee(user models.User, slug string, body models.D
 	}
 
 	return s.EventRepo.DeleteCoffee(body.ID)
+}
+
+func (s *EventService) RegisterUserToCoffee(user models.User, slug string, coffee_id string) error {
+	isRegistered, err := s.EventRepo.IsUserRegisteredToCoffee(user.ID, coffee_id)
+	if err != nil {
+		return err
+	}
+	if isRegistered {
+		return errors.New("user already registered to this event")
+	}
+
+	product, err := s.EventRepo.GetUserProductByUserIDAndProductID(user.ID, "")
+	if err != nil {
+		return errors.New("could not get user product")
+	}
+
+	if product == nil {
+		return errors.New("product came back as nil")
+	}
+
+	now := time.Now()
+	registration := models.CoffeeRegistration{
+		CoffeeID:   coffee_id,
+		UserID:     user.ID,
+		AttendedAt: &now,
+	}
+
+	return s.EventRepo.CreateCoffeeRegistration(&registration)
 }

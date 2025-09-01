@@ -93,6 +93,7 @@ func InitializeMux(database *gorm.DB, cfg *config.Config) http.Handler {
 	mux.Handle("GET /v1/events/{slug}/coffee", verifiedOnly(http.HandlerFunc(eventHandler.GetAllCoffees)))
 	mux.Handle("DELETE /v1/events/{slug}/coffee", verifiedOnly(http.HandlerFunc(eventHandler.DeleteCoffee)))
 	mux.Handle("PATCH /v1/events/{slug}/coffee", verifiedOnly(http.HandlerFunc(eventHandler.UpdateCoffee)))
+	mux.Handle("POST /v1/events/{slug}/coffee/register", verifiedOnly(http.HandlerFunc(eventHandler.RegisterToCoffee)))
 
 	// Event Activity routes accessed by event slug
 	mux.HandleFunc("GET /v1/events/{slug}/activities", activityHandler.GetAllActivitiesFromEvent)
