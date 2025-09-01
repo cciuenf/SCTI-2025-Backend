@@ -582,12 +582,11 @@ func (s *EventService) UpdateCoffee(user models.User, slug string, newData *mode
 		return nil, errors.New("event end can't be before event start")
 	}
 
-	var coffee models.CoffeeBreak
-	coffee.StartDate = newData.StartDate
-	coffee.EndDate = newData.EndDate
+	orig.StartDate = newData.StartDate
+	orig.EndDate = newData.EndDate
 
-	err = s.EventRepo.UpdateCoffee(&coffee)
-	return &coffee, err
+	err = s.EventRepo.UpdateCoffee(orig)
+	return orig, err
 }
 
 func (s *EventService) DeleteCoffee(user models.User, slug string, body models.DeleteCoffeeRequest) error {
