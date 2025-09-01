@@ -610,21 +610,30 @@ func (s *EventService) DeleteCoffee(user models.User, slug string, body models.D
 }
 
 func (s *EventService) RegisterUserToCoffee(user models.User, slug string, coffee_id string) error {
+	registered, err := s.EventRepo.IsUserRegisteredToEvent(user.ID, slug)
+	if err != nil {
+		return errors.New("error checking if user is registered to event")
+	}
+	if !registered {
+		return errors.New("user is not registered to event")
+	}
+
 	isRegistered, err := s.EventRepo.IsUserRegisteredToCoffee(user.ID, coffee_id)
 	if err != nil {
 		return err
 	}
 	if isRegistered {
-		return errors.New("user already registered to this event")
+		return errors.New("user already registered to this coffee")
 	}
 
-	product, err := s.EventRepo.GetUserProductByUserIDAndProductID(user.ID, "")
+	const ticketId = "ac225eb9-b41a-4f62-b717-676b43aa2d88"
+	product, err := s.EventRepo.GetUserProductByUserIDAndProductID(user.ID, ticketId)
 	if err != nil {
 		return errors.New("could not get user product")
 	}
 
-	if product == nil {
-		return errors.New("product came back as nil")
+	if len(product) <= 0 {
+		return errors.New("user doesnt have event ticket")
 	}
 
 	now := time.Now()
@@ -635,4 +644,25 @@ func (s *EventService) RegisterUserToCoffee(user models.User, slug string, coffe
 	}
 
 	return s.EventRepo.CreateCoffeeRegistration(&registration)
+}
+
+func (s *EventService) GetCoffeeRegistrations() ([]models.CoffeeRegistration, error) {
+	return s.EventRepo.GetCoffeeRegistrations()
+}
+func (s *EventService) GetCoffeeRegistrationsByCoffeeID(slug string, id string) (*models.CoffeeRegistration, error) {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	coffee, err := s.EventRepo.GetCoffeeByID(id)
+	if err != nil {
+		return nil, errors.New("coffee not found: " + err.Error())
+	}
+
+	if coffee.EventID != event.ID {
+		return nil, errors.New("coffee does not belong to this event")
+	}
+
+	return s.EventRepo.GetCoffeeRegistrationsByCoffeeID(coffee.ID)
 }

@@ -441,3 +441,19 @@ func (r *EventRepo) IsUserRegisteredToCoffee(userID string, coffee_id string) (b
 func (r *EventRepo) CreateCoffeeRegistration(registration *models.CoffeeRegistration) error {
 	return r.DB.Create(registration).Error
 }
+
+func (r *EventRepo) GetCoffeeRegistrations() ([]models.CoffeeRegistration, error) {
+	var registrations []models.CoffeeRegistration
+	if err := r.DB.Find(&registrations).Error; err != nil {
+		return nil, err
+	}
+	return registrations, nil
+}
+
+func (r *EventRepo) GetCoffeeRegistrationsByCoffeeID(coffee_id string) (*models.CoffeeRegistration, error) {
+	var registration models.CoffeeRegistration
+	if err := r.DB.Where("coffee_id = ?", coffee_id).First(&registration).Error; err != nil {
+		return nil, err
+	}
+	return &registration, nil
+}

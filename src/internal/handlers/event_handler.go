@@ -655,3 +655,62 @@ func (h *EventHandler) RegisterToCoffee(w http.ResponseWriter, r *http.Request) 
 
 	handleSuccess(w, nil, "registered to coffee", http.StatusOK)
 }
+
+// GetCoffeeRegistrations godoc
+// @Summary      Get coffee registrations
+// @Description  Returns a list of all registrations for a coffee
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.CoffeeRegistration}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee/registrations [get]
+func (h *EventHandler) GetCoffeeRegistrations(w http.ResponseWriter, r *http.Request) {
+	registrations, err := h.EventService.GetCoffeeRegistrations()
+	if err != nil {
+		handleError(w, errors.New("error getting coffee registrations: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, registrations, "", http.StatusOK)
+}
+
+// GetCoffeeRegistrationByID godoc
+// @Summary      Get coffee registration by ID
+// @Description  Returns a registration for a coffee by its ID
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Param        id path string true "Coffee ID"
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.CoffeeRegistration}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee/{id} [get]
+func (h *EventHandler) GetCoffeeRegistrationsByCoffeeID(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	id := r.PathValue("id")
+	if id == "" {
+		handleError(w, errors.New("coffee ID is required"), http.StatusBadRequest)
+		return
+	}
+
+	registrations, err := h.EventService.GetCoffeeRegistrationsByCoffeeID(slug, id)
+	if err != nil {
+		handleError(w, errors.New("error getting coffee registrations: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, registrations, "", http.StatusOK)
+}
