@@ -442,6 +442,32 @@ func (h *ProductHandler) GetAllUserProductsRelation(w http.ResponseWriter, r *ht
 	handleSuccess(w, products, "", http.StatusOK)
 }
 
+// GetGlobalUserProductsFromID godoc
+// @Summary      Get all site-wide bought user products from an id
+// @Description  Returns a list of all site-wide owned products for a given id
+// @Tags         product
+// @Produce      json
+// @Security     Bearer
+// @Param        id path string true "Product ID"
+// @Success      200  {object}  NoMessageSuccessResponse{data=[]models.Product}
+// @Failure      400  {object}  ProductStandardErrorResponse
+// @Failure      401  {object}  ProductStandardErrorResponse
+// @Router       /user-products-global/{id} [get]
+func (h *ProductHandler) GetGlobalUserProductsFromID(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		HandleErrMsg("error getting products", errors.New("id cannot be empty"), w).Stack("product").BadRequest()
+	}
+
+	products, err := h.ProductService.GetGlobalUserProductsFromID(id)
+	if err != nil {
+		HandleErrMsg("error getting products", err, w).Stack("product").BadRequest()
+		return
+	}
+
+	handleSuccess(w, products, "", http.StatusOK)
+}
+
 // GetUserProducts godoc
 // @Summary      Get user products
 // @Description  Returns a list of all products for the authenticated user
