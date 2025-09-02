@@ -675,7 +675,7 @@ func (s *EventService) GetAllCoffeeRegistrations(slug string) ([]models.CoffeeRe
 
 	return s.EventRepo.GetAllCoffeeRegistrations(event.ID)
 }
-func (s *EventService) GetCoffeeRegistrationsByCoffeeID(slug string, id string) (*models.CoffeeRegistration, error) {
+func (s *EventService) GetCoffeeRegistrationsByCoffeeID(slug string, id string) (*[]models.CoffeeRegistration, error) {
 	event, err := s.EventRepo.GetEventBySlug(slug)
 	if err != nil {
 		return nil, errors.New("event not found: " + err.Error())

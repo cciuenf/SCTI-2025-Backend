@@ -428,7 +428,7 @@ func (r *EventRepo) DeleteCoffee(coffee_id string) error {
 func (r *EventRepo) IsUserRegisteredToCoffee(userID string, coffee_id string) (bool, error) {
 	var count int64
 	err := r.DB.Model(&models.CoffeeRegistration{}).
-		Where("user_id = ? AND event_id = ?", userID, coffee_id).
+		Where("user_id = ? AND coffee_id = ?", userID, coffee_id).
 		Count(&count).Error
 
 	if err != nil {
@@ -461,8 +461,8 @@ func (r *EventRepo) GetAllCoffeeRegistrations(event_id string) ([]models.CoffeeR
 	return registrations, nil
 }
 
-func (r *EventRepo) GetCoffeeRegistrationsByCoffeeID(coffee_id string) (*models.CoffeeRegistration, error) {
-	var registration models.CoffeeRegistration
+func (r *EventRepo) GetCoffeeRegistrationsByCoffeeID(coffee_id string) (*[]models.CoffeeRegistration, error) {
+	var registration []models.CoffeeRegistration
 	if err := r.DB.Where("coffee_id = ?", coffee_id).First(&registration).Error; err != nil {
 		return nil, err
 	}
