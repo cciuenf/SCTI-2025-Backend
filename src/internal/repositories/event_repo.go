@@ -442,10 +442,21 @@ func (r *EventRepo) CreateCoffeeRegistration(registration *models.CoffeeRegistra
 	return r.DB.Create(registration).Error
 }
 
-func (r *EventRepo) GetCoffeeRegistrations() ([]models.CoffeeRegistration, error) {
-	var registrations []models.CoffeeRegistration
-	if err := r.DB.Find(&registrations).Error; err != nil {
+func (r *EventRepo) GetAllCoffeeRegistrations(event_id string) ([]models.CoffeeRegistration, error) {
+	var coffees []models.CoffeeBreak
+	if err := r.DB.Where("event_id = ?", event_id).Find(&coffees).Error; err != nil {
 		return nil, err
+	}
+
+	var registrations []models.CoffeeRegistration
+	for _, coffee := range coffees {
+		if err := r.DB.Where("coffee_id = ?", coffee.ID).Find(&registrations).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				continue
+			}
+			return nil, err
+		}
+		registrations = append(registrations, registrations...)
 	}
 	return registrations, nil
 }
@@ -456,4 +467,10 @@ func (r *EventRepo) GetCoffeeRegistrationsByCoffeeID(coffee_id string) (*models.
 		return nil, err
 	}
 	return &registration, nil
+}
+
+func (r *EventRepo) DeleteCoffeeRegistration(userID string, coffeeID string) error {
+	return r.DB.Where("user_id = ? AND coffee_id = ?", userID, coffeeID).
+		Unscoped().
+		Delete(&models.CoffeeRegistration{}).Error
 }

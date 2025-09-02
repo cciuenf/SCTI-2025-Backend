@@ -530,6 +530,36 @@ func (h *EventHandler) GetAllCoffees(w http.ResponseWriter, r *http.Request) {
 	handleSuccess(w, coffees, "", http.StatusOK)
 }
 
+// GetCoffeeByID godoc
+// @Summary      Get coffee by ID
+// @Description  Returns a coffee by its ID
+// @Tags         events
+// @Produce      json
+// @Success      200  {object}  NoMessageSuccessResponse{data=models.CoffeeBreak}
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee/{id} [get]
+func (h *EventHandler) GetCoffeeByID(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	id := r.PathValue("id")
+	if id == "" {
+		handleError(w, errors.New("coffee ID is required"), http.StatusBadRequest)
+		return
+	}
+
+	coffee, err := h.EventService.GetCoffeeByID(slug, id)
+	if err != nil {
+		handleError(w, errors.New("error getting coffee by ID: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, coffee, "", http.StatusOK)
+}
+
 // UpdateEvent godoc
 // @Summary      Update an event by slug
 // @Description  Updates an existing event using its slug. Only master users can update events
@@ -648,7 +678,17 @@ func (h *EventHandler) RegisterToCoffee(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.EventService.RegisterUserToCoffee(user, slug, reqBody.ID); err != nil {
+	if reqBody.UserID == "" {
+		handleError(w, errors.New("user ID cannot be empty"), http.StatusBadRequest)
+		return
+	}
+
+	if reqBody.CoffeeID == "" {
+		handleError(w, errors.New("coffee ID cannot be empty"), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.EventService.RegisterUserToCoffee(user, slug, reqBody); err != nil {
 		handleError(w, errors.New("error registering to coffee: "+err.Error()), http.StatusBadRequest)
 		return
 	}
@@ -669,8 +709,14 @@ func (h *EventHandler) RegisterToCoffee(w http.ResponseWriter, r *http.Request) 
 // @Failure      400  {object}  EventStandardErrorResponse
 // @Failure      401  {object}  EventStandardErrorResponse
 // @Router       /events/{slug}/coffee/registrations [get]
-func (h *EventHandler) GetCoffeeRegistrations(w http.ResponseWriter, r *http.Request) {
-	registrations, err := h.EventService.GetCoffeeRegistrations()
+func (h *EventHandler) GetAllCoffeeRegistrations(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	registrations, err := h.EventService.GetAllCoffeeRegistrations(slug)
 	if err != nil {
 		handleError(w, errors.New("error getting coffee registrations: "+err.Error()), http.StatusBadRequest)
 		return
@@ -692,7 +738,7 @@ func (h *EventHandler) GetCoffeeRegistrations(w http.ResponseWriter, r *http.Req
 // @Success      200  {object}  NoMessageSuccessResponse{data=models.CoffeeRegistration}
 // @Failure      400  {object}  EventStandardErrorResponse
 // @Failure      401  {object}  EventStandardErrorResponse
-// @Router       /events/{slug}/coffee/{id} [get]
+// @Router       /events/{slug}/coffee/{id}/registrations [get]
 func (h *EventHandler) GetCoffeeRegistrationsByCoffeeID(w http.ResponseWriter, r *http.Request) {
 	slug, err := extractSlugAndValidate(r)
 	if err != nil {
@@ -713,4 +759,55 @@ func (h *EventHandler) GetCoffeeRegistrationsByCoffeeID(w http.ResponseWriter, r
 	}
 
 	handleSuccess(w, registrations, "", http.StatusOK)
+}
+
+// UnregisterFromCoffee godoc
+// @Summary      Unregister from a coffee
+// @Description  Unregisters the authenticated user from a coffee by its ID
+// @Tags         events
+// @Produce      json
+// @Security     Bearer
+// @Param        Authorization header string true "Bearer {access_token}"
+// @Param        Refresh header string true "Bearer {refresh_token}"
+// @Param        slug path string true "Event slug"
+// @Param        id path string true "Coffee ID"
+// @Success      200  {object}  NoDataSuccessResponse
+// @Failure      400  {object}  EventStandardErrorResponse
+// @Failure      401  {object}  EventStandardErrorResponse
+// @Router       /events/{slug}/coffee/unregister [post]
+func (h *EventHandler) UnregisterFromCoffee(w http.ResponseWriter, r *http.Request) {
+	slug, err := extractSlugAndValidate(r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var reqBody models.UnregisterFromCoffeeRequest
+	if err := decodeRequestBody(r, &reqBody); err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	user, err := getUserFromContext(h.EventService.GetUserByID, r)
+	if err != nil {
+		handleError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if reqBody.UserID == "" {
+		handleError(w, errors.New("user ID cannot be empty"), http.StatusBadRequest)
+		return
+	}
+
+	if reqBody.CoffeeID == "" {
+		handleError(w, errors.New("coffee ID cannot be empty"), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.EventService.UnregisterUserFromCoffee(user, slug, reqBody); err != nil {
+		handleError(w, errors.New("error unregistering from coffee: "+err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	handleSuccess(w, nil, "unregistered from coffee", http.StatusOK)
 }

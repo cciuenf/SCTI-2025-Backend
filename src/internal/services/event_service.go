@@ -525,8 +525,8 @@ func (s *EventService) CreateCoffee(user models.User, slug string, body models.C
 
 	if !user.IsSuperUser && event.CreatedBy != user.ID {
 		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
-		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
-			return nil, errors.New("unauthorized: only admins can create coffee breaks")
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster) {
+			return nil, errors.New("unauthorized: only master admins can create coffee breaks")
 		}
 	}
 
@@ -573,8 +573,8 @@ func (s *EventService) UpdateCoffee(user models.User, slug string, newData *mode
 
 	if !user.IsSuperUser && event.CreatedBy != user.ID {
 		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
-		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
-			return nil, errors.New("unauthorized: only admins can update coffee breaks")
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster) {
+			return nil, errors.New("unauthorized: only master admins can update coffee breaks")
 		}
 	}
 
@@ -601,16 +601,37 @@ func (s *EventService) DeleteCoffee(user models.User, slug string, body models.D
 
 	if !user.IsSuperUser && event.CreatedBy != user.ID {
 		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
-		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
-			return errors.New("unauthorized: only admins can delete coffee breaks")
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster) {
+			return errors.New("unauthorized: only master admins can delete coffee breaks")
 		}
 	}
 
 	return s.EventRepo.DeleteCoffee(body.ID)
 }
 
-func (s *EventService) RegisterUserToCoffee(user models.User, slug string, coffee_id string) error {
-	registered, err := s.EventRepo.IsUserRegisteredToEvent(user.ID, slug)
+func (s *EventService) RegisterUserToCoffee(user models.User, slug string, body models.RegisterToCoffeeRequest) error {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	if !user.IsSuperUser && event.CreatedBy != user.ID {
+		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return errors.New("unauthorized: only admins can register to coffee breaks")
+		}
+	}
+
+	coffee, err := s.EventRepo.GetCoffeeByID(body.CoffeeID)
+	if err != nil {
+		return errors.New("coffee not found: " + err.Error())
+	}
+
+	if coffee.EventID != event.ID || coffee.ID != body.CoffeeID {
+		return errors.New("coffee does not belong to this event")
+	}
+
+	registered, err := s.EventRepo.IsUserRegisteredToEvent(body.UserID, slug)
 	if err != nil {
 		return errors.New("error checking if user is registered to event")
 	}
@@ -618,7 +639,7 @@ func (s *EventService) RegisterUserToCoffee(user models.User, slug string, coffe
 		return errors.New("user is not registered to event")
 	}
 
-	isRegistered, err := s.EventRepo.IsUserRegisteredToCoffee(user.ID, coffee_id)
+	isRegistered, err := s.EventRepo.IsUserRegisteredToCoffee(body.UserID, coffee.ID)
 	if err != nil {
 		return err
 	}
@@ -627,7 +648,7 @@ func (s *EventService) RegisterUserToCoffee(user models.User, slug string, coffe
 	}
 
 	const ticketId = "ac225eb9-b41a-4f62-b717-676b43aa2d88"
-	product, err := s.EventRepo.GetUserProductByUserIDAndProductID(user.ID, ticketId)
+	product, err := s.EventRepo.GetUserProductByUserIDAndProductID(body.UserID, ticketId)
 	if err != nil {
 		return errors.New("could not get user product")
 	}
@@ -638,16 +659,21 @@ func (s *EventService) RegisterUserToCoffee(user models.User, slug string, coffe
 
 	now := time.Now()
 	registration := models.CoffeeRegistration{
-		CoffeeID:   coffee_id,
-		UserID:     user.ID,
+		CoffeeID:   coffee.ID,
+		UserID:     body.UserID,
 		AttendedAt: &now,
 	}
 
 	return s.EventRepo.CreateCoffeeRegistration(&registration)
 }
 
-func (s *EventService) GetCoffeeRegistrations() ([]models.CoffeeRegistration, error) {
-	return s.EventRepo.GetCoffeeRegistrations()
+func (s *EventService) GetAllCoffeeRegistrations(slug string) ([]models.CoffeeRegistration, error) {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	return s.EventRepo.GetAllCoffeeRegistrations(event.ID)
 }
 func (s *EventService) GetCoffeeRegistrationsByCoffeeID(slug string, id string) (*models.CoffeeRegistration, error) {
 	event, err := s.EventRepo.GetEventBySlug(slug)
@@ -665,4 +691,55 @@ func (s *EventService) GetCoffeeRegistrationsByCoffeeID(slug string, id string) 
 	}
 
 	return s.EventRepo.GetCoffeeRegistrationsByCoffeeID(coffee.ID)
+}
+
+func (s *EventService) UnregisterUserFromCoffee(user models.User, slug string, body models.UnregisterFromCoffeeRequest) error {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return errors.New("event not found: " + err.Error())
+	}
+
+	if !user.IsSuperUser && event.CreatedBy != user.ID {
+		adminStatus, err := s.EventRepo.GetUserAdminStatusBySlug(user.ID, slug)
+		if err != nil || (adminStatus.AdminType != models.AdminTypeMaster && adminStatus.AdminType != models.AdminTypeNormal) {
+			return errors.New("unauthorized: only admins can unregister from coffee breaks")
+		}
+	}
+
+	coffee, err := s.EventRepo.GetCoffeeByID(body.CoffeeID)
+	if err != nil {
+		return errors.New("coffee not found: " + err.Error())
+	}
+
+	if coffee.EventID != event.ID || coffee.ID != body.CoffeeID {
+		return errors.New("coffee does not belong to this event")
+	}
+
+	isRegistered, err := s.EventRepo.IsUserRegisteredToCoffee(body.UserID, coffee.ID)
+	if err != nil {
+		return errors.New("error checking if user is registered to coffee")
+	}
+	if !isRegistered {
+		return errors.New("user is not registered to this coffee")
+	}
+
+	return s.EventRepo.DeleteCoffeeRegistration(body.UserID, coffee.ID)
+}
+
+func (s *EventService) GetCoffeeByID(slug string, id string) (*models.CoffeeBreak, error) {
+	event, err := s.EventRepo.GetEventBySlug(slug)
+	if err != nil {
+		return nil, errors.New("event not found: " + err.Error())
+	}
+
+	coffee, err := s.EventRepo.GetCoffeeByID(id)
+	if err != nil {
+		return nil, errors.New("coffee not found: " + err.Error())
+	}
+
+	if coffee.EventID != event.ID {
+		return nil, errors.New("coffee does not belong to this event")
+	}
+
+	return coffee, nil
 }
