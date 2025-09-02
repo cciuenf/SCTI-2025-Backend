@@ -52,6 +52,56 @@ type EventRegistration struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+type CoffeeBreak struct {
+	ID      string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	EventID string `gorm:"type:varchar(36);primaryKey" json:"event_id"`
+
+	StartDate time.Time `gorm:"not null" json:"start_date"`
+	EndDate   time.Time `gorm:"not null" json:"end_date"`
+
+	Attendees []User `gorm:"many2many:coffee_registration;constraint:OnDelete:CASCADE" json:"attendees"`
+
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+}
+
+type CreateCoffeeRequest struct {
+	StartDate time.Time `json:"start_date" example:"2025-05-01T14:00:00Z"`
+	EndDate   time.Time `json:"end_date" example:"2025-05-01T17:00:00Z"`
+}
+
+type UpdateCoffeeRequest struct {
+	ID        string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	StartDate time.Time `json:"start_date" example:"2025-05-01T14:00:00Z"`
+	EndDate   time.Time `json:"end_date" example:"2025-05-01T17:00:00Z"`
+}
+
+type DeleteCoffeeRequest struct {
+	ID string `gorm:"type:varchar(36);primaryKey" json:"id"`
+}
+
+type RegisterToCoffeeRequest struct {
+	UserID   string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
+	CoffeeID string `gorm:"type:varchar(36);primaryKey" json:"coffee_id"`
+}
+
+type UnregisterFromCoffeeRequest struct {
+	UserID   string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
+	CoffeeID string `gorm:"type:varchar(36);primaryKey" json:"coffee_id"`
+}
+
+type CoffeeRegistration struct {
+	CoffeeID string `gorm:"type:varchar(36);primaryKey" json:"coffee_id"`
+	UserID   string `gorm:"type:varchar(36);primaryKey" json:"user_id"`
+
+	AttendedAt *time.Time `json:"attended_at"` // Time of attendance, null if not attended yet
+
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+}
+
 func (Event) TableName() string {
 	return "events"
 }

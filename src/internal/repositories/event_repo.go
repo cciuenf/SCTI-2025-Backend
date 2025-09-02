@@ -396,3 +396,81 @@ func (r *EventRepo) GetUserProductByUserIDAndProductID(userID string, productID 
 	}
 	return userProducts, nil
 }
+
+func (r *EventRepo) CreateCoffee(event *models.CoffeeBreak) error {
+	return r.DB.Create(event).Error
+}
+
+func (r *EventRepo) GetCoffeeByID(coffee_id string) (*models.CoffeeBreak, error) {
+	var coffee models.CoffeeBreak
+	if err := r.DB.Where("id = ?", coffee_id).Find(&coffee).Error; err != nil {
+		return nil, err
+	}
+	return &coffee, nil
+}
+
+func (r *EventRepo) GetAllCoffees(event_id string) ([]models.CoffeeBreak, error) {
+	var coffee []models.CoffeeBreak
+	if err := r.DB.Where("event_id = ?", event_id).Find(&coffee).Error; err != nil {
+		return nil, err
+	}
+	return coffee, nil
+}
+
+func (r *EventRepo) UpdateCoffee(event *models.CoffeeBreak) error {
+	return r.DB.Save(event).Error
+}
+
+func (r *EventRepo) DeleteCoffee(coffee_id string) error {
+	return r.DB.Where("id = ?", coffee_id).Delete(&models.CoffeeBreak{}).Error
+}
+
+func (r *EventRepo) IsUserRegisteredToCoffee(userID string, coffee_id string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&models.CoffeeRegistration{}).
+		Where("user_id = ? AND coffee_id = ?", userID, coffee_id).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (r *EventRepo) CreateCoffeeRegistration(registration *models.CoffeeRegistration) error {
+	return r.DB.Create(registration).Error
+}
+
+func (r *EventRepo) GetAllCoffeeRegistrations(event_id string) ([]models.CoffeeRegistration, error) {
+	var coffees []models.CoffeeBreak
+	if err := r.DB.Where("event_id = ?", event_id).Find(&coffees).Error; err != nil {
+		return nil, err
+	}
+
+	var registrations []models.CoffeeRegistration
+	for _, coffee := range coffees {
+		if err := r.DB.Where("coffee_id = ?", coffee.ID).Find(&registrations).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				continue
+			}
+			return nil, err
+		}
+		registrations = append(registrations, registrations...)
+	}
+	return registrations, nil
+}
+
+func (r *EventRepo) GetCoffeeRegistrationsByCoffeeID(coffee_id string) (*[]models.CoffeeRegistration, error) {
+	var registration []models.CoffeeRegistration
+	if err := r.DB.Where("coffee_id = ?", coffee_id).Find(&registration).Error; err != nil {
+		return nil, err
+	}
+	return &registration, nil
+}
+
+func (r *EventRepo) DeleteCoffeeRegistration(userID string, coffeeID string) error {
+	return r.DB.Where("user_id = ? AND coffee_id = ?", userID, coffeeID).
+		Unscoped().
+		Delete(&models.CoffeeRegistration{}).Error
+}

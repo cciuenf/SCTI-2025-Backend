@@ -25,6 +25,8 @@ func Migrate() {
 		&models.ProductBundle{},
 		&models.AccessTarget{},
 		&models.PixPurchase{},
+		&models.CoffeeBreak{},
+		&models.CoffeeRegistration{},
 	)
 	if err != nil {
 		log.Fatalf("migrations failed: %v", err)
