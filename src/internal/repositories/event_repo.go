@@ -463,7 +463,7 @@ func (r *EventRepo) GetAllCoffeeRegistrations(event_id string) ([]models.CoffeeR
 
 func (r *EventRepo) GetCoffeeRegistrationsByCoffeeID(coffee_id string) (*[]models.CoffeeRegistration, error) {
 	var registration []models.CoffeeRegistration
-	if err := r.DB.Where("coffee_id = ?", coffee_id).First(&registration).Error; err != nil {
+	if err := r.DB.Where("coffee_id = ?", coffee_id).Find(&registration).Error; err != nil {
 		return nil, err
 	}
 	return &registration, nil
