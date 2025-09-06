@@ -92,18 +92,16 @@ type UserInfoBatch struct {
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
-// @Param        id path string true "User ID"
 // @Param        request body UserInfoBatch true "Array list of all users IDs"
 // @Success      200  {object}  NoMessageSuccessResponse{data=UserInfoBatch}
 // @Failure      400  {object}  AuthStandardErrorResponse
 // @Router       /users/batch [post]
 func (h *UsersHandler) GetUserInfoBatched(w http.ResponseWriter, r *http.Request) {
-	var reqBody UserInfoBatch
+	var reqBody *UserInfoBatch
 	if err := decodeRequestBody(r, &reqBody); err != nil {
 		BadRequestError(w, err, "user")
 		return
 	}
-
 	if reqBody.Id_array == nil {
 		BadRequestError(w, errors.New("array list is required"), "user")
 		return
@@ -114,6 +112,5 @@ func (h *UsersHandler) GetUserInfoBatched(w http.ResponseWriter, r *http.Request
 		HandleErrMsg("error getting users infos", err, w).Stack("users").BadRequest()
 		return
 	}
-
 	handleSuccess(w, users_info, "", http.StatusCreated)
 }

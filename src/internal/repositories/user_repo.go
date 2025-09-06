@@ -30,6 +30,18 @@ func (r *UserRepo) GetUserByID(id string) (models.User, error) {
 	return user, nil
 }
 
+func (r *UserRepo) GetUsersByIDs(ids []string) ([]*models.User, error) {
+	if len(ids) == 0 {
+		return []*models.User{}, nil
+	}
+
+	var users []*models.User
+	if err := r.db.Where("id IN ?", ids).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *UserRepo) UpdateUser(user *models.User) (*models.User, error) {
 	return user, r.db.Save(user).Error
 }
