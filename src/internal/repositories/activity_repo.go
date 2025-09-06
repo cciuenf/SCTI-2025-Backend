@@ -113,6 +113,56 @@ func (r *ActivityRepo) GetActivityCapacity(activityID string) (int, int, error) 
 	return int(count), activity.MaxCapacity, nil
 }
 
+func (r *ActivityRepo) GetAllActivitiesFromEventWithSlotsGORM(eventID string) ([]*models.ActivityWithSlotsDTO, error) {
+	var activities []*models.Activity
+
+	// Use GORM's Preload to fetch registrations in a single additional query
+	if err := r.DB.
+		Where("event_id = ? AND is_hidden = ? AND deleted_at IS NULL", eventID, false).
+		Preload("Registrants", func(db *gorm.DB) *gorm.DB {
+			return db.Select("users.id").Joins("JOIN activity_registrations ON users.id = activity_registrations.user_id").
+				Where("activity_registrations.deleted_at IS NULL")
+		}).
+		Order("created_at ASC").
+		Find(&activities).Error; err != nil {
+		return nil, err
+	}
+
+	var activitiesWithSlots []*models.ActivityWithSlotsDTO
+	for _, activity := range activities {
+		currentRegistrations := len(activity.Registrants)
+
+		availableSlotsInfo := models.AvailableSlotsInfo{
+			ID:                activity.ID,
+			HasUnlimitedSlots: activity.HasUnlimitedCapacity,
+			CurrentOccupancy:  currentRegistrations,
+		}
+
+		if activity.HasUnlimitedCapacity {
+			availableSlotsInfo.TotalCapacity = 0
+			availableSlotsInfo.AvailableSlots = -1
+			availableSlotsInfo.IsFull = false
+		} else {
+			availableSlotsInfo.TotalCapacity = activity.MaxCapacity
+			availableSlotsInfo.AvailableSlots = activity.MaxCapacity - currentRegistrations
+			availableSlotsInfo.IsFull = currentRegistrations >= activity.MaxCapacity
+
+			if availableSlotsInfo.AvailableSlots < 0 {
+				availableSlotsInfo.AvailableSlots = 0
+			}
+		}
+
+		activityWithSlots := &models.ActivityWithSlotsDTO{
+			Activity:       *activity,
+			AvailableSlots: availableSlotsInfo,
+		}
+
+		activitiesWithSlots = append(activitiesWithSlots, activityWithSlots)
+	}
+
+	return activitiesWithSlots, nil
+}
+
 func (r *ActivityRepo) IsEventBlocked(eventID string) (bool, error) {
 	var event models.Event
 	if err := r.DB.Select("is_blocked").Where("id = ?", eventID).First(&event).Error; err != nil {
