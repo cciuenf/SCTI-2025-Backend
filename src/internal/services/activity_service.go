@@ -72,66 +72,19 @@ func (s *ActivityService) CreateEventActivity(user models.User, eventSlug string
 	return &activity, nil
 }
 
-func (s *ActivityService) GetAllActivitiesFromEvent(eventSlug string) ([]models.ActivityWithSlotsDTO, error) {
+func (s *ActivityService) GetAllActivitiesFromEvent(eventSlug string) ([]*models.ActivityWithSlotsDTO, error) {
 	event, err := s.ActivityRepo.GetEventBySlug(eventSlug)
 	if err != nil {
 		return nil, errors.New("event not found: " + err.Error())
 	}
 
-	activities, err := s.ActivityRepo.GetAllActivitiesFromEvent(event.ID)
+	// Get activities with their capacity info in a single query
+	withSlots, err := s.ActivityRepo.GetAllActivitiesFromEventWithSlotsGORM(event.ID)
 	if err != nil {
-		return nil, errors.New("failed to get activities: " + err.Error())
-	}
-
-	withSlots, err := s.AddSlotsInfoToActivities(activities)
-	if err != nil {
-		return nil, errors.New("couldn't get available slots info")
+		return nil, errors.New("failed to get activities with slots: " + err.Error())
 	}
 
 	return withSlots, nil
-}
-
-func (s *ActivityService) AddSlotsInfoToActivities(activities []models.Activity) ([]models.ActivityWithSlotsDTO, error) {
-	var activitiesWithSlots []models.ActivityWithSlotsDTO
-
-	for _, activity := range activities {
-		// Get current registrations count
-		currentRegistrations, maxCapacity, err := s.ActivityRepo.GetActivityCapacity(activity.ID)
-		if err != nil {
-			return nil, errors.New("error getting capacity for activity " + activity.ID + ": " + err.Error())
-		}
-
-		// Calculate available slots info
-		availableSlotsInfo := models.AvailableSlotsInfo{
-			ID:                activity.ID,
-			HasUnlimitedSlots: activity.HasUnlimitedCapacity,
-			CurrentOccupancy:  currentRegistrations,
-		}
-
-		if activity.HasUnlimitedCapacity {
-			availableSlotsInfo.TotalCapacity = 0   // 0 indicates unlimited
-			availableSlotsInfo.AvailableSlots = -1 // -1 indicates unlimited
-			availableSlotsInfo.IsFull = false
-		} else {
-			availableSlotsInfo.TotalCapacity = maxCapacity
-			availableSlotsInfo.AvailableSlots = maxCapacity - currentRegistrations
-			availableSlotsInfo.IsFull = currentRegistrations >= maxCapacity
-		}
-
-		// Ensure available slots is never negative
-		if availableSlotsInfo.AvailableSlots < 0 && !activity.HasUnlimitedCapacity {
-			availableSlotsInfo.AvailableSlots = 0
-		}
-
-		activityWithSlots := models.ActivityWithSlotsDTO{
-			Activity:       activity,
-			AvailableSlots: availableSlotsInfo,
-		}
-
-		activitiesWithSlots = append(activitiesWithSlots, activityWithSlots)
-	}
-
-	return activitiesWithSlots, nil
 }
 
 func (s *ActivityService) UpdateEventActivity(user models.User, eventSlug string, activityID string, req models.ActivityUpdateRequest) (*models.Activity, error) {
