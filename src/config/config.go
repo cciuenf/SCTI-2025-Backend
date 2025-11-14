@@ -43,7 +43,7 @@ var (
 func LoadConfig(path string) *Config {
 	err := godotenv.Load(path)
 	if err != nil {
-		log.Fatalf("Failed to load config")
+		log.Printf("Could not load %s file, using environment variables: %v", path, err)
 	}
 
 	server_host = os.Getenv("HOST")
@@ -52,6 +52,7 @@ func LoadConfig(path string) *Config {
 	db_port = os.Getenv("DATABASE_PORT")
 	db_user = os.Getenv("DATABASE_USER")
 	db_pass = os.Getenv("DATABASE_PASS")
+	db_host := os.Getenv("DB_HOST")
 	jwtSecret = os.Getenv("JWT_SECRET")
 	systemEmail = os.Getenv("SCTI_EMAIL")
 	masterUserPass = os.Getenv("MASTER_USER_PASS")
@@ -67,7 +68,7 @@ func LoadConfig(path string) *Config {
 		log.Fatalf("Failed to create mercado pago config: %v", err)
 	}
 
-	dsn = fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=America/Sao_Paulo", server_host, db_user, db_pass, db, db_port)
+	dsn = fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable TimeZone=America/Sao_Paulo", db_host, db_user, db_pass, db, db_port)
 
 	return &Config{
 		HOST:       server_host,
